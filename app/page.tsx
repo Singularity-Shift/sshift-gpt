@@ -2,13 +2,16 @@
 
 import { useState } from 'react'
 import { Button } from "@/components/ui/button"
-import Link from 'next/link'
 import Image from 'next/image'
+import { FaDiscord } from 'react-icons/fa' // Make sure to install react-icons
+import { silkscreen } from './fonts'
 
 export default function Home() {
   const [isLoggedIn, setIsLoggedIn] = useState(false)
 
-  const handleLogin = () => {
+  const handleDiscordLogin = () => {
+    // Implement Discord OAuth login logic here
+    console.log("Discord login clicked")
     setIsLoggedIn(true)
   }
 
@@ -33,7 +36,7 @@ export default function Home() {
             />
           </div>
           <div className="flex flex-col justify-center">
-            <h1 className="text-6xl font-bold text-gray-800 leading-tight text-center">
+            <h1 className={`text-6xl font-bold text-gray-800 leading-tight text-center ${silkscreen.className}`}>
               Welcome to<br />SShift GPT
             </h1>
           </div>
@@ -41,11 +44,11 @@ export default function Home() {
         <div className="flex space-x-4">
           {!isLoggedIn ? (
             <Button 
-              onClick={handleLogin} 
-              className="px-8 py-2 text-lg border-2 border-black bg-white text-black hover:bg-gray-100"
-              variant="outline"
+              onClick={handleDiscordLogin} 
+              className="px-8 py-2 text-lg bg-[#5865F2] text-white hover:bg-[#4752C4] flex items-center space-x-2"
             >
-              login
+              <FaDiscord className="w-6 h-6" />
+              <span>Login with Discord</span>
             </Button>
           ) : (
             <Button 
@@ -56,15 +59,6 @@ export default function Home() {
               Logout
             </Button>
           )}
-          <Link href="/chat" passHref>
-            <Button 
-              className="px-8 py-2 text-lg border-2 border-black bg-white text-black hover:bg-gray-100" 
-              variant="outline"
-              disabled={!isLoggedIn}
-            >
-              enter
-            </Button>
-          </Link>
         </div>
       </div>
     </div>
