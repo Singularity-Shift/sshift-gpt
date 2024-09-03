@@ -5,9 +5,11 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scrollarea"
-import { Paperclip, Image, Send, Plus } from "lucide-react"
+import { Paperclip, Image, Send, Plus, LogOut } from "lucide-react"
+import { useRouter } from 'next/navigation'
 
 export default function ChatPage() {
+  const router = useRouter()
   const [selectedModel, setSelectedModel] = useState("gpt-3.5-turbo")
   const [inputMessage, setInputMessage] = useState("")
   const [messages, setMessages] = useState([
@@ -33,11 +35,21 @@ export default function ChatPage() {
     // Additional logic for starting a new chat
   }
 
+  const handleDisconnect = () => {
+    // Implement logout logic here
+    console.log("User disconnected")
+    // Redirect to home page
+    router.push('/')
+  }
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
       <div className="w-64 border-r border-border bg-background hidden md:block">
-        <ScrollArea className="h-full">
+        <div className="p-4 border-b border-border">
+          <h2 className="text-lg font-semibold">Chat History</h2>
+        </div>
+        <ScrollArea className="h-[calc(100%-60px)]">
           <div className="p-4 space-y-2">
             {chats.map((chat) => (
               <Button key={chat.id} variant="ghost" className="w-full justify-start">
@@ -62,13 +74,19 @@ export default function ChatPage() {
                 <SelectItem value="gpt-4">GPT-4</SelectItem>
               </SelectContent>
             </Select>
-            <Button onClick={handleNewChat} variant="outline" size="icon">
-              <Plus className="h-4 w-4" />
+            <Button onClick={handleNewChat} variant="outline">
+              New Chat
             </Button>
           </div>
-          <div className="flex items-center space-x-2">
-            <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
-            <span className="text-gray-800 font-semibold">Connected</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-2">
+              <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
+              <span className="text-gray-800 font-semibold">Connected</span>
+            </div>
+            <Button onClick={handleDisconnect} variant="outline" size="sm">
+              <LogOut className="h-4 w-4 mr-2" />
+              Disconnect
+            </Button>
           </div>
         </div>
 
