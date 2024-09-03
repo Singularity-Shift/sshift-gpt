@@ -46,10 +46,10 @@ export default function ChatPage() {
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
       <div className="w-64 border-r border-border bg-background hidden md:block">
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-border h-[73px] flex items-center">
           <h2 className="text-lg font-semibold">Chat History</h2>
         </div>
-        <ScrollArea className="h-[calc(100%-60px)]">
+        <ScrollArea className="h-[calc(100%-73px)]">
           <div className="p-4 space-y-2">
             {chats.map((chat) => (
               <Button key={chat.id} variant="ghost" className="w-full justify-start">
@@ -63,7 +63,7 @@ export default function ChatPage() {
       {/* Main Content */}
       <div className="flex flex-col flex-1">
         {/* Chat Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border">
+        <div className="flex items-center justify-between p-4 border-b border-border h-[73px]">
           <div className="flex items-center space-x-4">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-[180px]">
