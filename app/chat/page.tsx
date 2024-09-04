@@ -5,21 +5,25 @@ import { Button } from "@/components/ui/button"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scrollarea"
-import { Paperclip, Image, Send, Plus, LogOut } from "lucide-react"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { Paperclip, Image, Send, LogOut } from "lucide-react"
 import { useRouter } from 'next/navigation'
+import ReactMarkdown, { Components } from 'react-markdown'
+import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
+import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
 export default function ChatPage() {
   const router = useRouter()
-  const [selectedModel, setSelectedModel] = useState("gpt-3.5-turbo")
+  const [selectedModel, setSelectedModel] = useState("gpt-4o-mini")
   const [inputMessage, setInputMessage] = useState("")
   const [messages, setMessages] = useState([
-    { id: 1, sender: "user", content: "Hello, how can you help me today?" },
-    { id: 2, sender: "assistant", content: "Hello! I'm here to assist you with any questions or tasks you may have. How can I help you today?" },
+    { id: 1, sender: "user", content: "Hi mate, give me a short python script, something simple." },
+    { id: 2, sender: "assistant", content: "Hello! I'm here to assist you with any questions or tasks you may have. Here's a simple Python script that defines a function to greet a user by name and then calls that function:\n\n```python\n# Define a function to greet a user by name\n\ndef greet(name):\n    print(f'Hello, {name}!')\n\n# Call the function with a sample name\ngreet('World')\n```" },
   ])
   const [chats, setChats] = useState([
-    { id: 1, summary: "General Inquiries" },
-    { id: 2, summary: "Technical Support" },
-    { id: 3, summary: "Product Information" },
+    { id: 1, summary: "Math help" },
+    { id: 2, summary: "Code assistance" },
+    { id: 3, summary: "Announcement help" },
   ])
 
   const handleSendMessage = () => {
@@ -70,8 +74,8 @@ export default function ChatPage() {
                 <SelectValue placeholder="Select model" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="gpt-3.5-turbo">GPT-3.5 Turbo</SelectItem>
-                <SelectItem value="gpt-4">GPT-4</SelectItem>
+                <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+                <SelectItem value="gpt-4o">GPT-4o</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleNewChat} variant="outline">
@@ -96,14 +100,42 @@ export default function ChatPage() {
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex items-start space-x-2 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
               >
+                {message.sender === "assistant" && (
+                  <Avatar className="w-8 h-8 mr-2">
+                    <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
+                    <AvatarFallback>AI</AvatarFallback>
+                  </Avatar>
+                )}
                 <div
                   className={`max-w-[70%] rounded-lg p-3 ${
-                    message.sender === "user" ? "bg-primary text-primary-foreground" : "bg-muted"
+                    message.sender === "user" ? "bg-muted text-black" : "bg-muted"
                   }`}
                 >
-                  {message.content}
+                  <ReactMarkdown
+                    components={{
+                      code: ({ node, inline, className, children, ...props }: any) => {
+                        const match = /language-(\w+)/.exec(className || '')
+                        return !inline && match ? (
+                          <SyntaxHighlighter
+                            style={materialDark}
+                            language={match[1]}
+                            PreTag="div"
+                            {...props}
+                          >
+                            {String(children).replace(/\n$/, '')}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        )
+                      }
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
                 </div>
               </div>
             ))}
