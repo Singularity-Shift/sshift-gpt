@@ -6,9 +6,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea"
 import { ScrollArea } from "@/components/ui/scrollarea"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Paperclip, Image, Send, LogOut } from "lucide-react"
+import { Paperclip, Image, Send, LogOut, Volume2, Copy, RefreshCw } from "lucide-react"
 import { useRouter } from 'next/navigation'
-import ReactMarkdown, { Components } from 'react-markdown'
+import ReactMarkdown from 'react-markdown'
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter'
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism'
 
@@ -46,6 +46,28 @@ export default function ChatPage() {
     router.push('/')
   }
 
+  const handleCopy = (text: string) => {
+    navigator.clipboard.writeText(text)
+  }
+
+  const CodeBlock = ({ language, value }: { language: string, value: string }) => {
+    return (
+      <div className="relative">
+        <SyntaxHighlighter style={materialDark} language={language} PreTag="div">
+          {value}
+        </SyntaxHighlighter>
+        <Button
+          variant="ghost"
+          size="icon"
+          className="absolute bottom-2 right-2 hover:bg-gray-200"
+          onClick={() => handleCopy(value)}
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+      </div>
+    )
+  }
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
@@ -65,9 +87,9 @@ export default function ChatPage() {
       </div>
 
       {/* Main Content */}
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 items-center">
         {/* Chat Header */}
-        <div className="flex items-center justify-between p-4 border-b border-border h-[73px]">
+        <div className="flex items-center justify-between p-4 border-b border-border h-[73px] w-full">
           <div className="flex items-center space-x-4">
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-[180px]">
@@ -95,12 +117,12 @@ export default function ChatPage() {
         </div>
 
         {/* ChatWindow */}
-        <ScrollArea className="flex-1 p-4">
+        <ScrollArea className="flex-1 p-4 w-full max-w-5xl">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex items-start space-x-2 ${message.sender === "user" ? "justify-end" : "justify-start"}`}
+                className={`flex items-start space-x-2 ${message.sender === "user" ? "justify-end" : "justify-start"} relative`}
               >
                 {message.sender === "assistant" && (
                   <Avatar className="w-8 h-8 mr-2">
@@ -118,14 +140,7 @@ export default function ChatPage() {
                       code: ({ node, inline, className, children, ...props }: any) => {
                         const match = /language-(\w+)/.exec(className || '')
                         return !inline && match ? (
-                          <SyntaxHighlighter
-                            style={materialDark}
-                            language={match[1]}
-                            PreTag="div"
-                            {...props}
-                          >
-                            {String(children).replace(/\n$/, '')}
-                          </SyntaxHighlighter>
+                          <CodeBlock language={match[1]} value={String(children).replace(/\n$/, '')} />
                         ) : (
                           <code className={className} {...props}>
                             {children}
@@ -136,6 +151,19 @@ export default function ChatPage() {
                   >
                     {message.content}
                   </ReactMarkdown>
+                  {message.sender === "assistant" && (
+                    <div className="flex space-x-2 mt-2">
+                      <Button variant="ghost" size="icon" className="hover:bg-gray-200" onClick={() => handleCopy(message.content)}>
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:bg-gray-200">
+                        <Volume2 className="h-4 w-4" />
+                      </Button>
+                      <Button variant="ghost" size="icon" className="hover:bg-gray-200">
+                        <RefreshCw className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  )}
                 </div>
               </div>
             ))}
@@ -143,21 +171,21 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* ChatInput */}
-        <div className="border-t border-border p-4">
-          <div className="flex items-end space-x-2">
+        <div className="border-t border-border p-4 w-full">
+          <div className="flex items-end space-x-2 max-w-5xl mx-auto">
             <Textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               placeholder="Type your message here..."
               className="flex-1"
             />
-            <Button variant="outline" size="icon" className="shrink-0">
+            <Button variant="outline" size="icon" className="shrink-0 hover:bg-gray-200">
               <Paperclip className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="shrink-0">
+            <Button variant="outline" size="icon" className="shrink-0 hover:bg-gray-200">
               <Image className="h-4 w-4" />
             </Button>
-            <Button onClick={handleSendMessage} className="shrink-0">
+            <Button onClick={handleSendMessage} className="shrink-0 hover:bg-gray-200">
               <Send className="h-4 w-4" />
             </Button>
           </div>
