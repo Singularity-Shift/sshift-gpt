@@ -1,0 +1,9 @@
+{
+  "name": "frontend-chat-e2e",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "frontend-chat-e2e/src",
+  "tags": [],
+  "implicitDependencies": ["frontend-chat"],
+  "// targets": "to see all targets run: nx show project frontend-chat-e2e --web",
+  "targets": {}
+}
