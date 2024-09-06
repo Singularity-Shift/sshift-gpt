@@ -26,11 +26,50 @@ export default function ChatPage() {
     { id: 3, summary: "Announcement help" },
   ])
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (inputMessage.trim()) {
-      setMessages([...messages, { id: messages.length + 1, sender: "user", content: inputMessage }])
+      const newMessage = { id: messages.length + 1, sender: "user", content: inputMessage }
+      setMessages([...messages, newMessage])
       setInputMessage("")
-      // Here you would typically send the message to the backend and wait for a response
+
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ messages: [...messages, newMessage], model: selectedModel }),
+        })
+
+        if (!response.body) throw new Error('No response body')
+
+        const reader = response.body.getReader()
+        const decoder = new TextDecoder()
+        let assistantMessage = { id: messages.length + 2, sender: "assistant", content: "" }
+
+        while (true) {
+          const { done, value } = await reader.read()
+          if (done) break
+
+          const chunk = decoder.decode(value, { stream: true })
+          const lines = chunk.split('\n').filter(line => line.trim() !== '')
+          for (const line of lines) {
+            if (line === 'data: [DONE]') {
+              setMessages([...messages, newMessage, assistantMessage])
+              return
+            }
+            if (line.startsWith('data: ')) {
+              const data = JSON.parse(line.substring(6))
+              if (data.choices && data.choices[0] && data.choices[0].delta && data.choices[0].delta.content) {
+                assistantMessage.content += data.choices[0].delta.content
+                setMessages([...messages, newMessage, { ...assistantMessage }])
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error sending message:', error)
+      }
     }
   }
 
