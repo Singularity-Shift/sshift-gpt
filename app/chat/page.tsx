@@ -117,7 +117,7 @@ export default function ChatPage() {
         </div>
 
         {/* ChatWindow */}
-        <ScrollArea className="flex-1 p-4 w-full max-w-5xl">
+        <ScrollArea className="flex-1 p-4 w-full max-w-6xl">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -172,7 +172,7 @@ export default function ChatPage() {
 
         {/* ChatInput */}
         <div className="border-t border-border p-4 w-full">
-          <div className="flex items-end space-x-2 max-w-5xl mx-auto">
+          <div className="flex items-end space-x-2 max-w-6xl mx-auto">
             <Textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
