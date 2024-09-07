@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '../../src/components/ui/button';
 import {
   Select,
@@ -53,6 +53,8 @@ export default function ChatPage() {
     { id: 3, summary: 'Announcement help' },
   ]);
 
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
       const newMessage = {
@@ -60,7 +62,7 @@ export default function ChatPage() {
         sender: 'user',
         content: inputMessage,
       };
-      setMessages([...messages, newMessage]);
+      setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
 
       try {
@@ -79,11 +81,12 @@ export default function ChatPage() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        const assistantMessage = {
+        let assistantMessage = {
           id: messages.length + 2,
           sender: 'assistant',
           content: '',
         };
+        let isFirstChunk = true;
 
         while (true) {
           const { done, value } = await reader.read();
@@ -93,19 +96,22 @@ export default function ChatPage() {
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
           for (const line of lines) {
             if (line === 'data: [DONE]') {
-              setMessages([...messages, newMessage, assistantMessage]);
               return;
             }
             if (line.startsWith('data: ')) {
               const data = JSON.parse(line.substring(6));
-              if (
-                data.choices &&
-                data.choices[0] &&
-                data.choices[0].delta &&
-                data.choices[0].delta.content
-              ) {
-                assistantMessage.content += data.choices[0].delta.content;
-                setMessages([...messages, newMessage, { ...assistantMessage }]);
+              if (data.content) {
+                assistantMessage.content += data.content;
+                setMessages(prevMessages => {
+                  if (isFirstChunk) {
+                    isFirstChunk = false;
+                    return [...prevMessages, { ...assistantMessage }];
+                  } else {
+                    return prevMessages.map(msg => 
+                      msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                    );
+                  }
+                });
               }
             }
           }
@@ -115,6 +121,12 @@ export default function ChatPage() {
       }
     }
   };
+
+  useEffect(() => {
+    if (scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   const handleNewChat = () => {
     setMessages([]);
@@ -213,7 +225,7 @@ export default function ChatPage() {
         </div>
 
         {/* ChatWindow */}
-        <ScrollArea className="flex-1 p-4 w-full max-w-6xl">
+        <ScrollArea className="flex-1 p-4 w-full max-w-6xl" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
               <div
