@@ -1,0 +1,67 @@
+services: 
+  redis:
+    image: redis:latest
+    container_name: shift_redis_db
+    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PWD}
+    env_file:
+      - .env
+    ports:
+      - '6379:6379'
+    volumes:
+      - sshift_redis_data:/data
+
+  mongo:
+    image: mongo:latest
+    restart: always
+    container_name: shift_mongo_db
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PWD}
+    ports:
+      - "27017:27017"
+    volumes:
+      - 'sshift_mongo_data:/data/db'
+
+  sshift_dao_frontend_chat:
+    image: node:latest
+    container_name: sshift_dao_fn_chat
+    working_dir: /usr/src/sshift_dao_fn_chat
+    command: bash -c "npm && npm run fn-chat:${RUN_ENV}"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "3000:8080"
+    volumes:
+      - ./:/usr/src/sshift_dao_fn_chat
+
+  sshift_dao_backend_chat:
+    image: node:latest
+    container_name: sshift_dao_bn_chat
+    working_dir: /usr/src/sshift_dao_bn_chat
+    command: bash -c "npm && npm run bn-chat:${RUN_ENV}"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./:/usr/src/sshift_dao_bn_chat
+
+  shift_dao_chat:
+    image: node:latest
+    container_name: sshift_dao_bn_chat
+    working_dir: /usr/src/sshift_dao_chat
+    command: bash -c "npm && npm run ${MULT_RUN_ENV}"
+    environment:
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+    ports:
+      - "3000:8080"
+      - "3100:3100"
+    volumes:
+      - ./:/usr/src/sshift_dao_chat
+
+
+volumes:
+  sshift_redis_data:
+    driver: local
+  sshift_mongo_data:
+    driver: local
