@@ -10,9 +10,9 @@
     "bn-chat:build": "nx run backend-chat:build",
     "bn-chat:preview": "nx run backend-chat:preview",
     "bn-chat:start": "nx run backend-chat:start:production",
-    "dev": "nx run-many -t dev serve",
+    "dev": "nx run-many -t dev serve -p frontend-chat backend-chat -c development",
     "build": "nx run-many -t build",
-    "start": "nx run-many -t start preview"
+    "start": "nx run-many -t start serve:production"
   },
   "dependencies": {
     "@nestjs-modules/ioredis": "^2.0.2",

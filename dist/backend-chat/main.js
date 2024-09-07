@@ -211,8 +211,8 @@ exports.Profiles = {
         },
         redis: {
             pwd: process.env.REDIS_PWD,
-            host: process.env.HOST,
-            port: process.env.PORT,
+            host: process.env.REDIS_HOST,
+            port: process.env.REDIS_PORT,
         },
         server: {
             port: process.env.PORT,
@@ -221,12 +221,12 @@ exports.Profiles = {
     production: {
         nodeEnv: process.env.NODE_ENV,
         mongo: {
-            uri: process.env.URI,
+            uri: process.env.MONGO_URI,
         },
         redis: {
             pwd: process.env.REDIS_PWD,
-            host: process.env.HOST,
-            port: process.env.PORT,
+            host: process.env.REDIS_HOST,
+            port: process.env.REDIS_PORT,
         },
         server: {
             port: process.env.PORT,
