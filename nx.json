@@ -1,0 +1,63 @@
+{
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "targetDefaults": {
+    "dev": {
+      "outputs": ["{projectRoot}/dist"],
+      "cache": true,
+    },
+    "build": {
+      "outputs": ["{projectRoot}/build"],
+      "cache": true
+    },
+    "start": {
+      "cache": true
+    },
+    "lint": {
+      "cache": true
+    },
+    "e2e-ci--**/*": {
+      "dependsOn": ["^build"]
+    }
+  },
+  "defaultBase": "master",
+  "plugins": [
+    {
+      "plugin": "@nx/eslint/plugin",
+      "options": {
+        "targetName": "lint"
+      }
+    },
+    {
+      "plugin": "@nx/next/plugin",
+      "options": {
+        "startTargetName": "start",
+        "buildTargetName": "build",
+        "devTargetName": "dev",
+        "serveStaticTargetName": "serve-static"
+      }
+    },
+    {
+      "plugin": "@nx/cypress/plugin",
+      "options": {
+        "targetName": "e2e",
+        "openTargetName": "open-cypress",
+        "componentTestingTargetName": "component-test",
+        "ciTargetName": "e2e-ci"
+      }
+    },
+    {
+      "plugin": "@nx/jest/plugin",
+      "options": {
+        "targetName": "test"
+      }
+    }
+  ],
+  "generators": {
+    "@nx/next": {
+      "application": {
+        "style": "tailwind",
+        "linter": "eslint"
+      }
+    }
+  }
+}
