@@ -12,6 +12,7 @@
 # next.js
 /.next/
 /out/
+.env
 
 # production
 /build
@@ -42,4 +43,6 @@ next-env.d.ts
 
 # Next.js
 .next
+.nx
+dist
 out
