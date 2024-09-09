@@ -30,23 +30,17 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
+interface Message {
+  id: number;
+  sender: 'user' | 'assistant';
+  content: string;
+}
+
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      id: 1,
-      sender: 'user',
-      content: 'Hi mate, give me a short python script, something simple.',
-    },
-    {
-      id: 2,
-      sender: 'assistant',
-      content:
-        "Hello! I'm here to assist you with any questions or tasks you may have. Here's a simple Python script that defines a function to greet a user by name and then calls that function:\n\n```python\n# Define a function to greet a user by name\n\ndef greet(name):\n    print(f'Hello, {name}!')\n\n# Call the function with a sample name\ngreet('World')\n```",
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [chats, setChats] = useState([
     { id: 1, summary: 'Math help' },
     { id: 2, summary: 'Code assistance' },
@@ -64,7 +58,7 @@ export default function ChatPage() {
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
-      const newMessage = {
+      const newMessage: Message = {
         id: messages.length + 1,
         sender: 'user',
         content: inputMessage,
@@ -89,7 +83,7 @@ export default function ChatPage() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let assistantMessage = {
+        let assistantMessage: Message = {
           id: messages.length + 2,
           sender: 'assistant',
           content: '',
@@ -132,8 +126,8 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
+    handleNewChat(); // Trigger New Chat action on page load
+  }, []);
 
   const handleNewChat = () => {
     setMessages([]);
