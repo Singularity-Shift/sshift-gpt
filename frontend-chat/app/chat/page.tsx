@@ -54,6 +54,13 @@ export default function ChatPage() {
   ]);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
+  const lastMessageRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    if (lastMessageRef.current) {
+      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   const handleSendMessage = async () => {
     if (inputMessage.trim()) {
@@ -64,6 +71,7 @@ export default function ChatPage() {
       };
       setMessages(prevMessages => [...prevMessages, newMessage]);
       setInputMessage('');
+      scrollToBottom(); // Ensure scrolling after user message is sent
 
       try {
         const response = await fetch('/api/chat', {
@@ -112,6 +120,7 @@ export default function ChatPage() {
                     );
                   }
                 });
+                scrollToBottom();
               }
             }
           }
@@ -123,9 +132,7 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
-    }
+    scrollToBottom();
   }, [messages]);
 
   const handleNewChat = () => {
@@ -163,7 +170,7 @@ export default function ChatPage() {
         <Button
           variant="ghost"
           size="icon"
-          className="absolute bottom-2 right-2 hover:bg-gray-200"
+          className="absolute top-2 right-2 hover:bg-gray-200"
           onClick={() => handleCopy(value)}
         >
           <Copy className="h-4 w-4" />
@@ -227,24 +234,25 @@ export default function ChatPage() {
         {/* ChatWindow */}
         <ScrollArea className="flex-1 p-4 w-full max-w-6xl" ref={scrollAreaRef}>
           <div className="space-y-4">
-            {messages.map((message) => (
+            {messages.map((message, index) => (
               <div
                 key={message.id}
                 className={`flex items-start space-x-2 ${
                   message.sender === 'user' ? 'justify-end' : 'justify-start'
                 } relative`}
+                ref={index === messages.length - 1 ? lastMessageRef : null}
               >
                 {message.sender === 'assistant' && (
-                  <Avatar className="w-8 h-8 mr-2">
+                  <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
                     <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
                     <AvatarFallback>AI</AvatarFallback>
                   </Avatar>
                 )}
                 <div
-                  className={`max-w-[70%] rounded-lg p-3 ${
+                  className={`max-w-[70%] rounded-lg p-4 ${
                     message.sender === 'user'
-                      ? 'bg-muted text-black'
-                      : 'bg-muted'
+                      ? 'bg-blue-100 text-black'
+                      : 'bg-gray-100'
                   }`}
                 >
                   <ReactMarkdown
@@ -268,7 +276,15 @@ export default function ChatPage() {
                           </code>
                         );
                       },
+                      p: ({ children }) => <p className="mb-2">{children}</p>,
+                      h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+                      h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+                      h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                      li: ({ children }) => <li className="mb-1">{children}</li>,
                     }}
+                    className="prose max-w-none"
                   >
                     {message.content}
                   </ReactMarkdown>
