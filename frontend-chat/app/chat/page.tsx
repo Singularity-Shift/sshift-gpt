@@ -36,16 +36,17 @@ interface Message {
   content: string;
 }
 
+interface Chat {
+  id: number;
+  summary: string;
+}
+
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [inputMessage, setInputMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>([]);
-  const [chats, setChats] = useState([
-    { id: 1, summary: 'Math help' },
-    { id: 2, summary: 'Code assistance' },
-    { id: 3, summary: 'Announcement help' },
-  ]);
+  const [chats, setChats] = useState<Chat[]>([]); // Define the type for chats
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -323,13 +324,6 @@ export default function ChatPage() {
               placeholder="Type your message here..."
               className="flex-1"
             />
-            <Button
-              variant="outline"
-              size="icon"
-              className="shrink-0 hover:bg-gray-200"
-            >
-              <Paperclip className="h-4 w-4" />
-            </Button>
             <Button
               variant="outline"
               size="icon"
