@@ -64,7 +64,7 @@ export default function ChatPage() {
         sender: 'user',
         content: inputMessage,
       };
-      setMessages(prevMessages => [...prevMessages, newMessage]);
+      setMessages((prevMessages) => [...prevMessages, newMessage]);
       setInputMessage('');
       scrollToBottom(); // Ensure scrolling after user message is sent
 
@@ -105,13 +105,15 @@ export default function ChatPage() {
               const data = JSON.parse(line.substring(6));
               if (data.content) {
                 assistantMessage.content += data.content;
-                setMessages(prevMessages => {
+                setMessages((prevMessages) => {
                   if (isFirstChunk) {
                     isFirstChunk = false;
                     return [...prevMessages, { ...assistantMessage }];
                   } else {
-                    return prevMessages.map(msg => 
-                      msg.id === assistantMessage.id ? { ...assistantMessage } : msg
+                    return prevMessages.map((msg) =>
+                      msg.id === assistantMessage.id
+                        ? { ...assistantMessage }
+                        : msg
                     );
                   }
                 });

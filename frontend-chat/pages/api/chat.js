@@ -10,7 +10,7 @@ const openai = new OpenAI({
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        const { messages, model } = req.body;
+        const { messages, model, temperature = 0.2 } = req.body;
 
         // Validate messages array
         if (!Array.isArray(messages) || messages.length === 0) {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
                 model: model || 'gpt-4o-mini', // Use a default model if not provided
                 messages: messagesWithSystemPrompt,
                 max_tokens: 4000,
-                temperature: 0.2,
+                temperature: temperature,
                 stream: true,
             });
 
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
             res.write('data: [DONE]\n\n');
             res.end();
         } catch (error) {
-            console.error('OpenAI API Error:', error);
+            console.error('OpenAI API Error:', error.response ? error.response.data : error.message);
             res.status(500).json({ error: 'Internal Server Error', details: error.message });
         }
     } else {
