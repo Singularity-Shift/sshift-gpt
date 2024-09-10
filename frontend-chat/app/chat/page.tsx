@@ -31,22 +31,26 @@ import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 
 interface Message {
-  id: number;
-  sender: 'user' | 'assistant';
+  id: string;
+  role: 'user' | 'assistant' | 'system';
   content: string;
+  created?: number;
+  model?: string;
+  finish_reason?: string;
 }
 
 interface Chat {
   id: number;
-  summary: string;
+  title: string;
+  messages: Message[];
 }
 
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [inputMessage, setInputMessage] = useState('');
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [chats, setChats] = useState<Chat[]>([]); // Define the type for chats
+  const [chats, setChats] = useState<Chat[]>([]);
+  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -57,90 +61,130 @@ export default function ChatPage() {
     }
   };
 
+  const handleNewChat = () => {
+    const newChat: Chat = {
+      id: chats.length + 1,
+      title: `New Chat ${chats.length + 1}`,
+      messages: [],
+    };
+    setChats([...chats, newChat]);
+    setCurrentChatId(newChat.id);
+  };
+
+  const handleChatSelect = (chatId: number) => {
+    setCurrentChatId(chatId);
+  };
+
   const handleSendMessage = async () => {
-    if (inputMessage.trim()) {
-      const newMessage: Message = {
-        id: messages.length + 1,
-        sender: 'user',
+    if (inputMessage.trim() && currentChatId) {
+      const userMessage: Message = {
+        id: Date.now().toString(),
+        role: 'user',
         content: inputMessage,
       };
-      setMessages((prevMessages) => [...prevMessages, newMessage]);
+      
+      console.log('User message:', userMessage);
+      
+      setChats(prevChats => {
+        const updatedChats = prevChats.map(chat => 
+          chat.id === currentChatId 
+            ? { ...chat, messages: [...chat.messages, userMessage] }
+            : chat
+        );
+        console.log('Updated chats after user message:', updatedChats);
+        return updatedChats;
+      });
+      
       setInputMessage('');
-      scrollToBottom(); // Ensure scrolling after user message is sent
+      scrollToBottom();
 
       try {
+        console.log('Sending message to API...');
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: [...messages, newMessage],
+            messages: [...chats.find(chat => chat.id === currentChatId)?.messages || [], userMessage],
             model: selectedModel,
           }),
         });
+        console.log('API response received:', response);
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
         if (!response.body) throw new Error('No response body');
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantMessage: Message = {
-          id: messages.length + 2,
-          sender: 'assistant',
+          id: Date.now().toString(),
+          role: 'assistant',
           content: '',
         };
-        let isFirstChunk = true;
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) break;
+          if (done) {
+            console.log('Stream complete');
+            break;
+          }
 
           const chunk = decoder.decode(value, { stream: true });
+          console.log('Received chunk:', chunk);
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
+          
           for (const line of lines) {
             if (line === 'data: [DONE]') {
+              console.log('Received DONE signal');
+              // Add the final assistant message to the chat
+              setChats(prevChats => prevChats.map(chat => 
+                chat.id === currentChatId 
+                  ? { 
+                      ...chat, 
+                      messages: chat.messages.some(m => m.id === assistantMessage.id)
+                        ? chat.messages.map(m => m.id === assistantMessage.id ? assistantMessage : m)
+                        : [...chat.messages, assistantMessage]
+                    }
+                  : chat
+              ));
               return;
             }
             if (line.startsWith('data: ')) {
               const data = JSON.parse(line.substring(6));
+              console.log('Parsed data:', data);
               if (data.content) {
                 assistantMessage.content += data.content;
-                setMessages((prevMessages) => {
-                  if (isFirstChunk) {
-                    isFirstChunk = false;
-                    return [...prevMessages, { ...assistantMessage }];
-                  } else {
-                    return prevMessages.map((msg) =>
-                      msg.id === assistantMessage.id
-                        ? { ...assistantMessage }
-                        : msg
-                    );
-                  }
-                });
+                // Update the chat with the current state of the assistant message
+                setChats(prevChats => prevChats.map(chat => 
+                  chat.id === currentChatId 
+                    ? { 
+                        ...chat, 
+                        messages: chat.messages.some(m => m.id === assistantMessage.id)
+                          ? chat.messages.map(m => m.id === assistantMessage.id ? assistantMessage : m)
+                          : [...chat.messages, assistantMessage]
+                      }
+                    : chat
+                ));
                 scrollToBottom();
               }
             }
           }
         }
+
+        console.log('Final assistant message:', assistantMessage);
+
       } catch (error) {
-        console.error('Error sending message:', error);
+        console.error('Error in handleSendMessage:', error);
       }
     }
   };
 
-  useEffect(() => {
-    handleNewChat(); // Trigger New Chat action on page load
-  }, []);
-
-  const handleNewChat = () => {
-    setMessages([]);
-    // Additional logic for starting a new chat
-  };
-
   const handleDisconnect = () => {
-    // Implement logout logic here
     console.log('User disconnected');
-    // Redirect to home page
     router.push('/');
   };
 
@@ -176,6 +220,34 @@ export default function ChatPage() {
     );
   };
 
+  useEffect(() => {
+    const savedChats = localStorage.getItem('chats');
+    if (savedChats) {
+      const parsedChats = JSON.parse(savedChats);
+      setChats(parsedChats);
+      if (parsedChats.length > 0) {
+        setCurrentChatId(parsedChats[0].id);
+      }
+    } else {
+      handleNewChat();
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem('chats', JSON.stringify(chats));
+  }, [chats]);
+
+  useEffect(() => {
+    console.log('Chats state updated:', chats);
+  }, [chats]);
+
+  console.log('Current chats state:', chats);
+  console.log('Current chat ID:', currentChatId);
+
+  const currentChat = chats.find(chat => chat.id === currentChatId);
+  console.log('Current chat:', currentChat);
+  console.log('Current chat messages:', currentChat?.messages);
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
@@ -188,10 +260,11 @@ export default function ChatPage() {
             {chats.map((chat) => (
               <Button
                 key={chat.id}
-                variant="ghost"
+                variant={currentChatId === chat.id ? "secondary" : "ghost"}
                 className="w-full justify-start"
+                onClick={() => handleChatSelect(chat.id)}
               >
-                {chat.summary}
+                {chat.title}
               </Button>
             ))}
           </div>
@@ -229,91 +302,93 @@ export default function ChatPage() {
         </div>
 
         {/* ChatWindow */}
-        <ScrollArea className="flex-1 p-4 w-full max-w-6xl" ref={scrollAreaRef}>
+        <ScrollArea className="flex-1 p-4 w-full max-w-6xl" style={{ height: 'calc(100vh - 200px)' }} ref={scrollAreaRef}>
           <div className="space-y-4">
-            {messages.map((message, index) => (
-              <div
-                key={message.id}
-                className={`flex items-start space-x-2 ${
-                  message.sender === 'user' ? 'justify-end' : 'justify-start'
-                } relative`}
-                ref={index === messages.length - 1 ? lastMessageRef : null}
-              >
-                {message.sender === 'assistant' && (
-                  <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
-                    <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                )}
+            {currentChat?.messages.map((message, index) => {
+              console.log('Rendering message:', message);
+              return (
                 <div
-                  className={`max-w-[70%] rounded-lg p-4 ${
-                    message.sender === 'user'
-                      ? 'bg-blue-100 text-black'
-                      : 'bg-gray-100'
-                  }`}
+                  key={message.id}
+                  className={`flex items-start space-x-2 ${
+                    message.role === 'user' ? 'justify-end' : 'justify-start'
+                  } relative`}
+                  ref={index === (currentChat.messages.length - 1) ? lastMessageRef : null}
                 >
-                  <ReactMarkdown
-                    components={{
-                      code: ({
-                        node,
-                        inline,
-                        className,
-                        children,
-                        ...props
-                      }: any) => {
-                        const match = /language-(\w+)/.exec(className || '');
-                        return !inline && match ? (
-                          <CodeBlock
-                            language={match[1]}
-                            value={String(children).replace(/\n$/, '')}
-                          />
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        );
-                      },
-                      p: ({ children }) => <p className="mb-2">{children}</p>,
-                      h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
-                      h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
-                      h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
-                      ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                      li: ({ children }) => <li className="mb-1">{children}</li>,
-                    }}
-                    className="prose max-w-none"
-                  >
-                    {message.content}
-                  </ReactMarkdown>
-                  {message.sender === 'assistant' && (
-                    <div className="flex space-x-2 mt-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-gray-200"
-                        onClick={() => handleCopy(message.content)}
-                      >
-                        <Copy className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-gray-200"
-                      >
-                        <Volume2 className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:bg-gray-200"
-                      >
-                        <RefreshCw className="h-4 w-4" />
-                      </Button>
-                    </div>
+                  {message.role === 'assistant' && (
+                    <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
+                      <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
                   )}
+                  <div
+                    className={`max-w-[70%] rounded-lg p-4 ${
+                      message.role === 'user'
+                        ? 'bg-blue-100 text-black'
+                        : 'bg-gray-100'
+                    }`}
+                  >
+                    <ReactMarkdown
+                      components={{
+                        code: ({ node, inline, className, children, ...props }: any) => {
+                          const match = /language-(\w+)/.exec(className || '');
+                          return !inline && match ? (
+                            <CodeBlock
+                              language={match[1]}
+                              value={String(children).replace(/\n$/, '')}
+                            />
+                          ) : (
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        p: ({ children }) => <p className="mb-2">{children}</p>,
+                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
+                        h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
+                        h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
+                        ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                      }}
+                      className="prose max-w-none"
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                    {message.role === 'assistant' && (
+                      <div className="flex space-x-2 mt-2">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-gray-200"
+                          onClick={() => handleCopy(message.content)}
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-gray-200"
+                        >
+                          <Volume2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="hover:bg-gray-200"
+                        >
+                          <RefreshCw className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    )}
+                    {message.model && (
+                      <div className="text-xs text-gray-500 mt-2">
+                        Model: {message.model}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </ScrollArea>
 
