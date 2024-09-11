@@ -24,11 +24,15 @@ import {
   Volume2,
   Copy,
   RefreshCw,
+  Trash2,
+  Pencil,
+  ArrowLeft,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { Input } from '../../src/components/ui/input';
 
 interface Message {
   id: string;
@@ -43,6 +47,7 @@ interface Chat {
   id: number;
   title: string;
   messages: Message[];
+  isRenaming?: boolean;
 }
 
 export default function ChatPage() {
@@ -51,6 +56,8 @@ export default function ChatPage() {
   const [inputMessage, setInputMessage] = useState('');
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [renamingChatId, setRenamingChatId] = useState<number | null>(null);
+  const [newChatTitle, setNewChatTitle] = useState('');
 
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -83,15 +90,18 @@ export default function ChatPage() {
         content: inputMessage,
       };
       
-      console.log('User message:', userMessage);
-      
       setChats(prevChats => {
-        const updatedChats = prevChats.map(chat => 
-          chat.id === currentChatId 
-            ? { ...chat, messages: [...chat.messages, userMessage] }
-            : chat
-        );
-        console.log('Updated chats after user message:', updatedChats);
+        const updatedChats = prevChats.map(chat => {
+          if (chat.id === currentChatId) {
+            const updatedMessages = [...chat.messages, userMessage];
+            // Update the chat title if this is the first message
+            const updatedTitle = updatedMessages.length === 1 
+              ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
+              : chat.title;
+            return { ...chat, messages: updatedMessages, title: updatedTitle };
+          }
+          return chat;
+        });
         return updatedChats;
       });
       
@@ -220,6 +230,36 @@ export default function ChatPage() {
     );
   };
 
+  const handleDeleteChat = (chatId: number) => {
+    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+    if (currentChatId === chatId) {
+      const remainingChats = chats.filter(chat => chat.id !== chatId);
+      if (remainingChats.length > 0) {
+        setCurrentChatId(remainingChats[0].id);
+      } else {
+        setCurrentChatId(null);
+        handleNewChat(); // Create a new chat if all chats are deleted
+      }
+    }
+  };
+
+  const handleRenameClick = (chatId: number) => {
+    setRenamingChatId(chatId);
+    const chat = chats.find(c => c.id === chatId);
+    setNewChatTitle(chat ? chat.title : '');
+  };
+
+  const handleRenameSubmit = (chatId: number) => {
+    setChats(prevChats => prevChats.map(chat => 
+      chat.id === chatId ? { ...chat, title: newChatTitle } : chat
+    ));
+    setRenamingChatId(null);
+  };
+
+  const handleNavigateToDashboard = () => {
+    router.push('/dashboard');
+  };
+
   useEffect(() => {
     const savedChats = localStorage.getItem('chats');
     if (savedChats) {
@@ -227,6 +267,8 @@ export default function ChatPage() {
       setChats(parsedChats);
       if (parsedChats.length > 0) {
         setCurrentChatId(parsedChats[0].id);
+      } else {
+        handleNewChat();
       }
     } else {
       handleNewChat();
@@ -251,21 +293,70 @@ export default function ChatPage() {
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
-      <div className="w-64 border-r border-border bg-background hidden md:block">
+      <div className="w-80 border-r border-border bg-background hidden md:block">
         <div className="p-4 border-b border-border h-[73px] flex items-center">
           <h2 className="text-lg font-semibold">Chat History</h2>
         </div>
         <ScrollArea className="h-[calc(100%-73px)]">
           <div className="p-4 space-y-2">
             {chats.map((chat) => (
-              <Button
-                key={chat.id}
-                variant={currentChatId === chat.id ? "secondary" : "ghost"}
-                className="w-full justify-start"
-                onClick={() => handleChatSelect(chat.id)}
-              >
-                {chat.title}
-              </Button>
+              <div key={chat.id} className="relative group mb-1">
+                {renamingChatId === chat.id ? (
+                  <form onSubmit={(e) => {
+                    e.preventDefault();
+                    handleRenameSubmit(chat.id);
+                  }} className="flex">
+                    <Input
+                      value={newChatTitle}
+                      onChange={(e) => setNewChatTitle(e.target.value)}
+                      className="w-full pr-16"
+                      autoFocus
+                    />
+                    <Button
+                      type="submit"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-8 top-1/2 -translate-y-1/2"
+                    >
+                      Save
+                    </Button>
+                  </form>
+                ) : (
+                  <div className="flex items-center justify-between w-full">
+                    <Button
+                      variant={currentChatId === chat.id ? "secondary" : "ghost"}
+                      className="w-full justify-start text-left truncate pr-16"
+                      onClick={() => handleChatSelect(chat.id)}
+                    >
+                      {chat.title}
+                    </Button>
+                    <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 mr-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleRenameClick(chat.id);
+                        }}
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDeleteChat(chat.id);
+                        }}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </ScrollArea>
@@ -276,6 +367,15 @@ export default function ChatPage() {
         {/* Chat Header */}
         <div className="flex items-center justify-between p-4 border-b border-border h-[73px] w-full">
           <div className="flex items-center space-x-4">
+            <Button
+              onClick={handleNavigateToDashboard}
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2 text-gray-800 font-semibold"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Button>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select model" />
@@ -369,8 +469,7 @@ export default function ChatPage() {
                           size="icon"
                           className="hover:bg-gray-200"
                         >
-                          <Volume2 className="h-4 w-4" />
-                        </Button>
+                          <Volume2 className="h-4 w-4" />                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"
