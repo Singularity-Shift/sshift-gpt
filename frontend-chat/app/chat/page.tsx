@@ -26,6 +26,7 @@ import {
   RefreshCw,
   Trash2,
   Pencil,
+  ArrowLeft,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -255,6 +256,10 @@ export default function ChatPage() {
     setRenamingChatId(null);
   };
 
+  const handleNavigateToDashboard = () => {
+    router.push('/dashboard');
+  };
+
   useEffect(() => {
     const savedChats = localStorage.getItem('chats');
     if (savedChats) {
@@ -362,6 +367,15 @@ export default function ChatPage() {
         {/* Chat Header */}
         <div className="flex items-center justify-between p-4 border-b border-border h-[73px] w-full">
           <div className="flex items-center space-x-4">
+            <Button
+              onClick={handleNavigateToDashboard}
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2 text-gray-800 font-semibold"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Dashboard</span>
+            </Button>
             <Select value={selectedModel} onValueChange={setSelectedModel}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select model" />

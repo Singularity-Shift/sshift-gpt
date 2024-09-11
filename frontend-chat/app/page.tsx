@@ -97,7 +97,7 @@ export default function Home() {
 
   const handleConnectWallet = () => {
     console.log('Connect wallet clicked');
-    router.push('/chat');
+    router.push('/dashboard'); // Changed from '/chat' to '/dashboard'
   };
 
   return (
