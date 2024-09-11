@@ -60,6 +60,10 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
     router.push('/'); // Redirect to home page
   };
 
+  const handleEnterSShiftGPT = () => {
+    router.push('/chat');
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       {/* Top Bar */}
@@ -173,7 +177,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
           </div>
         </div>
 
-        <Button variant="outline" className="py-3 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+        <Button variant="outline" className="py-3 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onClick={handleEnterSShiftGPT}>
           Enter SShift GPT
         </Button>
       </div>
