@@ -24,6 +24,10 @@ const DOTENV_SCHEMA = Joi.object({
   mongo: Joi.object({
     uri: Joi.string().required(),
   }),
+  jwt: Joi.object({
+    secret: Joi.string().required(),
+    expiredTime: Joi.string().default('31d'),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -32,7 +36,9 @@ type DotenvSchemaKeys =
   | 'redis.pwd'
   | 'redis.port'
   | 'redis.host'
-  | 'mongo.uri';
+  | 'mongo.uri'
+  | 'jwt.secret'
+  | 'jwt.expiredTime';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

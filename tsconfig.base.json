@@ -15,6 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
+      "aptos": ["lib/aptos/src/index.ts"],
       "fn-chat/*": ["./frontend-chat/src/*"]
     }
   },
