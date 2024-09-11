@@ -4,10 +4,12 @@ import { JwtModule } from '@nestjs/jwt';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { ConfigService } from '../share/config/config.service';
+import { ConfigModule } from '../share/config/config.module';
 
 @Module({
   imports: [
     JwtModule.registerAsync({
+      imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         return {
           global: true,
