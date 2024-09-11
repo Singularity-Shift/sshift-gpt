@@ -15,14 +15,16 @@
     "start": "nx run-many -t start serve:production"
   },
   "dependencies": {
+    "@aptos-labs/ts-sdk": "^1.27.1",
     "@nestjs-modules/ioredis": "^1.1.2",
     "@nestjs/cache-manager": "^2.0.0",
-    "@nestjs/common": "^10.0.2",
-    "@nestjs/core": "^10.0.2",
-    "@nestjs/mongoose": "^9.1.1",
-    "@nestjs/platform-express": "^10.0.2",
-    "@nestjs/swagger": "^4.1.0",
-    "@nx/web": "^19.6.5",
+    "@nestjs/common": "^10.4.1",
+    "@nestjs/core": "^10.4.1",
+    "@nestjs/jwt": "^10.2.0",
+    "@nestjs/mongoose": "^10.0.10",
+    "@nestjs/platform-express": "^10.4.1",
+    "@nestjs/swagger": "^7.4.0",
+    "@nx/web": "^19.7.2",
     "@radix-ui/react-avatar": "^1.1.0",
     "@radix-ui/react-scroll-area": "^1.1.0",
     "@radix-ui/react-select": "^2.1.1",
@@ -55,8 +57,8 @@
     "tslib": "^2.3.0"
   },
   "devDependencies": {
-    "@nestjs/schematics": "^10.0.1",
-    "@nestjs/testing": "^7.0.0",
+    "@nestjs/schematics": "^10.1.4",
+    "@nestjs/testing": "^10.4.1",
     "@nx/cypress": "19.6.5",
     "@nx/eslint": "19.6.5",
     "@nx/eslint-plugin": "19.6.5",
