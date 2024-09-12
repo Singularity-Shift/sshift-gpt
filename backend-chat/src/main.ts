@@ -18,6 +18,7 @@ async function bootstrap() {
   const globalPrefix = 'chat-api';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());
+  app.enableCors();
 
   const packageJsonPath = path.join(__dirname, '../..', 'package.json');
   const packageJsonString = readFileSync(packageJsonPath, 'utf8');

@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
-import { validateSignature } from 'aptos';
+import { validateSignature } from '@aptos';
 import { PayloadDto } from './dto/payload.dto';
 import { LoginDto } from './dto/login.dto';
 

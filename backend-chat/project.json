@@ -3,6 +3,7 @@
   "$schema": "../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "backend-chat/src",
   "projectType": "application",
+  "implicitDependencies": ["!aptos"],
   "tags": [],
   "targets": {
     "serve": {
@@ -15,13 +16,15 @@
       },
       "configurations": {
         "development": {
-          "buildTarget": "backend-chat:build:development",
-          "watch": true
+          "buildTarget": "backend-chat:build:development"
         },
         "production": {
           "buildTarget": "backend-chat:build:production"
         }
       }
+    },
+    "watch": {
+      "command": "nest start --watch"
     }
   }
 }

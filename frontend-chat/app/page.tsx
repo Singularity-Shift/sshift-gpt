@@ -1,11 +1,10 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { Button } from '../src/components/ui/button';
 import Image from 'next/image';
-import { FaWallet } from 'react-icons/fa'; // Changed from FaDiscord to FaWallet
 import { silkscreen } from './fonts';
-import { useRouter } from 'next/navigation';
+import { SshiftWallet } from '@fn-chat/components/SshigtWallet';
+import { PontemWallet } from '@pontem/wallet-adapter-plugin';
 
 const CELL_SIZE = 20;
 
@@ -93,13 +92,6 @@ function GameOfLifeBackground() {
 }
 
 export default function Home() {
-  const router = useRouter();
-
-  const handleConnectWallet = () => {
-    console.log('Connect wallet clicked');
-    router.push('/dashboard'); // Changed from '/chat' to '/dashboard'
-  };
-
   return (
     <div className="relative min-h-screen">
       <GameOfLifeBackground />
@@ -126,13 +118,7 @@ export default function Home() {
           </div>
         </div>
         <div className="flex space-x-4">
-          <Button
-            onClick={handleConnectWallet}
-            className="px-8 py-2 text-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2"
-          >
-            <FaWallet className="w-6 h-6" />
-            <span>Connect Wallet</span>
-          </Button>
+          <SshiftWallet />
         </div>
       </div>
     </div>

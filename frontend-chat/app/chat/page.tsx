@@ -33,6 +33,8 @@ import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Input } from '../../src/components/ui/input';
+import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
 
 interface Message {
   id: string;
@@ -89,22 +91,23 @@ export default function ChatPage() {
         role: 'user',
         content: inputMessage,
       };
-      
-      setChats(prevChats => {
-        const updatedChats = prevChats.map(chat => {
+
+      setChats((prevChats) => {
+        const updatedChats = prevChats.map((chat) => {
           if (chat.id === currentChatId) {
             const updatedMessages = [...chat.messages, userMessage];
             // Update the chat title if this is the first message
-            const updatedTitle = updatedMessages.length === 1 
-              ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
-              : chat.title;
+            const updatedTitle =
+              updatedMessages.length === 1
+                ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
+                : chat.title;
             return { ...chat, messages: updatedMessages, title: updatedTitle };
           }
           return chat;
         });
         return updatedChats;
       });
-      
+
       setInputMessage('');
       scrollToBottom();
 
@@ -116,7 +119,11 @@ export default function ChatPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            messages: [...chats.find(chat => chat.id === currentChatId)?.messages || [], userMessage],
+            messages: [
+              ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
+                []),
+              userMessage,
+            ],
             model: selectedModel,
           }),
         });
@@ -146,21 +153,29 @@ export default function ChatPage() {
           const chunk = decoder.decode(value, { stream: true });
           console.log('Received chunk:', chunk);
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
-          
+
           for (const line of lines) {
             if (line === 'data: [DONE]') {
               console.log('Received DONE signal');
               // Add the final assistant message to the chat
-              setChats(prevChats => prevChats.map(chat => 
-                chat.id === currentChatId 
-                  ? { 
-                      ...chat, 
-                      messages: chat.messages.some(m => m.id === assistantMessage.id)
-                        ? chat.messages.map(m => m.id === assistantMessage.id ? assistantMessage : m)
-                        : [...chat.messages, assistantMessage]
-                    }
-                  : chat
-              ));
+              setChats((prevChats) =>
+                prevChats.map((chat) =>
+                  chat.id === currentChatId
+                    ? {
+                        ...chat,
+                        messages: chat.messages.some(
+                          (m) => m.id === assistantMessage.id
+                        )
+                          ? chat.messages.map((m) =>
+                              m.id === assistantMessage.id
+                                ? assistantMessage
+                                : m
+                            )
+                          : [...chat.messages, assistantMessage],
+                      }
+                    : chat
+                )
+              );
               return;
             }
             if (line.startsWith('data: ')) {
@@ -169,16 +184,24 @@ export default function ChatPage() {
               if (data.content) {
                 assistantMessage.content += data.content;
                 // Update the chat with the current state of the assistant message
-                setChats(prevChats => prevChats.map(chat => 
-                  chat.id === currentChatId 
-                    ? { 
-                        ...chat, 
-                        messages: chat.messages.some(m => m.id === assistantMessage.id)
-                          ? chat.messages.map(m => m.id === assistantMessage.id ? assistantMessage : m)
-                          : [...chat.messages, assistantMessage]
-                      }
-                    : chat
-                ));
+                setChats((prevChats) =>
+                  prevChats.map((chat) =>
+                    chat.id === currentChatId
+                      ? {
+                          ...chat,
+                          messages: chat.messages.some(
+                            (m) => m.id === assistantMessage.id
+                          )
+                            ? chat.messages.map((m) =>
+                                m.id === assistantMessage.id
+                                  ? assistantMessage
+                                  : m
+                              )
+                            : [...chat.messages, assistantMessage],
+                        }
+                      : chat
+                  )
+                );
                 scrollToBottom();
               }
             }
@@ -186,16 +209,10 @@ export default function ChatPage() {
         }
 
         console.log('Final assistant message:', assistantMessage);
-
       } catch (error) {
         console.error('Error in handleSendMessage:', error);
       }
     }
-  };
-
-  const handleDisconnect = () => {
-    console.log('User disconnected');
-    router.push('/');
   };
 
   const handleCopy = (text: string) => {
@@ -231,9 +248,9 @@ export default function ChatPage() {
   };
 
   const handleDeleteChat = (chatId: number) => {
-    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+    setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
     if (currentChatId === chatId) {
-      const remainingChats = chats.filter(chat => chat.id !== chatId);
+      const remainingChats = chats.filter((chat) => chat.id !== chatId);
       if (remainingChats.length > 0) {
         setCurrentChatId(remainingChats[0].id);
       } else {
@@ -245,14 +262,16 @@ export default function ChatPage() {
 
   const handleRenameClick = (chatId: number) => {
     setRenamingChatId(chatId);
-    const chat = chats.find(c => c.id === chatId);
+    const chat = chats.find((c) => c.id === chatId);
     setNewChatTitle(chat ? chat.title : '');
   };
 
   const handleRenameSubmit = (chatId: number) => {
-    setChats(prevChats => prevChats.map(chat => 
-      chat.id === chatId ? { ...chat, title: newChatTitle } : chat
-    ));
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === chatId ? { ...chat, title: newChatTitle } : chat
+      )
+    );
     setRenamingChatId(null);
   };
 
@@ -286,7 +305,7 @@ export default function ChatPage() {
   console.log('Current chats state:', chats);
   console.log('Current chat ID:', currentChatId);
 
-  const currentChat = chats.find(chat => chat.id === currentChatId);
+  const currentChat = chats.find((chat) => chat.id === currentChatId);
   console.log('Current chat:', currentChat);
   console.log('Current chat messages:', currentChat?.messages);
 
@@ -302,10 +321,13 @@ export default function ChatPage() {
             {chats.map((chat) => (
               <div key={chat.id} className="relative group mb-1">
                 {renamingChatId === chat.id ? (
-                  <form onSubmit={(e) => {
-                    e.preventDefault();
-                    handleRenameSubmit(chat.id);
-                  }} className="flex">
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleRenameSubmit(chat.id);
+                    }}
+                    className="flex"
+                  >
                     <Input
                       value={newChatTitle}
                       onChange={(e) => setNewChatTitle(e.target.value)}
@@ -324,7 +346,9 @@ export default function ChatPage() {
                 ) : (
                   <div className="flex items-center justify-between w-full">
                     <Button
-                      variant={currentChatId === chat.id ? "secondary" : "ghost"}
+                      variant={
+                        currentChatId === chat.id ? 'secondary' : 'ghost'
+                      }
                       className="w-full justify-start text-left truncate pr-16"
                       onClick={() => handleChatSelect(chat.id)}
                     >
@@ -394,15 +418,16 @@ export default function ChatPage() {
               <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
               <span className="text-gray-800 font-semibold">Connected</span>
             </div>
-            <Button onClick={handleDisconnect} variant="outline" size="sm">
-              <LogOut className="h-4 w-4 mr-2" />
-              Disconnect
-            </Button>
+            <SshiftWalletDisconnect />
           </div>
         </div>
 
         {/* ChatWindow */}
-        <ScrollArea className="flex-1 p-4 w-full max-w-6xl" style={{ height: 'calc(100vh - 200px)' }} ref={scrollAreaRef}>
+        <ScrollArea
+          className="flex-1 p-4 w-full max-w-6xl"
+          style={{ height: 'calc(100vh - 200px)' }}
+          ref={scrollAreaRef}
+        >
           <div className="space-y-4">
             {currentChat?.messages.map((message, index) => {
               console.log('Rendering message:', message);
@@ -412,11 +437,18 @@ export default function ChatPage() {
                   className={`flex items-start space-x-2 ${
                     message.role === 'user' ? 'justify-end' : 'justify-start'
                   } relative`}
-                  ref={index === (currentChat.messages.length - 1) ? lastMessageRef : null}
+                  ref={
+                    index === currentChat.messages.length - 1
+                      ? lastMessageRef
+                      : null
+                  }
                 >
                   {message.role === 'assistant' && (
                     <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
-                      <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
+                      <AvatarImage
+                        src="/images/sshift-guy.png"
+                        alt="AI Avatar"
+                      />
                       <AvatarFallback>AI</AvatarFallback>
                     </Avatar>
                   )}
@@ -429,7 +461,13 @@ export default function ChatPage() {
                   >
                     <ReactMarkdown
                       components={{
-                        code: ({ node, inline, className, children, ...props }: any) => {
+                        code: ({
+                          node,
+                          inline,
+                          className,
+                          children,
+                          ...props
+                        }: any) => {
                           const match = /language-(\w+)/.exec(className || '');
                           return !inline && match ? (
                             <CodeBlock
@@ -443,12 +481,26 @@ export default function ChatPage() {
                           );
                         },
                         p: ({ children }) => <p className="mb-2">{children}</p>,
-                        h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
-                        h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
-                        h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
-                        ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                        h1: ({ children }) => (
+                          <h1 className="text-2xl font-bold mb-2">
+                            {children}
+                          </h1>
+                        ),
+                        h2: ({ children }) => (
+                          <h2 className="text-xl font-bold mb-2">{children}</h2>
+                        ),
+                        h3: ({ children }) => (
+                          <h3 className="text-lg font-bold mb-2">{children}</h3>
+                        ),
+                        ul: ({ children }) => (
+                          <ul className="list-disc pl-4 mb-2">{children}</ul>
+                        ),
+                        ol: ({ children }) => (
+                          <ol className="list-decimal pl-4 mb-2">{children}</ol>
+                        ),
+                        li: ({ children }) => (
+                          <li className="mb-1">{children}</li>
+                        ),
                       }}
                       className="prose max-w-none"
                     >
@@ -469,7 +521,8 @@ export default function ChatPage() {
                           size="icon"
                           className="hover:bg-gray-200"
                         >
-                          <Volume2 className="h-4 w-4" />                        </Button>
+                          <Volume2 className="h-4 w-4" />{' '}
+                        </Button>
                         <Button
                           variant="ghost"
                           size="icon"

@@ -1,4 +1,10 @@
-import { Body, Controller, Post, UnauthorizedException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Logger,
+  Post,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { LoginDto } from './dto/login.dto';
@@ -6,6 +12,7 @@ import { PayloadDto } from './dto/payload.dto';
 
 @Controller('auth')
 export class AuthController {
+  logger = new Logger(AuthController.name);
   constructor(private authService: AuthService) {}
 
   @Post('login')
@@ -23,6 +30,7 @@ export class AuthController {
     description: 'Unauthorized access',
   })
   signIn(@Body() payloadDto: PayloadDto) {
+    this.logger.debug(payloadDto);
     const isValid = this.authService.isValid(payloadDto);
 
     if (!isValid) {
