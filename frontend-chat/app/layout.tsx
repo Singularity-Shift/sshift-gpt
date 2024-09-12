@@ -1,6 +1,10 @@
 import 'tailwindcss/tailwind.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import { Toaster } from '@fn-chat/components/ui/toaster';
+import { ThemeProvider } from '@fn-chat/context/ThemeProvider';
+import { WalletProvider } from '@fn-chat/context/WalletProvider';
+import { BackendProvider } from '@fn-chat/context/BackendProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -16,7 +20,19 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={inter.className}>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="light"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <WalletProvider>
+            <BackendProvider>{children}</BackendProvider>
+          </WalletProvider>
+          <Toaster />
+        </ThemeProvider>
+      </body>
     </html>
   );
 }
