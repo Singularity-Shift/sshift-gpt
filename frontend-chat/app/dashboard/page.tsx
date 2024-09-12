@@ -6,6 +6,7 @@ import { Slider } from '../../src/components/ui/slider';
 import { LogOut, ArrowLeft } from 'lucide-react'; // Import the LogOut and ArrowLeft icons
 import { useRouter } from 'next/navigation'; // Import useRouter
 import { useState } from 'react';
+import { silkscreen } from '../fonts';
 import { Input } from '../../src/components/ui/input';
 
 interface SubscriptionPageProps {}
@@ -103,120 +104,125 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
       {/* Main Content */}
       <div className="flex-grow flex flex-col items-center justify-center px-4 py-8">
-        <div className="flex space-x-8 mb-8">
-          {/* Subscription Container */}
-          <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
-            <div className="text-center">
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">SShift GPT Subscription</h2>
-              <p className="mt-2 text-sm text-gray-600">Choose your subscription length</p>
-            </div>
-            <div className="mt-8 space-y-6">
-              <div className="space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">1 day</span>
-                  <span className="text-sm font-medium text-gray-700">30 days</span>
-                </div>
-                <Slider
-                  min={1}
-                  max={30}
-                  step={1}
-                  value={[days]}
-                  onValueChange={(value) => setDays(value[0])}
-                  className="w-full"
-                />
-                <div className="text-center space-y-2">
-                  <span className="text-lg font-semibold text-gray-900">{days} day{days !== 1 ? 's' : ''}</span>
-                  <p className="text-sm text-gray-600">Starts: {dates.startDate}</p>
-                  <p className="text-sm text-gray-600">Expires: {dates.expirationDate}</p>
-                </div>
-              </div>
-              <div className="bg-gray-50 px-4 py-5 sm:p-6 rounded-md">
-                <div className="text-center">
-                  <p className="text-sm text-gray-600">Total Price</p>
-                  <p className="mt-1 text-4xl font-extrabold text-gray-900">{price} USDT</p>
-                </div>
-              </div>
-              <Button className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                Subscribe
-              </Button>
-            </div>
-          </div>
-
-          {/* User Profile Container */}
-          <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col">
-            <div>
+        <div className="flex flex-col items-center">
+          <h1 className={`${silkscreen.className} text-6xl mb-16 text-gray-800`}>
+            USER DASHBOARD
+          </h1>
+          <div className="flex space-x-8 mb-8">
+            {/* Subscription Container */}
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
               <div className="text-center">
-                <h2 className="mt-6 text-3xl font-extrabold text-gray-900">User Profile</h2>
-                <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
+                <h2 className="mt-6 text-3xl font-extrabold text-gray-900">SShift GPT Subscription</h2>
+                <p className="mt-2 text-sm text-gray-600">Choose your subscription length</p>
               </div>
-              <div className="mt-8 space-y-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Subscription Status:</span>
-                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                    isSubscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                  }`}>
-                    {isSubscriptionActive ? 'Active' : 'Inactive'}
-                  </span>
+              <div className="mt-8 space-y-6">
+                <div className="space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">1 day</span>
+                    <span className="text-sm font-medium text-gray-700">30 days</span>
+                  </div>
+                  <Slider
+                    min={1}
+                    max={30}
+                    step={1}
+                    value={[days]}
+                    onValueChange={(value) => setDays(value[0])}
+                    className="w-full"
+                  />
+                  <div className="text-center space-y-2">
+                    <span className="text-lg font-semibold text-gray-900">{days} day{days !== 1 ? 's' : ''}</span>
+                    <p className="text-sm text-gray-600">Starts: {dates.startDate}</p>
+                    <p className="text-sm text-gray-600">Expires: {dates.expirationDate}</p>
+                  </div>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">Expiry Date:</span>
-                  <div className="border border-gray-300 rounded-md px-3 py-2 w-60 text-right"> {/* Changed w-40 to w-60 */}
-                    <span className="text-sm text-gray-600">
-                      {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
+                <div className="bg-gray-50 px-4 py-5 sm:p-6 rounded-md">
+                  <div className="text-center">
+                    <p className="text-sm text-gray-600">Total Price</p>
+                    <p className="mt-1 text-4xl font-extrabold text-gray-900">{price} USDT</p>
+                  </div>
+                </div>
+                <Button className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                  Subscribe
+                </Button>
+              </div>
+            </div>
+
+            {/* User Profile Container */}
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col">
+              <div>
+                <div className="text-center">
+                  <h2 className="mt-6 text-3xl font-extrabold text-gray-900">User Profile</h2>
+                  <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
+                </div>
+                <div className="mt-8 space-y-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Subscription Status:</span>
+                    <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                      isSubscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    }`}>
+                      {isSubscriptionActive ? 'Active' : 'Inactive'}
                     </span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm font-medium text-gray-700">Expiry Date:</span>
+                    <div className="border border-gray-300 rounded-md px-3 py-2 w-40 text-right">
+                      <span className="text-sm text-gray-600">
+                        {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
+              
+              <div className="mt-16 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Move Bot owned:</span>
+                  <Input
+                    type="number"
+                    value={moveBotsOwned}
+                    onChange={(e) => setMoveBotsOwned(e.target.value)}
+                    className="w-20 text-right"
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Qribble NFT owned:</span>
+                  <Input
+                    type="number"
+                    value={qribbleNFTsOwned}
+                    onChange={(e) => setQribbleNFTsOwned(e.target.value)}
+                    className="w-20 text-right"
+                  />
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">SShift Records owned:</span>
+                  <Input
+                    type="number"
+                    value={sshiftRecordsOwned}
+                    onChange={(e) => setSShiftRecordsOwned(e.target.value)}
+                    className="w-20 text-right"
+                  />
+                </div>
+              </div>
             </div>
-            
-            <div className="mt-16 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Move Bot owned:</span>
-                <Input
-                  type="number"
-                  value={moveBotsOwned}
-                  onChange={(e) => setMoveBotsOwned(e.target.value)}
-                  className="w-20 text-right"
-                />
+
+            {/* Upgrade Subscription Container */}
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
+              <div className="text-center">
+                <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Upgrade Subscription</h2>
+                <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Qribble NFT owned:</span>
-                <Input
-                  type="number"
-                  value={qribbleNFTsOwned}
-                  onChange={(e) => setQribbleNFTsOwned(e.target.value)}
-                  className="w-20 text-right"
-                />
-              </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">SShift Records owned:</span>
-                <Input
-                  type="number"
-                  value={sshiftRecordsOwned}
-                  onChange={(e) => setSShiftRecordsOwned(e.target.value)}
-                  className="w-20 text-right"
-                />
+              <div className="mt-8 flex items-center justify-center h-40">
+                <p className="text-lg text-gray-400 text-center">
+                  Coming soon - under development
+                </p>
               </div>
             </div>
           </div>
 
-          {/* Upgrade Subscription Container */}
-          <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
-            <div className="text-center">
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Upgrade Subscription</h2>
-              <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
-            </div>
-            <div className="mt-8 flex items-center justify-center h-40">
-              <p className="text-lg text-gray-400 text-center">
-                Coming soon - under development
-              </p>
-            </div>
-          </div>
+          <Button variant="default" className="py-4 px-8 rounded-md shadow-sm text-base font-bold text-black bg-green-400 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400 transform transition-transform hover:scale-105" onClick={handleEnterSShiftGPT}>
+            Enter SShift GPT
+          </Button>
         </div>
-
-        <Button variant="outline" className="py-3 px-6 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" onClick={handleEnterSShiftGPT}>
-          Enter SShift GPT
-        </Button>
       </div>
     </div>
   );
