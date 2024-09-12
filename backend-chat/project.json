@@ -15,7 +15,8 @@
       },
       "configurations": {
         "development": {
-          "buildTarget": "backend-chat:build:development"
+          "buildTarget": "backend-chat:build:development",
+          "watch": true
         },
         "production": {
           "buildTarget": "backend-chat:build:production"

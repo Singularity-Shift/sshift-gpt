@@ -3,7 +3,7 @@
  * This is only a minimal backend to get started.
  */
 
-import { Logger } from '@nestjs/common';
+import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { readFileSync } from 'fs';
@@ -17,6 +17,7 @@ async function bootstrap() {
   const port = app.get<ConfigService>(ConfigService).get<number>('server.port');
   const globalPrefix = 'chat-api';
   app.setGlobalPrefix(globalPrefix);
+  app.useGlobalPipes(new ValidationPipe());
 
   const packageJsonPath = path.join(__dirname, '../..', 'package.json');
   const packageJsonString = readFileSync(packageJsonPath, 'utf8');

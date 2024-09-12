@@ -12,6 +12,10 @@ export const Profiles = {
     server: {
       port: process.env.PORT,
     },
+    jwt: {
+      secret: process.env.JWT_SECRET_KEY,
+      expiredTime: process.env.JWT_EXPIRED_TIME,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,
@@ -25,6 +29,10 @@ export const Profiles = {
     },
     server: {
       port: process.env.PORT,
+    },
+    jwt: {
+      secret: process.env.JWT_SECRET_KEY,
+      expiredTime: process.env.JWT_EXPIRED_TIME,
     },
   },
 };

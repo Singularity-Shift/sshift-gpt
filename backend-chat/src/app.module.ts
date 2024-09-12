@@ -6,6 +6,7 @@ import { RedisOptions } from 'ioredis';
 import { ConfigModule } from './share/config/config.module';
 import { ConfigService } from './share/config/config.service';
 import { MongooseModule } from '@nestjs/mongoose';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { MongooseModule } from '@nestjs/mongoose';
         };
       },
     }),
+    AuthModule,
   ],
   controllers: [],
   providers: [
