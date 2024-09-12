@@ -5,6 +5,8 @@ import { Button } from '../../src/components/ui/button';
 import { Slider } from '../../src/components/ui/slider';
 import { LogOut, ArrowLeft } from 'lucide-react'; // Import the LogOut and ArrowLeft icons
 import { useRouter } from 'next/navigation'; // Import useRouter
+import { useState } from 'react';
+import { Input } from '../../src/components/ui/input';
 
 interface SubscriptionPageProps {}
 
@@ -45,6 +47,9 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
   const [dates, setDates] = React.useState({ startDate: '', expirationDate: '' });
   const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false); // Default to inactive
   const router = useRouter(); // Initialize the router
+  const [moveBotsOwned, setMoveBotsOwned] = useState('0');
+  const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState('0');
+  const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState('0');
 
   React.useEffect(() => {
     setPrice(calculatePrice(days));
@@ -81,14 +86,14 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
         </div>
         <div className="flex items-center space-x-4">
           <div className="flex items-center space-x-2">
-            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-            <span className="text-sm text-gray-600">Connected</span>
+            <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
+            <span className="text-gray-800 font-semibold">Connected</span>
           </div>
           <Button 
             onClick={handleDisconnect} 
-            variant="ghost" 
+            variant="outline" 
             size="sm"
-            className="text-sm text-gray-600 hover:bg-gray-100"
+            className="flex items-center"
           >
             <LogOut className="h-4 w-4 mr-2" />
             Disconnect
@@ -138,27 +143,59 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
           </div>
 
           {/* User Profile Container */}
-          <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
-            <div className="text-center">
-              <h2 className="mt-6 text-3xl font-extrabold text-gray-900">User Profile</h2>
-              <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
-            </div>
-            <div className="mt-8 space-y-4">
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Subscription Status:</span>
-                <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
-                  isSubscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                }`}>
-                  {isSubscriptionActive ? 'Active' : 'Inactive'}
-                </span>
+          <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col">
+            <div>
+              <div className="text-center">
+                <h2 className="mt-6 text-3xl font-extrabold text-gray-900">User Profile</h2>
+                <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
               </div>
-              <div className="flex justify-between items-center">
-                <span className="text-sm font-medium text-gray-700">Expiry Date:</span>
-                <div className="border border-gray-300 rounded-md px-3 py-2 w-48 text-right">
-                  <span className="text-sm text-gray-600">
-                    {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
+              <div className="mt-8 space-y-4">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Subscription Status:</span>
+                  <span className={`px-2 py-1 rounded-full text-xs font-semibold ${
+                    isSubscriptionActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  }`}>
+                    {isSubscriptionActive ? 'Active' : 'Inactive'}
                   </span>
                 </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-sm font-medium text-gray-700">Expiry Date:</span>
+                  <div className="border border-gray-300 rounded-md px-3 py-2 w-60 text-right"> {/* Changed w-40 to w-60 */}
+                    <span className="text-sm text-gray-600">
+                      {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div className="mt-16 space-y-4">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Move Bot owned:</span>
+                <Input
+                  type="number"
+                  value={moveBotsOwned}
+                  onChange={(e) => setMoveBotsOwned(e.target.value)}
+                  className="w-20 text-right"
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">Qribble NFT owned:</span>
+                <Input
+                  type="number"
+                  value={qribbleNFTsOwned}
+                  onChange={(e) => setQribbleNFTsOwned(e.target.value)}
+                  className="w-20 text-right"
+                />
+              </div>
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium text-gray-700">SShift Records owned:</span>
+                <Input
+                  type="number"
+                  value={sshiftRecordsOwned}
+                  onChange={(e) => setSShiftRecordsOwned(e.target.value)}
+                  className="w-20 text-right"
+                />
               </div>
             </div>
           </div>
