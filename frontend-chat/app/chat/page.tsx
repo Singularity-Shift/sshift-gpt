@@ -43,6 +43,7 @@ interface Message {
   created?: number;
   model?: string;
   finish_reason?: string;
+  system_fingerprint?: string;
 }
 
 interface Chat {
@@ -50,6 +51,11 @@ interface Chat {
   title: string;
   messages: Message[];
   isRenaming?: boolean;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
 }
 
 export default function ChatPage() {
