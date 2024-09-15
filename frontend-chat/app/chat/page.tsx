@@ -315,6 +315,14 @@ export default function ChatPage() {
   console.log('Current chat:', currentChat);
   console.log('Current chat messages:', currentChat?.messages);
 
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    // Check for Ctrl+Enter or Cmd+Enter
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      e.preventDefault(); // Prevent default to avoid any unwanted behavior
+      handleSendMessage();
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
@@ -410,7 +418,7 @@ export default function ChatPage() {
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Select model" />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="bg-white">
                 <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
                 <SelectItem value="gpt-4o">GPT-4o</SelectItem>
               </SelectContent>
@@ -556,7 +564,8 @@ export default function ChatPage() {
             <Textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
-              placeholder="Type your message here..."
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message here... (Ctrl+Enter to send)"
               className="flex-1"
             />
             <Button
