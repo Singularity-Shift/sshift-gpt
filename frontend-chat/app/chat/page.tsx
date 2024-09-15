@@ -56,6 +56,8 @@ interface Chat {
     completion_tokens: number;
     total_tokens: number;
   };
+  createdAt: number; // Timestamp for when the chat was created
+  lastUpdated: number; // New field for last update timestamp
 }
 
 export default function ChatPage() {
@@ -77,10 +79,13 @@ export default function ChatPage() {
   };
 
   const handleNewChat = () => {
+    const currentTime = Date.now();
     const newChat: Chat = {
       id: chats.length + 1,
       title: `New Chat ${chats.length + 1}`,
       messages: [],
+      createdAt: currentTime,
+      lastUpdated: currentTime,
     };
     setChats([...chats, newChat]);
     setCurrentChatId(newChat.id);
@@ -88,6 +93,13 @@ export default function ChatPage() {
 
   const handleChatSelect = (chatId: number) => {
     setCurrentChatId(chatId);
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === chatId
+          ? { ...chat, lastUpdated: Date.now() }
+          : chat
+      )
+    );
   };
 
   const handleSendMessage = async () => {
@@ -99,19 +111,23 @@ export default function ChatPage() {
       };
 
       setChats((prevChats) => {
-        const updatedChats = prevChats.map((chat) => {
+        const currentTime = Date.now();
+        return prevChats.map((chat) => {
           if (chat.id === currentChatId) {
             const updatedMessages = [...chat.messages, userMessage];
-            // Update the chat title if this is the first message
             const updatedTitle =
               updatedMessages.length === 1
                 ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
                 : chat.title;
-            return { ...chat, messages: updatedMessages, title: updatedTitle };
+            return {
+              ...chat,
+              messages: updatedMessages,
+              title: updatedTitle,
+              lastUpdated: currentTime,
+            };
           }
           return chat;
         });
-        return updatedChats;
       });
 
       setInputMessage('');
@@ -285,13 +301,134 @@ export default function ChatPage() {
     router.push('/dashboard');
   };
 
+  const ChatHistory = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const previous7Days = new Date(today);
+    previous7Days.setDate(previous7Days.getDate() - 7);
+    const previous30Days = new Date(today);
+    previous30Days.setDate(previous30Days.getDate() - 30);
+    const previous90Days = new Date(today);
+    previous90Days.setDate(previous90Days.getDate() - 90);
+
+    const chatGroups: { [key: string]: Chat[] } = {
+      Today: [],
+      Yesterday: [],
+      'Previous 7 Days': [],
+      'Previous 30 Days': [],
+      'Previous 90 Days': [],
+      Older: [],
+    };
+
+    chats.forEach((chat) => {
+      const lastUpdated = new Date(chat.lastUpdated);
+      lastUpdated.setHours(0, 0, 0, 0);
+      if (lastUpdated.getTime() === today.getTime()) {
+        chatGroups.Today.push(chat);
+      } else if (lastUpdated.getTime() === yesterday.getTime()) {
+        chatGroups.Yesterday.push(chat);
+      } else if (lastUpdated >= previous7Days) {
+        chatGroups['Previous 7 Days'].push(chat);
+      } else if (lastUpdated >= previous30Days) {
+        chatGroups['Previous 30 Days'].push(chat);
+      } else if (lastUpdated >= previous90Days) {
+        chatGroups['Previous 90 Days'].push(chat);
+      } else {
+        chatGroups.Older.push(chat);
+      }
+    });
+
+    return (
+      <div className="p-4 space-y-2">
+        {Object.entries(chatGroups).map(([group, groupChats]) => (
+          groupChats.length > 0 && (
+            <div key={group}>
+              <h3 className="text-sm font-semibold mb-2 text-gray-600">{group}</h3>
+              {groupChats.map((chat) => (
+                <div key={chat.id} className="relative group mb-1">
+                  {renamingChatId === chat.id ? (
+                    <form
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        handleRenameSubmit(chat.id);
+                      }}
+                      className="flex"
+                    >
+                      <Input
+                        value={newChatTitle}
+                        onChange={(e) => setNewChatTitle(e.target.value)}
+                        className="w-full pr-16 text-sm"
+                        autoFocus
+                      />
+                      <Button
+                        type="submit"
+                        variant="ghost"
+                        size="sm"
+                        className="absolute right-8 top-1/2 -translate-y-1/2 text-sm"
+                      >
+                        Save
+                      </Button>
+                    </form>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <Button
+                        variant={
+                          currentChatId === chat.id ? 'secondary' : 'ghost'
+                        }
+                        className="w-full justify-start text-left truncate pr-16 text-sm"
+                        onClick={() => handleChatSelect(chat.id)}
+                      >
+                        {chat.title}
+                      </Button>
+                      <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6 mr-1"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleRenameClick(chat.id);
+                          }}
+                        >
+                          <Pencil className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteChat(chat.id);
+                          }}
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )
+        ))}
+      </div>
+    );
+  };
+
   useEffect(() => {
     const savedChats = localStorage.getItem('chats');
     if (savedChats) {
       const parsedChats = JSON.parse(savedChats);
-      setChats(parsedChats);
-      if (parsedChats.length > 0) {
-        setCurrentChatId(parsedChats[0].id);
+      const updatedChats = parsedChats.map((chat: Chat) => ({
+        ...chat,
+        createdAt: chat.createdAt || Date.now(),
+        lastUpdated: chat.lastUpdated || Date.now(),
+      }));
+      setChats(updatedChats);
+      if (updatedChats.length > 0) {
+        setCurrentChatId(updatedChats[0].id);
       } else {
         handleNewChat();
       }
@@ -331,72 +468,7 @@ export default function ChatPage() {
           <h2 className="text-lg font-semibold">Chat History</h2>
         </div>
         <ScrollArea className="h-[calc(100%-73px)]">
-          <div className="p-4 space-y-2">
-            {chats.map((chat) => (
-              <div key={chat.id} className="relative group mb-1">
-                {renamingChatId === chat.id ? (
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      handleRenameSubmit(chat.id);
-                    }}
-                    className="flex"
-                  >
-                    <Input
-                      value={newChatTitle}
-                      onChange={(e) => setNewChatTitle(e.target.value)}
-                      className="w-full pr-16"
-                      autoFocus
-                    />
-                    <Button
-                      type="submit"
-                      variant="ghost"
-                      size="sm"
-                      className="absolute right-8 top-1/2 -translate-y-1/2"
-                    >
-                      Save
-                    </Button>
-                  </form>
-                ) : (
-                  <div className="flex items-center justify-between w-full">
-                    <Button
-                      variant={
-                        currentChatId === chat.id ? 'secondary' : 'ghost'
-                      }
-                      className="w-full justify-start text-left truncate pr-16"
-                      onClick={() => handleChatSelect(chat.id)}
-                    >
-                      {chat.title}
-                    </Button>
-                    <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8 mr-1"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleRenameClick(chat.id);
-                        }}
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteChat(chat.id);
-                        }}
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            ))}
-          </div>
+          <ChatHistory />
         </ScrollArea>
       </div>
 
