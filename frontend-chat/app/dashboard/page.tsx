@@ -189,7 +189,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                     <span className="text-sm font-medium text-gray-700">
                       Expiry Date:
                     </span>
-                    <div className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 w-40 text-right">
+                    <div className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 w-56 text-right"> {/* Changed w-40 to w-56 */}
                       <span className="text-sm text-gray-600">
                         {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
                       </span>
