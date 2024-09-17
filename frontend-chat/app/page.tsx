@@ -4,54 +4,21 @@ import { useState, useEffect, useCallback } from 'react';
 import Image from 'next/image';
 import { silkscreen } from './fonts';
 import { SshiftWallet } from '@fn-chat/components/SshigtWallet';
-import { PontemWallet } from '@pontem/wallet-adapter-plugin';
-
-const CELL_SIZE = 20;
-
-function createEmptyGrid(width: number, height: number) {
-  const cols = Math.ceil(width / CELL_SIZE);
-  const rows = Math.ceil(height / CELL_SIZE);
-  return Array(rows)
-    .fill(null)
-    .map(() =>
-      Array(cols)
-        .fill(null)
-        .map(() => Math.random() > 0.8)
-    );
-}
+import { createEmptyGrid, runSimulation, CELL_SIZE } from './utils/gameOfLife';
 
 function GameOfLifeBackground() {
   const [grid, setGrid] = useState(() =>
-    createEmptyGrid(window.innerWidth, window.innerHeight)
+    createEmptyGrid(typeof window !== 'undefined' ? window.innerWidth : 1000, typeof window !== 'undefined' ? window.innerHeight : 1000)
   );
 
-  const runSimulation = useCallback(() => {
-    setGrid((g) => {
-      return g.map((row, i) =>
-        row.map((cell, j) => {
-          const neighbors = [
-            g[i - 1]?.[j - 1],
-            g[i - 1]?.[j],
-            g[i - 1]?.[j + 1],
-            g[i]?.[j - 1],
-            g[i]?.[j + 1],
-            g[i + 1]?.[j - 1],
-            g[i + 1]?.[j],
-            g[i + 1]?.[j + 1],
-          ].filter(Boolean).length;
-
-          if (cell && (neighbors < 2 || neighbors > 3)) return false;
-          if (!cell && neighbors === 3) return true;
-          return cell;
-        })
-      );
-    });
+  const updateGrid = useCallback(() => {
+    setGrid(runSimulation);
   }, []);
 
   useEffect(() => {
-    const intervalId = setInterval(runSimulation, 150);
+    const intervalId = setInterval(updateGrid, 150);
     return () => clearInterval(intervalId);
-  }, [runSimulation]);
+  }, [updateGrid]);
 
   return (
     <div
@@ -62,10 +29,10 @@ function GameOfLifeBackground() {
         style={{
           display: 'grid',
           gridTemplateColumns: `repeat(${Math.ceil(
-            window.innerWidth / CELL_SIZE
+            (typeof window !== 'undefined' ? window.innerWidth : 1000) / CELL_SIZE
           )}, ${CELL_SIZE}px)`,
           gridTemplateRows: `repeat(${Math.ceil(
-            window.innerHeight / CELL_SIZE
+            (typeof window !== 'undefined' ? window.innerHeight : 1000) / CELL_SIZE
           )}, ${CELL_SIZE}px)`,
           height: '100vh',
           width: '100vw',
