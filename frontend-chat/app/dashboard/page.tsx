@@ -3,16 +3,15 @@
 import * as React from 'react';
 import { Button } from '../../src/components/ui/button';
 import { Slider } from '../../src/components/ui/slider';
-import { LogOut, ArrowLeft } from 'lucide-react'; // Import the LogOut and ArrowLeft icons
-import { useRouter } from 'next/navigation'; // Import useRouter
+import { LogOut, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import { Input } from '../../src/components/ui/input';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
 import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
-import config from './config.json'; // Import the config file
+import config from '../../config/dashboard_config.json';
 
-// Add these constants at the top of your file, outside the component
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
 const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
@@ -26,8 +25,8 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
     startDate: '',
     expirationDate: '',
   });
-  const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false); // Default to inactive
-  const router = useRouter(); // Initialize the router
+  const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false);
+  const router = useRouter();
   const [moveBotsOwned, setMoveBotsOwned] = useState('0');
   const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState('0');
   const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState('0');
@@ -55,7 +54,6 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
     router.push('/chat');
   };
 
-  // Add these functions to handle input changes
   const handleMoveBotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = Math.min(parseInt(e.target.value) || 0, MAX_MOVE_BOTS);
     setMoveBotsOwned(value.toString());
@@ -105,7 +103,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
           </h1>
           <div className="flex space-x-8 mb-8">
             {/* Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg border border-gray-700">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   SShift GPT Subscription
@@ -144,7 +142,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:p-6 rounded-md">
+                <div className="bg-gray-100 px-4 py-5 sm:p-6 rounded-md"> {/* Changed from bg-gray-50 to bg-gray-100 */}
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Total Price</p>
                     <p className="mt-1 text-4xl font-extrabold text-gray-900">
@@ -164,7 +162,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
             </div>
 
             {/* User Profile Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col">
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col border border-gray-700">
               <div>
                 <div className="text-center">
                   <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -208,10 +206,8 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={moveBotsOwned}
-                    onChange={handleMoveBotsChange}
-                    className="w-20 text-right"
-                    min="0"
-                    max={MAX_MOVE_BOTS}
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
                 <div className="flex justify-between items-center">
@@ -221,10 +217,8 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={qribbleNFTsOwned}
-                    onChange={handleQribbleNFTsChange}
-                    className="w-20 text-right"
-                    min="0"
-                    max={MAX_QRIBBLE_NFTS}
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
                 <div className="flex justify-between items-center">
@@ -234,17 +228,15 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={sshiftRecordsOwned}
-                    onChange={handleSShiftRecordsChange}
-                    className="w-20 text-right"
-                    min="0"
-                    max={MAX_SSHIFT_RECORDS}
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
               </div>
             </div>
 
             {/* Upgrade Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
+            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg border border-gray-700">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   Upgrade Subscription
@@ -261,7 +253,26 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
           <Button
             variant="default"
-            className="py-4 px-8 rounded-md shadow-sm text-base font-bold text-black bg-green-400 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400 transform transition-transform hover:scale-105"
+            className={`
+              ${silkscreen.className}
+              py-4 px-6
+              text-lg
+              font-bold
+              text-black
+              bg-green-400
+              hover:bg-green-500
+              focus:outline-none
+              focus:ring-2
+              focus:ring-offset-2
+              focus:ring-green-400
+              transform
+              transition-transform
+              hover:scale-105
+              rounded-xl
+              shadow-lg
+              border
+              border-gray-700
+            `}
             onClick={handleEnterSShiftGPT}
           >
             Enter SShift GPT
