@@ -10,11 +10,12 @@ import { silkscreen } from '../fonts';
 import { Input } from '../../src/components/ui/input';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
 import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
+import config from './config.json'; // Import the config file
 
 // Add these constants at the top of your file, outside the component
-const MAX_MOVE_BOTS = 111;
-const MAX_QRIBBLE_NFTS = 3333;
-const MAX_SSHIFT_RECORDS = 569;
+const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
+const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
+const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
 
 interface SubscriptionPageProps {}
 
