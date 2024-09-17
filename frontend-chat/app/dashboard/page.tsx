@@ -5,48 +5,18 @@ import { Button } from '../../src/components/ui/button';
 import { Slider } from '../../src/components/ui/slider';
 import { LogOut, ArrowLeft } from 'lucide-react'; // Import the LogOut and ArrowLeft icons
 import { useRouter } from 'next/navigation'; // Import useRouter
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import { Input } from '../../src/components/ui/input';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
+import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
+
+// Add these constants at the top of your file, outside the component
+const MAX_MOVE_BOTS = 111;
+const MAX_QRIBBLE_NFTS = 3333;
+const MAX_SSHIFT_RECORDS = 569;
 
 interface SubscriptionPageProps {}
-
-function calculatePrice(days: number) {
-  const minPrice = 2; // Price for 1 day
-  const maxPrice = 22; // Price for 30 days
-  const maxDays = 30;
-
-  if (days === 1) return minPrice;
-  if (days === maxDays) return maxPrice;
-
-  // Calculate the exponent that satisfies our constraints
-  const exponent = Math.log(maxPrice / minPrice) / Math.log(maxDays);
-
-  // Calculate the price using the power function
-  const price = minPrice * Math.pow(days, exponent);
-
-  return parseFloat(price.toFixed(2));
-}
-
-function formatUTCDate(date: Date): string {
-  return date.toUTCString().replace('GMT', 'UTC');
-}
-
-function calculateDates(days: number): {
-  startDate: string;
-  expirationDate: string;
-} {
-  const startDate = new Date();
-  const expirationDate = new Date(
-    startDate.getTime() + days * 24 * 60 * 60 * 1000
-  );
-
-  return {
-    startDate: formatUTCDate(startDate),
-    expirationDate: formatUTCDate(expirationDate),
-  };
-}
 
 export default function SubscriptionPage({}: SubscriptionPageProps) {
   const [days, setDays] = React.useState(15);
@@ -60,11 +30,21 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
   const [moveBotsOwned, setMoveBotsOwned] = useState('0');
   const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState('0');
   const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState('0');
+  const [discount, setDiscount] = useState(0);
 
-  React.useEffect(() => {
-    setPrice(calculatePrice(days));
+  useEffect(() => {
+    const priceWithoutDiscount = calculatePrice(days);
+    const moveBotsDiscount = calculateDiscount(parseInt(moveBotsOwned), MAX_MOVE_BOTS);
+    const qribbleNFTsDiscount = calculateDiscount(parseInt(qribbleNFTsOwned), MAX_QRIBBLE_NFTS);
+    const sshiftRecordsDiscount = calculateDiscount(parseInt(sshiftRecordsOwned), MAX_SSHIFT_RECORDS);
+
+    const maxDiscount = Math.max(moveBotsDiscount, qribbleNFTsDiscount, sshiftRecordsDiscount);
+    setDiscount(maxDiscount);
+
+    const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
+    setPrice(parseFloat(finalPrice.toFixed(2)));
     setDates(calculateDates(days));
-  }, [days]);
+  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
 
   const handleNavigateToChat = () => {
     router.push('/chat');
@@ -72,6 +52,22 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
   const handleEnterSShiftGPT = () => {
     router.push('/chat');
+  };
+
+  // Add these functions to handle input changes
+  const handleMoveBotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_MOVE_BOTS);
+    setMoveBotsOwned(value.toString());
+  };
+
+  const handleQribbleNFTsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_QRIBBLE_NFTS);
+    setQribbleNFTsOwned(value.toString());
+  };
+
+  const handleSShiftRecordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_SSHIFT_RECORDS);
+    setSShiftRecordsOwned(value.toString());
   };
 
   return (
@@ -153,6 +149,11 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                     <p className="mt-1 text-4xl font-extrabold text-gray-900">
                       {price} USDT
                     </p>
+                    {discount > 0 && (
+                      <p className="text-sm text-green-600">
+                        Discount Applied: {discount.toFixed(2)}%
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Button className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -206,8 +207,10 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={moveBotsOwned}
-                    onChange={(e) => setMoveBotsOwned(e.target.value)}
+                    onChange={handleMoveBotsChange}
                     className="w-20 text-right"
+                    min="0"
+                    max={MAX_MOVE_BOTS}
                   />
                 </div>
                 <div className="flex justify-between items-center">
@@ -217,8 +220,10 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={qribbleNFTsOwned}
-                    onChange={(e) => setQribbleNFTsOwned(e.target.value)}
+                    onChange={handleQribbleNFTsChange}
                     className="w-20 text-right"
+                    min="0"
+                    max={MAX_QRIBBLE_NFTS}
                   />
                 </div>
                 <div className="flex justify-between items-center">
@@ -228,8 +233,10 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   <Input
                     type="number"
                     value={sshiftRecordsOwned}
-                    onChange={(e) => setSShiftRecordsOwned(e.target.value)}
+                    onChange={handleSShiftRecordsChange}
                     className="w-20 text-right"
+                    min="0"
+                    max={MAX_SSHIFT_RECORDS}
                   />
                 </div>
               </div>
