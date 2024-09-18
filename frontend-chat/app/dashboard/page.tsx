@@ -11,6 +11,7 @@ import { Input } from '../../src/components/ui/input';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
 import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
 import config from '../../config/dashboard_config.json';
+import AGIThoughtBackground from '../../src/components/ui/agiThought';
 
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
@@ -70,9 +71,10 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      <AGIThoughtBackground />
       {/* Top Bar */}
-      <div className="bg-white shadow-sm py-2 px-4 flex justify-between items-center h-[73px]">
+      <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
         <div className="flex items-center space-x-4">
           <Button
             onClick={handleNavigateToChat}
@@ -94,16 +96,20 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8">
-        <div className="flex flex-col items-center">
-          <h1
-            className={`${silkscreen.className} text-6xl mb-16 text-gray-800`}
-          >
-            USER DASHBOARD
-          </h1>
+      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+        <div className="flex flex-col items-center space-y-8">
+          {/* User Dashboard Title Container */}
+          <div className="bg-white bg-opacity-90 p-6 rounded-xl shadow-lg border border-gray-300 mb-8">
+            <h1
+              className={`${silkscreen.className} text-4xl text-gray-800 text-center`}
+            >
+              USER DASHBOARD
+            </h1>
+          </div>
+
           <div className="flex space-x-8 mb-8">
             {/* Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg border border-gray-700">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   SShift GPT Subscription
@@ -162,7 +168,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
             </div>
 
             {/* User Profile Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col border border-gray-700">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg flex flex-col border border-gray-300">
               <div>
                 <div className="text-center">
                   <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -236,7 +242,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
             </div>
 
             {/* Upgrade Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg border border-gray-700">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   Upgrade Subscription
@@ -272,6 +278,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
               shadow-lg
               border
               border-gray-700
+              relative z-10
             `}
             onClick={handleEnterSShiftGPT}
           >
