@@ -12,6 +12,7 @@ import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
 import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
 import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
+import Link from 'next/link';
 
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
@@ -206,9 +207,19 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
               <div className="mt-16 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Move Bot owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Move Bot owned:
+                    </span>
+                    <Link 
+                      href={config.MOVEBOT_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={moveBotsOwned}
@@ -217,9 +228,19 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Qribble NFT owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Qribble NFT owned:
+                    </span>
+                    <Link 
+                      href={config.QRIBBLE_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={qribbleNFTsOwned}
@@ -228,9 +249,19 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    SShift Records owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      SShift Records owned:
+                    </span>
+                    <Link 
+                      href={config.SSHIFT_RECORDS_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={sshiftRecordsOwned}
