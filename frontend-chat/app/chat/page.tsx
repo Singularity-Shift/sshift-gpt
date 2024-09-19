@@ -35,11 +35,13 @@ import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
 import { Input } from '../../src/components/ui/input';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
+import imageCompression from 'browser-image-compression'; // Import image compression library
 
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  image?: string; // Added field for image
   created?: number;
   model?: string;
   finish_reason?: string;
@@ -102,12 +104,108 @@ export default function ChatPage() {
     );
   };
 
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Handle Image Button Click
+  const handleImageButtonClick = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  };
+
+  // Handle Image Selection
+  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Unsupported file type. Please upload PNG, JPEG, WEBP, or GIF images.');
+      return;
+    }
+
+    // Check if GIF is animated
+    if (file.type === 'image/gif') {
+      const isAnimated = await checkIfGifIsAnimated(file);
+      if (isAnimated) {
+        alert('Animated GIFs are not supported.');
+        return;
+      }
+    }
+
+    try {
+      setUploading(true);
+      // Compress the image to <=250KB
+      const options = {
+        maxSizeMB: 0.25, // 0.25 MB = 250 KB
+        maxWidthOrHeight: 1920, // Adjust as needed
+        useWebWorker: true,
+      };
+      const compressedFile = await imageCompression(file, options);
+
+      // Convert to Base64
+      const base64 = await convertToBase64(compressedFile);
+      setSelectedImage(base64);
+    } catch (error) {
+      console.error('Error compressing image:', error);
+      alert('Failed to upload image.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  // Helper function to check if GIF is animated
+  const checkIfGifIsAnimated = (file: File): Promise<boolean> => {
+    return new Promise((resolve) => {
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        const buffer = e.target?.result;
+        if (buffer && typeof buffer !== 'string') {
+          const view = new DataView(buffer);
+          let isAnimated = false;
+          // Simple check for multiple frames in GIF
+          for (let i = 0; i < view.byteLength - 9; i++) {
+            if (
+              view.getUint32(i) === 0x00021f9a &&
+              view.getUint8(i + 8) === 0x04 &&
+              view.getUint8(i + 9) === 0x00
+            ) {
+              isAnimated = true;
+              break;
+            }
+          }
+          resolve(isAnimated);
+        } else {
+          resolve(false);
+        }
+      };
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  // Helper function to convert file to Base64
+  const convertToBase64 = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        resolve(reader.result as string);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  };
+
   const handleSendMessage = async () => {
-    if (inputMessage.trim() && currentChatId) {
+    if (inputMessage.trim() || selectedImage) { // Allow sending if there is text or an image
       const userMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
         content: inputMessage,
+        image: selectedImage || undefined, // Attach image if available
       };
 
       setChats((prevChats) => {
@@ -131,6 +229,7 @@ export default function ChatPage() {
       });
 
       setInputMessage('');
+      setSelectedImage(null); // Reset selected image
       scrollToBottom();
 
       try {
@@ -460,6 +559,112 @@ export default function ChatPage() {
     }
   };
 
+  const MessageBubble = ({ message }: { message: Message }) => {
+    return (
+      <div
+        className={`flex items-start space-x-2 ${
+          message.role === 'user' ? 'justify-end' : 'justify-start'
+        } relative`}
+      >
+        {message.role === 'assistant' && (
+          <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
+            <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
+            <AvatarFallback>AI</AvatarFallback>
+          </Avatar>
+        )}
+        <div
+          className={`max-w-[70%] rounded-lg p-4 ${
+            message.role === 'user' ? 'bg-blue-100 text-black' : 'bg-gray-100'
+          }`}
+        >
+          <ReactMarkdown
+            components={{
+              code: ({
+                node,
+                inline,
+                className,
+                children,
+                ...props
+              }: any) => {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <CodeBlock
+                    language={match[1]}
+                    value={String(children).replace(/\n$/, '')}
+                  />
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              p: ({ children }) => <p className="mb-2">{children}</p>,
+              h1: ({ children }) => (
+                <h1 className="text-2xl font-bold mb-2">{children}</h1>
+              ),
+              h2: ({ children }) => (
+                <h2 className="text-xl font-bold mb-2">{children}</h2>
+              ),
+              h3: ({ children }) => (
+                <h3 className="text-lg font-bold mb-2">{children}</h3>
+              ),
+              ul: ({ children }) => (
+                <ul className="list-disc pl-4 mb-2">{children}</ul>
+              ),
+              ol: ({ children }) => (
+                <ol className="list-decimal pl-4 mb-2">{children}</ol>
+              ),
+              li: ({ children }) => (
+                <li className="mb-1">{children}</li>
+              ),
+            }}
+            className="prose max-w-none"
+          >
+            {message.content}
+          </ReactMarkdown>
+          {message.image && (
+            <img
+              src={message.image}
+              alt="Uploaded Image"
+              className="mt-2 max-w-xs rounded cursor-pointer hover:opacity-80"
+            />
+          )}
+          {message.role === 'assistant' && (
+            <div className="flex space-x-2 mt-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-gray-200"
+                onClick={() => handleCopy(message.content)}
+              >
+                <Copy className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-gray-200"
+              >
+                <Volume2 className="h-4 w-4" />{' '}
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="hover:bg-gray-200"
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          )}
+          {message.model && (
+            <div className="text-xs text-gray-500 mt-2">
+              Model: {message.model}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
@@ -515,118 +720,9 @@ export default function ChatPage() {
           ref={scrollAreaRef}
         >
           <div className="space-y-4">
-            {currentChat?.messages.map((message, index) => {
-              console.log('Rendering message:', message);
-              return (
-                <div
-                  key={message.id}
-                  className={`flex items-start space-x-2 ${
-                    message.role === 'user' ? 'justify-end' : 'justify-start'
-                  } relative`}
-                  ref={
-                    index === currentChat.messages.length - 1
-                      ? lastMessageRef
-                      : null
-                  }
-                >
-                  {message.role === 'assistant' && (
-                    <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
-                      <AvatarImage
-                        src="/images/sshift-guy.png"
-                        alt="AI Avatar"
-                      />
-                      <AvatarFallback>AI</AvatarFallback>
-                    </Avatar>
-                  )}
-                  <div
-                    className={`max-w-[70%] rounded-lg p-4 ${
-                      message.role === 'user'
-                        ? 'bg-blue-100 text-black'
-                        : 'bg-gray-100'
-                    }`}
-                  >
-                    <ReactMarkdown
-                      components={{
-                        code: ({
-                          node,
-                          inline,
-                          className,
-                          children,
-                          ...props
-                        }: any) => {
-                          const match = /language-(\w+)/.exec(className || '');
-                          return !inline && match ? (
-                            <CodeBlock
-                              language={match[1]}
-                              value={String(children).replace(/\n$/, '')}
-                            />
-                          ) : (
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        p: ({ children }) => <p className="mb-2">{children}</p>,
-                        h1: ({ children }) => (
-                          <h1 className="text-2xl font-bold mb-2">
-                            {children}
-                          </h1>
-                        ),
-                        h2: ({ children }) => (
-                          <h2 className="text-xl font-bold mb-2">{children}</h2>
-                        ),
-                        h3: ({ children }) => (
-                          <h3 className="text-lg font-bold mb-2">{children}</h3>
-                        ),
-                        ul: ({ children }) => (
-                          <ul className="list-disc pl-4 mb-2">{children}</ul>
-                        ),
-                        ol: ({ children }) => (
-                          <ol className="list-decimal pl-4 mb-2">{children}</ol>
-                        ),
-                        li: ({ children }) => (
-                          <li className="mb-1">{children}</li>
-                        ),
-                      }}
-                      className="prose max-w-none"
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                    {message.role === 'assistant' && (
-                      <div className="flex space-x-2 mt-2">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-gray-200"
-                          onClick={() => handleCopy(message.content)}
-                        >
-                          <Copy className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-gray-200"
-                        >
-                          <Volume2 className="h-4 w-4" />{' '}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="hover:bg-gray-200"
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    )}
-                    {message.model && (
-                      <div className="text-xs text-gray-500 mt-2">
-                        Model: {message.model}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
+            {currentChat?.messages.map((message) => (
+              <MessageBubble key={message.id} message={message} />
+            ))}
           </div>
         </ScrollArea>
 
@@ -640,12 +736,26 @@ export default function ChatPage() {
               placeholder="Type your message here... (Ctrl+Enter to send)"
               className="flex-1"
             />
+            {/* Hidden File Input */}
+            <input
+              type="file"
+              accept=".png, .jpeg, .jpg, .webp, .gif"
+              ref={fileInputRef}
+              className="hidden"
+              onChange={handleImageChange}
+            />
+            {/* Image Upload Button */}
             <Button
               variant="outline"
               size="icon"
               className="shrink-0 hover:bg-gray-200"
+              onClick={handleImageButtonClick}
+              disabled={uploading}
             >
               <Image className="h-4 w-4" />
+              {uploading && (
+                <span className="ml-2 text-sm text-gray-500">Uploading...</span>
+              )}
             </Button>
             <Button
               onClick={handleSendMessage}
