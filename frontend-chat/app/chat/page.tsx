@@ -27,6 +27,7 @@ import {
   Trash2,
   Pencil,
   ArrowLeft,
+  Upload,
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import ReactMarkdown from 'react-markdown';
@@ -106,6 +107,7 @@ export default function ChatPage() {
 
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<string | null>(null); // Add this line to define uploadedFile state
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -150,6 +152,7 @@ export default function ChatPage() {
       // Convert to Base64
       const base64 = await convertToBase64(compressedFile);
       setSelectedImage(base64);
+      setUploadedFile(base64); // Set uploaded file
     } catch (error) {
       console.error('Error compressing image:', error);
       alert('Failed to upload image.');
@@ -230,6 +233,7 @@ export default function ChatPage() {
 
       setInputMessage('');
       setSelectedImage(null); // Reset selected image
+      setUploadedFile(null); // Reset uploaded file
       scrollToBottom();
 
       try {
@@ -627,6 +631,7 @@ export default function ChatPage() {
               src={message.image}
               alt="Uploaded Image"
               className="mt-2 max-w-xs rounded cursor-pointer hover:opacity-80"
+              style={{ width: '75%' }} // Render image 25% smaller
             />
           )}
           {message.role === 'assistant' && (
@@ -727,15 +732,17 @@ export default function ChatPage() {
         </ScrollArea>
 
         {/* ChatInput */}
-        <div className="border-t border-border p-4 w-full">
+        <div className="border-t border-border p-4 w-full relative">
           <div className="flex items-end space-x-2 max-w-6xl mx-auto">
-            <Textarea
-              value={inputMessage}
-              onChange={(e) => setInputMessage(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="Type your message here... (Ctrl+Enter to send)"
-              className="flex-1"
-            />
+            <div className="relative flex-1">
+              <Textarea
+                value={inputMessage}
+                onChange={(e) => setInputMessage(e.target.value)}
+                onKeyDown={handleKeyDown}
+                placeholder="Type your message here... (Ctrl+Enter to send)"
+                className="flex-1"
+              />
+            </div>
             {/* Hidden File Input */}
             <input
               type="file"
@@ -748,13 +755,29 @@ export default function ChatPage() {
             <Button
               variant="outline"
               size="icon"
-              className="shrink-0 hover:bg-gray-200"
+              className="shrink-0 hover:bg-gray-200 relative"
               onClick={handleImageButtonClick}
               disabled={uploading}
             >
-              <Image className="h-4 w-4" />
-              {uploading && (
-                <span className="ml-2 text-sm text-gray-500">Uploading...</span>
+              {uploading ? (
+                <Upload className="animate-spin h-4 w-4" /> // Rotating upload icon
+              ) : (
+                <Image className="h-4 w-4" />
+              )}
+              {uploadedFile && ( // Render uploaded file representation
+                <div className="absolute top-[-40px] right-0 flex items-center">
+                  <img
+                    src={uploadedFile}
+                    alt="Uploaded Preview"
+                    className="h-8 w-8 rounded border border-gray-300"
+                  />
+                  <button
+                    className="ml-2 text-red-500"
+                    onClick={() => setUploadedFile(null)} // Remove uploaded file
+                  >
+                    &times; {/* Close icon */}
+                  </button>
+                </div>
               )}
             </Button>
             <Button
