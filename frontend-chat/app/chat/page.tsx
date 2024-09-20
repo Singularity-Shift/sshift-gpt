@@ -158,6 +158,10 @@ export default function ChatPage() {
       alert('Failed to upload image.');
     } finally {
       setUploading(false);
+      // Reset the file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
     }
   };
 
@@ -211,6 +215,14 @@ export default function ChatPage() {
         image: selectedImage || undefined, // Attach image if available
       };
 
+      const formattedMessage = {
+        role: 'user',
+        content: [
+          ...(selectedImage ? [{ type: 'image_url', image_url: { url: selectedImage, detail: 'high' } }] : []),
+          { type: 'text', text: inputMessage }
+        ]
+      };
+
       setChats((prevChats) => {
         const currentTime = Date.now();
         return prevChats.map((chat) => {
@@ -247,7 +259,7 @@ export default function ChatPage() {
             messages: [
               ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
                 []),
-              userMessage,
+              formattedMessage,
             ],
             model: selectedModel,
           }),
@@ -670,6 +682,13 @@ export default function ChatPage() {
     );
   };
 
+  // Add this new function to handle removing the uploaded file
+  const handleRemoveUploadedFile = (e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent the click from propagating to the parent button
+    setUploadedFile(null);
+    setSelectedImage(null);
+  };
+
   return (
     <div className="flex h-screen bg-background">
       {/* ChatSidebar */}
@@ -773,7 +792,7 @@ export default function ChatPage() {
                   />
                   <button
                     className="ml-2 text-red-500"
-                    onClick={() => setUploadedFile(null)} // Remove uploaded file
+                    onClick={handleRemoveUploadedFile}
                   >
                     &times; {/* Close icon */}
                   </button>
