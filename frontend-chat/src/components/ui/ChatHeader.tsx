@@ -8,7 +8,7 @@ import {
   SelectValue,
 } from './select';
 import { ArrowLeft } from 'lucide-react';
-import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
+import UserLoginStatus from './UserLoginStatus'; // Import the new component
 
 interface ChatHeaderProps {
   selectedModel: string;
@@ -48,13 +48,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           New Chat
         </Button>
       </div>
-      <div className="flex items-center space-x-4">
-        <div className="flex items-center space-x-2">
-          <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
-          <span className="text-gray-800 font-semibold">Connected</span>
-        </div>
-        <SshiftWalletDisconnect />
-      </div>
+      <UserLoginStatus /> {/* Use the new component here */}
     </div>
   );
 };
