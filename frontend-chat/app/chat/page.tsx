@@ -276,12 +276,13 @@ export default function ChatPage() {
           onNavigateToDashboard={() => router.push('/dashboard')}
         />
 
-        <ChatWindow
-          messages={currentChat?.messages || []}
-          onCopy={(text: string) => navigator.clipboard.writeText(text)}
-        />
-
-        <ChatInput onSendMessage={handleSendMessage} />
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <ChatWindow
+            messages={currentChat?.messages || []}
+            onCopy={(text: string) => navigator.clipboard.writeText(text)}
+          />
+          <ChatInput onSendMessage={handleSendMessage} />
+        </div>
       </div>
     </div>
   );
