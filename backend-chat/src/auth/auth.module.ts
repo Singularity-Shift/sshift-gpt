@@ -5,11 +5,12 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { ConfigService } from '../share/config/config.service';
 import { ConfigModule } from '../share/config/config.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
     JwtModule.registerAsync({
-      imports: [ConfigModule],
+      imports: [ConfigModule, UserModule],
       useFactory: (configService: ConfigService) => {
         return {
           global: true,

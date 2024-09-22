@@ -13,7 +13,10 @@ import { PayloadDto } from './dto/payload.dto';
 @Controller('auth')
 export class AuthController {
   logger = new Logger(AuthController.name);
-  constructor(private authService: AuthService) {}
+  constructor(
+    
+    private authService: AuthService
+  ) {}
 
   @Post('login')
   @ApiOperation({
