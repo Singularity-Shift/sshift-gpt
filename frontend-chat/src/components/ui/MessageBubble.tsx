@@ -56,7 +56,7 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
   return (
     <div
       className={`flex items-start space-x-2 ${
-        message.role === 'user' ? 'justify-end' : 'justify-start'
+        message.role === 'assistant' ? 'justify-start ml-0' : 'justify-end' // Set ml-0 for assistant
       } relative`}
     >
       {message.role === 'assistant' && (
