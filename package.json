@@ -38,6 +38,7 @@
     "@radix-ui/react-slot": "^1.1.0",
     "@radix-ui/react-toast": "^1.2.1",
     "axios": "^1.7.7",
+    "browser-image-compression": "^2.0.2",
     "cache-manager": "^5.7.6",
     "cache-manager-ioredis-yet": "^2.1.1",
     "class-transformer": "^0.5.1",

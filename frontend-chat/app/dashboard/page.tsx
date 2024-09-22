@@ -3,50 +3,22 @@
 import * as React from 'react';
 import { Button } from '../../src/components/ui/button';
 import { Slider } from '../../src/components/ui/slider';
-import { LogOut, ArrowLeft } from 'lucide-react'; // Import the LogOut and ArrowLeft icons
-import { useRouter } from 'next/navigation'; // Import useRouter
-import { useState } from 'react';
+import { LogOut, ArrowLeft } from 'lucide-react';
+import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import { Input } from '../../src/components/ui/input';
 import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
+import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
+import config from '../../config/dashboard_config.json';
+import AGIThoughtBackground from '../../src/components/ui/agiThought';
+import Link from 'next/link';
+
+const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
+const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
+const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
 
 interface SubscriptionPageProps {}
-
-function calculatePrice(days: number) {
-  const minPrice = 2; // Price for 1 day
-  const maxPrice = 22; // Price for 30 days
-  const maxDays = 30;
-
-  if (days === 1) return minPrice;
-  if (days === maxDays) return maxPrice;
-
-  // Calculate the exponent that satisfies our constraints
-  const exponent = Math.log(maxPrice / minPrice) / Math.log(maxDays);
-
-  // Calculate the price using the power function
-  const price = minPrice * Math.pow(days, exponent);
-
-  return parseFloat(price.toFixed(2));
-}
-
-function formatUTCDate(date: Date): string {
-  return date.toUTCString().replace('GMT', 'UTC');
-}
-
-function calculateDates(days: number): {
-  startDate: string;
-  expirationDate: string;
-} {
-  const startDate = new Date();
-  const expirationDate = new Date(
-    startDate.getTime() + days * 24 * 60 * 60 * 1000
-  );
-
-  return {
-    startDate: formatUTCDate(startDate),
-    expirationDate: formatUTCDate(expirationDate),
-  };
-}
 
 export default function SubscriptionPage({}: SubscriptionPageProps) {
   const [days, setDays] = React.useState(15);
@@ -55,16 +27,26 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
     startDate: '',
     expirationDate: '',
   });
-  const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false); // Default to inactive
-  const router = useRouter(); // Initialize the router
+  const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false);
+  const router = useRouter();
   const [moveBotsOwned, setMoveBotsOwned] = useState('0');
   const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState('0');
   const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState('0');
+  const [discount, setDiscount] = useState(0);
 
-  React.useEffect(() => {
-    setPrice(calculatePrice(days));
+  useEffect(() => {
+    const priceWithoutDiscount = calculatePrice(days);
+    const moveBotsDiscount = calculateDiscount(parseInt(moveBotsOwned), MAX_MOVE_BOTS);
+    const qribbleNFTsDiscount = calculateDiscount(parseInt(qribbleNFTsOwned), MAX_QRIBBLE_NFTS);
+    const sshiftRecordsDiscount = calculateDiscount(parseInt(sshiftRecordsOwned), MAX_SSHIFT_RECORDS);
+
+    const maxDiscount = Math.max(moveBotsDiscount, qribbleNFTsDiscount, sshiftRecordsDiscount);
+    setDiscount(maxDiscount);
+
+    const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
+    setPrice(parseFloat(finalPrice.toFixed(2)));
     setDates(calculateDates(days));
-  }, [days]);
+  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
 
   const handleNavigateToChat = () => {
     router.push('/chat');
@@ -74,10 +56,26 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
     router.push('/chat');
   };
 
+  const handleMoveBotsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_MOVE_BOTS);
+    setMoveBotsOwned(value.toString());
+  };
+
+  const handleQribbleNFTsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_QRIBBLE_NFTS);
+    setQribbleNFTsOwned(value.toString());
+  };
+
+  const handleSShiftRecordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = Math.min(parseInt(e.target.value) || 0, MAX_SSHIFT_RECORDS);
+    setSShiftRecordsOwned(value.toString());
+  };
+
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
+    <div className="min-h-screen flex flex-col relative">
+      <AGIThoughtBackground />
       {/* Top Bar */}
-      <div className="bg-white shadow-sm py-2 px-4 flex justify-between items-center h-[73px]">
+      <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
         <div className="flex items-center space-x-4">
           <Button
             onClick={handleNavigateToChat}
@@ -99,16 +97,20 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
       </div>
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8">
-        <div className="flex flex-col items-center">
-          <h1
-            className={`${silkscreen.className} text-6xl mb-16 text-gray-800`}
-          >
-            USER DASHBOARD
-          </h1>
+      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+        <div className="flex flex-col items-center space-y-8">
+          {/* User Dashboard Title Container */}
+          <div className="bg-white bg-opacity-90 p-6 rounded-xl shadow-lg border border-gray-300 mb-8">
+            <h1
+              className={`${silkscreen.className} text-4xl text-gray-800 text-center`}
+            >
+              USER DASHBOARD
+            </h1>
+          </div>
+
           <div className="flex space-x-8 mb-8">
             {/* Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   SShift GPT Subscription
@@ -147,12 +149,17 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                     </p>
                   </div>
                 </div>
-                <div className="bg-gray-50 px-4 py-5 sm:p-6 rounded-md">
+                <div className="bg-gray-100 px-4 py-5 sm:p-6 rounded-md"> {/* Changed from bg-gray-50 to bg-gray-100 */}
                   <div className="text-center">
                     <p className="text-sm text-gray-600">Total Price</p>
                     <p className="mt-1 text-4xl font-extrabold text-gray-900">
                       {price} USDT
                     </p>
+                    {discount > 0 && (
+                      <p className="text-sm text-green-600">
+                        Discount Applied: {discount.toFixed(2)}%
+                      </p>
+                    )}
                   </div>
                 </div>
                 <Button className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
@@ -162,7 +169,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
             </div>
 
             {/* User Profile Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg flex flex-col">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg flex flex-col border border-gray-300">
               <div>
                 <div className="text-center">
                   <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
@@ -189,7 +196,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
                     <span className="text-sm font-medium text-gray-700">
                       Expiry Date:
                     </span>
-                    <div className="border border-gray-300 rounded-md px-3 py-2 w-40 text-right">
+                    <div className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 w-56 text-right"> {/* Changed w-40 to w-56 */}
                       <span className="text-sm text-gray-600">
                         {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
                       </span>
@@ -200,43 +207,73 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
               <div className="mt-16 space-y-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Move Bot owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Move Bot owned:
+                    </span>
+                    <Link 
+                      href={config.MOVEBOT_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={moveBotsOwned}
-                    onChange={(e) => setMoveBotsOwned(e.target.value)}
-                    className="w-20 text-right"
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    Qribble NFT owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      Qribble NFT owned:
+                    </span>
+                    <Link 
+                      href={config.QRIBBLE_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={qribbleNFTsOwned}
-                    onChange={(e) => setQribbleNFTsOwned(e.target.value)}
-                    className="w-20 text-right"
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-sm font-medium text-gray-700">
-                    SShift Records owned:
-                  </span>
+                  <div>
+                    <span className="text-sm font-medium text-gray-700">
+                      SShift Records owned:
+                    </span>
+                    <Link 
+                      href={config.SSHIFT_RECORDS_BUY}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                    >
+                      Buy
+                    </Link>
+                  </div>
                   <Input
                     type="number"
                     value={sshiftRecordsOwned}
-                    onChange={(e) => setSShiftRecordsOwned(e.target.value)}
-                    className="w-20 text-right"
+                    className="w-20 text-right bg-gray-100"
+                    readOnly
                   />
                 </div>
               </div>
             </div>
 
             {/* Upgrade Subscription Container */}
-            <div className="w-[400px] bg-white p-10 rounded-xl shadow-lg">
+            <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
               <div className="text-center">
                 <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
                   Upgrade Subscription
@@ -253,7 +290,27 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
           <Button
             variant="default"
-            className="py-4 px-8 rounded-md shadow-sm text-base font-bold text-black bg-green-400 hover:bg-green-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-400 transform transition-transform hover:scale-105"
+            className={`
+              ${silkscreen.className}
+              py-4 px-6
+              text-lg
+              font-bold
+              text-black
+              bg-green-400
+              hover:bg-green-500
+              focus:outline-none
+              focus:ring-2
+              focus:ring-offset-2
+              focus:ring-green-400
+              transform
+              transition-transform
+              hover:scale-105
+              rounded-xl
+              shadow-lg
+              border
+              border-gray-700
+              relative z-10
+            `}
             onClick={handleEnterSShiftGPT}
           >
             Enter SShift GPT
