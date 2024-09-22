@@ -1,54 +1,17 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { Button } from '../../src/components/ui/button';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../../src/components/ui/select';
-import { Textarea } from '../../src/components/ui/textarea';
-import { ScrollArea } from '../../src/components/ui/scrollarea';
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from '../../src/components/ui/avatar';
-import {
-  Paperclip,
-  Image,
-  Send,
-  LogOut,
-  Volume2,
-  Copy,
-  RefreshCw,
-  Trash2,
-  Pencil,
-  ArrowLeft,
-  Upload,
-} from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import ReactMarkdown from 'react-markdown';
-import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
-import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
-import { Input } from '../../src/components/ui/input';
-import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
-import imageCompression from 'browser-image-compression'; // Import image compression library
-import { MessageBubble } from '../../src/components/ui/MessageBubble';
 import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
 import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
 import { ChatInput } from '../../src/components/ui/ChatInput';
-import { ImageUploadButton } from '../../src/components/ui/ImageUploadButton';
 
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
-  image?: string; // Added field for image
+  image?: string;
   created?: number;
   model?: string;
   finish_reason?: string;
@@ -65,8 +28,8 @@ interface Chat {
     completion_tokens: number;
     total_tokens: number;
   };
-  createdAt: number; // Timestamp for when the chat was created
-  lastUpdated: number; // New field for last update timestamp
+  createdAt: number;
+  lastUpdated: number;
 }
 
 export default function ChatPage() {
@@ -75,7 +38,6 @@ export default function ChatPage() {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<number | null>(null);
 
-  const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -251,10 +213,6 @@ export default function ChatPage() {
     }
   };
 
-  const handleCopy = (text: string) => {
-    navigator.clipboard.writeText(text);
-  };
-
   const handleDeleteChat = (chatId: number) => {
     setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
     if (currentChatId === chatId) {
@@ -266,10 +224,6 @@ export default function ChatPage() {
         handleNewChat(); // Create a new chat if all chats are deleted
       }
     }
-  };
-
-  const handleNavigateToDashboard = () => {
-    router.push('/dashboard');
   };
 
   useEffect(() => {
@@ -296,16 +250,7 @@ export default function ChatPage() {
     localStorage.setItem('chats', JSON.stringify(chats));
   }, [chats]);
 
-  useEffect(() => {
-    console.log('Chats state updated:', chats);
-  }, [chats]);
-
-  console.log('Current chats state:', chats);
-  console.log('Current chat ID:', currentChatId);
-
   const currentChat = chats.find((chat) => chat.id === currentChatId);
-  console.log('Current chat:', currentChat);
-  console.log('Current chat messages:', currentChat?.messages);
 
   return (
     <div className="flex h-screen bg-background">
@@ -323,22 +268,19 @@ export default function ChatPage() {
         }}
       />
 
-      {/* Main Content */}
-      <div className="flex flex-col flex-1 items-center">
+      <div className="flex flex-col flex-1">
         <ChatHeader
           selectedModel={selectedModel}
           onModelChange={setSelectedModel}
           onNewChat={handleNewChat}
-          onNavigateToDashboard={handleNavigateToDashboard}
+          onNavigateToDashboard={() => router.push('/dashboard')}
         />
 
-        {/* ChatWindow */}
         <ChatWindow
           messages={currentChat?.messages || []}
-          onCopy={handleCopy}
+          onCopy={(text: string) => navigator.clipboard.writeText(text)}
         />
 
-        {/* ChatInput */}
         <ChatInput onSendMessage={handleSendMessage} />
       </div>
     </div>
