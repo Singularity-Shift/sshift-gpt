@@ -17,10 +17,10 @@ export class Chat {
   system_fingerprint: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ChatHistory' })
-  chatHistory: ChatHistory[];
+  messages: ChatHistory[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ChatUsage' })
-  chatUsage: ChatUsage;
+  usage: ChatUsage;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

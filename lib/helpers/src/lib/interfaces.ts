@@ -27,3 +27,7 @@ export interface IChat {
   message_history: IChatHistory[];
   usage: IChatUsage;
 }
+
+export interface IUserAuth {
+  address: string;
+}

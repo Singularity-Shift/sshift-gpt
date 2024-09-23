@@ -1,7 +1,8 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
-import { Model } from 'mongoose';
+import { Model, UpdateWriteOpResult } from 'mongoose';
+import { UpdateUserDto } from './dto/update-user.dto';
 
 @Injectable()
 export class UserService {
@@ -17,5 +18,21 @@ export class UserService {
     });
 
     return user.save();
+  }
+
+  async updateUser(
+    address: string,
+    updateUserDto: UpdateUserDto
+  ): Promise<UpdateWriteOpResult> {
+    const user = await this.userModel.updateOne(
+      {
+        address,
+      },
+      {
+        ...updateUserDto,
+      }
+    );
+
+    return user;
   }
 }

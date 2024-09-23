@@ -8,7 +8,7 @@ export class ChatUsage {
   @Prop({ type: Number, required: true })
   prompt_tokens: number;
 
-  @Prop({ type: String, required: true })
+  @Prop({ type: Number, required: true })
   completion_tokens: number;
 
   @Prop({ type: Number, required: true })
