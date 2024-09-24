@@ -4,6 +4,7 @@ import { Textarea } from './textarea';
 import { Image, Send, Upload } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import { StopButton } from './StopButton'; // Import the StopButton
+import { SendButton } from './SendButton'; // Import the SendButton
 
 interface ChatInputProps {
   onSendMessage: (message: string, image: string | null) => void;
@@ -142,7 +143,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           onChange={handleImageChange}
         />
         <Button
-          variant="outline"
+          variant="outline" // Use outline variant for the image upload button
           size="icon"
           className="shrink-0 hover:bg-gray-200 relative"
           onClick={handleImageButtonClick}
@@ -170,12 +171,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           )}
         </Button>
         <StopButton onStop={handleStop} /> {/* Add StopButton here */}
-        <Button
-          onClick={handleSendMessage}
-          className="shrink-0 hover:bg-gray-200"
-        >
-          <Send className="h-4 w-4" />
-        </Button>
+        <SendButton onClick={handleSendMessage} /> {/* Use SendButton component */}
       </div>
     </div>
   );

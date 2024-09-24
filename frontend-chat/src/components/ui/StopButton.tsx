@@ -8,12 +8,12 @@ interface StopButtonProps {
 export function StopButton({ onStop }: StopButtonProps) {
   return (
     <Button
-      variant="ghost"
+      variant="outline" // Changed to outline variant
       size="icon"
       onClick={onStop}
-      className="text-gray-500 hover:bg-gray-300 hover:text-gray-800" // Changed to grey colors
+      className="text-black hover:bg-gray-300" // Black text by default, light grey on hover
     >
-      <StopCircle className="h-4 w-4" />
+      <StopCircle className="h-4 w-4 text-black hover:text-gray-500" /> {/* Black icon by default, grey on hover */}
     </Button>
   );
 }
