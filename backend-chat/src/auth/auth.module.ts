@@ -9,8 +9,9 @@ import { UserModule } from '../user/user.module';
 
 @Module({
   imports: [
+    UserModule,
     JwtModule.registerAsync({
-      imports: [ConfigModule, UserModule],
+      imports: [ConfigModule],
       useFactory: (configService: ConfigService) => {
         return {
           global: true,
