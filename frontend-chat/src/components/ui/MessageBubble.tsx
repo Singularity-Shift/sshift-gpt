@@ -20,6 +20,7 @@ interface Message {
 interface MessageBubbleProps {
   message: Message;
   onCopy: (text: string) => void;
+  onRegenerate: (message: Message) => void; // 1. Add onRegenerate to props
 }
 
 const CodeBlock = ({
@@ -65,7 +66,7 @@ const CodeBlock = ({
   );
 };
 
-export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
+export function MessageBubble({ message, onCopy, onRegenerate }: MessageBubbleProps) { // 2. Destructure onRegenerate
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
 
@@ -73,6 +74,12 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
     onCopy(text);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000); // Hide the label after 2 seconds
+  };
+
+  const handleRegenerate = () => {
+    if (message.role === 'assistant') {
+      onRegenerate(message); // 3. Call onRegenerate with the current message
+    }
   };
 
   return (
@@ -87,7 +94,7 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
       )}
       <div
         className={`max-w-[75%] w-auto p-3 rounded-lg ${
-          isUser ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
+          isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800' // Updated class for user message bubble
         }`}
       >
         <ReactMarkdown
@@ -137,7 +144,12 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
         )}
         {!isUser && (
           <div className="relative flex space-x-2 mt-2">
-            <Button variant="ghost" size="icon" className="active:bg-gray-300" onClick={() => handleCopy(message.content)}>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="active:bg-gray-300"
+              onClick={() => handleCopy(message.content)}
+            >
               <Copy className="h-4 w-4" />
             </Button>
             {copied && (
@@ -145,19 +157,25 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
                 Copied
               </span>
             )}
-            <Button variant="ghost" size="icon" className="active:bg-gray-300">
-              <Volume2 className="h-4 w-4" />
+            <Button
+              variant="ghost"
+              size="icon"
+              className="active:bg-gray-300"
+              onClick={handleRegenerate} // 4. Add onClick handler for regenerate
+            >
+              <RefreshCw className="h-4 w-4" /> {/* Regenerate (Refresh) Icon */}
             </Button>
             <Button variant="ghost" size="icon" className="active:bg-gray-300">
-              <RefreshCw className="h-4 w-4" />
+              <Volume2 className="h-4 w-4" />
             </Button>
           </div>
         )}
       </div>
       {isUser && (
-        <span className="text-xs text-gray-500 ml-2">
-          {new Date(message.created || Date.now()).toLocaleTimeString()}
-        </span>
+        <Avatar className="w-8 h-8 ml-2 flex-shrink-0">
+          <AvatarImage src="/images/sshift-guy-user.png" alt="User Avatar" />
+          <AvatarFallback>User</AvatarFallback>
+        </Avatar>
       )}
     </div>
   );

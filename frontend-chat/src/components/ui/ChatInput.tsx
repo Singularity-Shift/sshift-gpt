@@ -3,6 +3,7 @@ import { Button } from './button';
 import { Textarea } from './textarea';
 import { Image, Send, Upload } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
+import { StopButton } from './StopButton'; // Import the StopButton
 
 interface ChatInputProps {
   onSendMessage: (message: string, image: string | null) => void;
@@ -115,6 +116,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
     });
   };
 
+  const handleStop = async () => {
+    await fetch('/api/chat', {
+      method: 'DELETE',
+    });
+  };
+
   return (
     <div className="border-t border-border p-4 w-full relative">
       <div className="flex items-end space-x-2 max-w-6xl mx-auto">
@@ -162,6 +169,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
             </div>
           )}
         </Button>
+        <StopButton onStop={handleStop} /> {/* Add StopButton here */}
         <Button
           onClick={handleSendMessage}
           className="shrink-0 hover:bg-gray-200"
