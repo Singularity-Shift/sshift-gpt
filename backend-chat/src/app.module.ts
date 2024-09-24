@@ -8,10 +8,12 @@ import { ConfigService } from './share/config/config.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/auth.guard';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
     ConfigModule,
+    ChatModule,
     CacheModule.registerAsync<RedisOptions>({
       imports: [ConfigModule],
       inject: [ConfigService],
