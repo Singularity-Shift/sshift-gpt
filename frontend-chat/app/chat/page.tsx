@@ -118,8 +118,7 @@ export default function ChatPage() {
           },
           body: JSON.stringify({
             messages: [
-              ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
-                []),
+              ...(chats.find((chat) => chat.id === currentChatId)?.messages || []),
               formattedMessage,
             ],
             model: selectedModel,

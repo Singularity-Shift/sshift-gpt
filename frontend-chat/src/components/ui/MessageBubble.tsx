@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import { Button } from './button';
 import { Copy, Volume2, RefreshCw } from 'lucide-react';
@@ -31,6 +31,14 @@ const CodeBlock = ({
   value: string;
   onCopy: (text: string) => void;
 }) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    onCopy(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000); // Hide the label after 2 seconds
+  };
+
   return (
     <div className="relative">
       <SyntaxHighlighter
@@ -43,31 +51,43 @@ const CodeBlock = ({
       <Button
         variant="ghost"
         size="icon"
-        className="absolute top-2 right-2 hover:bg-gray-200"
-        onClick={() => onCopy(value)}
+        className="absolute top-2 right-2 hover:bg-gray-200 active:bg-gray-300"
+        onClick={() => handleCopy(value)}
       >
         <Copy className="h-4 w-4" />
       </Button>
+      {copied && (
+        <span className="absolute top-8 right-2 text-xs text-gray-500 bg-white p-1 rounded">
+          Copied
+        </span>
+      )}
     </div>
   );
 };
 
 export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
+  const isUser = message.role === 'user';
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = (text: string) => {
+    onCopy(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000); // Hide the label after 2 seconds
+  };
+
   return (
     <div
-      className={`flex items-start space-x-2 ${
-        message.role === 'assistant' ? 'justify-start ml-0' : 'justify-end' // Set ml-0 for assistant
-      } relative`}
+      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
     >
-      {message.role === 'assistant' && (
+      {!isUser && (
         <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
           <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
           <AvatarFallback>AI</AvatarFallback>
         </Avatar>
       )}
       <div
-        className={`max-w-[70%] rounded-lg p-4 ${
-          message.role === 'user' ? 'bg-blue-100 text-black' : 'bg-gray-100'
+        className={`max-w-[75%] w-auto p-3 rounded-lg ${
+          isUser ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
         }`}
       >
         <ReactMarkdown
@@ -111,35 +131,34 @@ export function MessageBubble({ message, onCopy }: MessageBubbleProps) {
         {message.image && (
           <img
             src={message.image}
-            alt="Uploaded Image"
-            className="mt-2 max-w-xs rounded cursor-pointer hover:opacity-80"
-            style={{ width: '75%' }}
+            alt="Attached"
+            className="mt-2 max-w-full rounded"
           />
         )}
-        {message.role === 'assistant' && (
-          <div className="flex space-x-2 mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="hover:bg-gray-200"
-              onClick={() => onCopy(message.content)}
-            >
+        {!isUser && (
+          <div className="relative flex space-x-2 mt-2">
+            <Button variant="ghost" size="icon" className="active:bg-gray-300" onClick={() => handleCopy(message.content)}>
               <Copy className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="hover:bg-gray-200">
+            {copied && (
+              <span className="absolute top-8 left-0 transform -translate-x-1/2 text-xs text-gray-500 bg-white p-1 rounded">
+                Copied
+              </span>
+            )}
+            <Button variant="ghost" size="icon" className="active:bg-gray-300">
               <Volume2 className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" className="hover:bg-gray-200">
+            <Button variant="ghost" size="icon" className="active:bg-gray-300">
               <RefreshCw className="h-4 w-4" />
             </Button>
           </div>
         )}
-        {message.model && (
-          <div className="text-xs text-gray-500 mt-2">
-            Model: {message.model}
-          </div>
-        )}
       </div>
+      {isUser && (
+        <span className="text-xs text-gray-500 ml-2">
+          {new Date(message.created || Date.now()).toLocaleTimeString()}
+        </span>
+      )}
     </div>
   );
 }

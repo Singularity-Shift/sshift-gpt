@@ -23,9 +23,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy }) => {
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <ScrollArea className="h-full">
-        <div className="w-full px-4 py-8 space-y-4"> {/* Removed max-w-3xl */}
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto"> {/* Adjusted max width */}
+      <ScrollArea className="flex-1">
+        <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
             <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
               <MessageBubble message={message} onCopy={onCopy} />
