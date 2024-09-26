@@ -9,11 +9,12 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
 import { GetUserDto } from '../user/dto/get-user.dto';
-import { UpdateUserDto } from '../user/dto/update-user.dto';
 import { UserAuth } from '../auth/auth.decorator';
 import { IUserAuth } from '@helpers';
+import { ChatHistoryDto } from './dto/chat-history.dto';
+import { Chat } from './chat.schema';
 
-@Controller('auth')
+@Controller('history')
 export class ChatController {
   logger = new Logger(ChatController.name);
   constructor(private readonly userService: UserService) {}
@@ -32,7 +33,7 @@ export class ChatController {
     description: 'Unauthorized access',
   })
   async updateUserChatHistory(
-    @Body() userDto: UpdateUserDto,
+    @Body() chats: ChatHistoryDto[],
     @UserAuth() userAuth: IUserAuth
   ) {
     const user = await this.userService.findUserByAddress(userAuth.address);
@@ -43,7 +44,15 @@ export class ChatController {
       );
     }
 
-    return this.userService.updateUser(userAuth.address, userDto);
+    await this.userService.updateUser(
+      userAuth.address.toLocaleLowerCase(),
+      chats
+    );
+
+    return GetUserDto.fromJson({
+      ...user,
+      chats: chats as Chat[],
+    });
   }
 
   @Get()

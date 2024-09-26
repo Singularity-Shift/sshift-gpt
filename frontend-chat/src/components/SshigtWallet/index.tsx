@@ -103,6 +103,7 @@ export const SshiftWalletDisconnect = () => {
 
   const handleDisconnect = async () => {
     console.log('User disconnected');
+    localStorage.removeItem('jwt');
     router.push('/');
   };
 

@@ -1,6 +1,6 @@
 'use client';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import api from '@fn-chat/services/api';
+import backend from '../services/backend';
 import { IAuth, IJwt } from '@helpers';
 import { createContext, ReactNode, useContext } from 'react';
 
@@ -33,7 +33,7 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
       publicKey: account?.publicKey as string,
     };
 
-    const response = await api.post('/auth/login', { ...payload });
+    const response = await backend.post('/auth/login', { ...payload });
 
     return response.data;
   };

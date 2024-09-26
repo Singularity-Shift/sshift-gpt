@@ -3,7 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type ChatImageDocument = HydratedDocument<ChatImage>;
 
-@Schema()
+@Schema({ _id: false })
 export class ChatImage {
   @Prop({ type: String, required: true })
   url: string;

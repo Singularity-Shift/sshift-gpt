@@ -1,5 +1,5 @@
 import React from 'react';
-import { SshiftWalletDisconnect } from '@fn-chat/components/SshigtWallet';
+import { SshiftWalletDisconnect } from '../SshigtWallet';
 
 const UserLoginStatus: React.FC = () => {
   return (

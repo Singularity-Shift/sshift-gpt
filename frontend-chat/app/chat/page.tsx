@@ -6,6 +6,7 @@ import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
 import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
 import { ChatInput } from '../../src/components/ui/ChatInput';
+import backend from '../../src/services/backend';
 
 export interface Message {
   id: string;
@@ -63,14 +64,15 @@ export default function ChatPage() {
     setCurrentChatId(chatId);
     setChats((prevChats) =>
       prevChats.map((chat) =>
-        chat.id === chatId
-          ? { ...chat, lastUpdated: Date.now() }
-          : chat
+        chat.id === chatId ? { ...chat, lastUpdated: Date.now() } : chat
       )
     );
   };
 
-  const handleSendMessage = async (inputMessage: string, selectedImage: string | null) => {
+  const handleSendMessage = async (
+    inputMessage: string,
+    selectedImage: string | null
+  ) => {
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -82,9 +84,16 @@ export default function ChatPage() {
       const formattedMessage = {
         role: 'user',
         content: [
-          ...(selectedImage ? [{ type: 'image_url', image_url: { url: selectedImage, detail: 'high' } }] : []),
-          { type: 'text', text: inputMessage }
-        ]
+          ...(selectedImage
+            ? [
+                {
+                  type: 'image_url',
+                  image_url: { url: selectedImage, detail: 'high' },
+                },
+              ]
+            : []),
+          { type: 'text', text: inputMessage },
+        ],
       };
 
       setChats((prevChats) => {
@@ -247,7 +256,13 @@ export default function ChatPage() {
   }, []);
 
   useEffect(() => {
-    localStorage.setItem('chats', JSON.stringify(chats));
+    void (async () => {
+      await backend.put('/history', [...chats], {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+      });
+    })();
   }, [chats]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);

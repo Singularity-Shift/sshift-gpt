@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { Model, UpdateWriteOpResult } from 'mongoose';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { ChatHistoryDto } from '../chat/dto/chat-history.dto';
 
 @Injectable()
 export class UserService {
@@ -22,14 +22,14 @@ export class UserService {
 
   async updateUser(
     address: string,
-    updateUserDto: UpdateUserDto
+    updatechatsDto: ChatHistoryDto[]
   ): Promise<UpdateWriteOpResult> {
     const user = await this.userModel.updateOne(
       {
         address,
       },
       {
-        ...updateUserDto,
+        chats: updatechatsDto,
       }
     );
 

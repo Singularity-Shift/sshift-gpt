@@ -1,11 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument } from 'mongoose';
+import { HydratedDocument } from 'mongoose';
 import { ChatHistory } from './chat-history.schema';
 import { ChatUsage } from './chat-usage.schema';
 
 export type ChatDocument = HydratedDocument<Chat>;
 
-@Schema()
+@Schema({ _id: false })
 export class Chat {
   @Prop({ type: String, required: true })
   id: string;
@@ -16,10 +16,10 @@ export class Chat {
   @Prop({ type: String, required: true })
   system_fingerprint: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ChatHistory' })
+  @Prop({ type: [ChatHistory] })
   messages: ChatHistory[];
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ChatUsage' })
+  @Prop({ type: ChatUsage })
   usage: ChatUsage;
 }
 

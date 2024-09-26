@@ -1,10 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import mongoose, { HydratedDocument, now } from 'mongoose';
+import { HydratedDocument, now } from 'mongoose';
 import { ChatImage } from './chat-image.schema';
 
 export type ChatContentDocument = HydratedDocument<ChatContent>;
 
-@Schema()
+@Schema({ _id: false })
 export class ChatContent {
   @Prop({ type: String, required: true })
   type: string;
@@ -13,8 +13,7 @@ export class ChatContent {
   text: string;
 
   @Prop({
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'ChatImage',
+    type: ChatImage,
     required: false,
   })
   image_url: ChatImage;
