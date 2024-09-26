@@ -229,7 +229,6 @@ export default function ChatPage() {
   const handleRegenerateMessage = async (assistantMessage: Message) => {
     if (!currentChatId) return;
 
-    // Find the index of the assistant message to regenerate
     const chat = chats.find((c) => c.id === currentChatId);
     if (!chat) return;
 
@@ -250,10 +249,10 @@ export default function ChatPage() {
       return;
     }
 
-    // Remove the old assistant message
+    // Remove the old assistant message and all messages after it
     const updatedChat = {
       ...chat,
-      messages: chat.messages.filter((msg) => msg.id !== assistantMessage.id),
+      messages: chat.messages.slice(0, messageIndex),
       lastUpdated: Date.now(),
     };
 

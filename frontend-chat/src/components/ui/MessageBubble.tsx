@@ -69,6 +69,7 @@ const CodeBlock = ({
 export function MessageBubble({ message, onCopy, onRegenerate }: MessageBubbleProps) { // 2. Destructure onRegenerate
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
+  const [audioClicked, setAudioClicked] = useState(false); // New state for audio button
 
   const handleCopy = (text: string) => {
     onCopy(text);
@@ -80,6 +81,11 @@ export function MessageBubble({ message, onCopy, onRegenerate }: MessageBubblePr
     if (message.role === 'assistant') {
       onRegenerate(message); // 3. Call onRegenerate with the current message
     }
+  };
+
+  const handleAudioClick = () => {
+    setAudioClicked(true);
+    setTimeout(() => setAudioClicked(false), 2000); // Hide the label after 2 seconds
   };
 
   return (
@@ -153,7 +159,7 @@ export function MessageBubble({ message, onCopy, onRegenerate }: MessageBubblePr
               <Copy className="h-4 w-4" />
             </Button>
             {copied && (
-              <span className="absolute top-8 left-0 transform -translate-x-1/2 text-xs text-gray-500 bg-white p-1 rounded">
+              <span className="absolute top-8 left-0 text-xs text-gray-500 bg-white p-1 rounded">
                 Copied
               </span>
             )}
@@ -165,9 +171,21 @@ export function MessageBubble({ message, onCopy, onRegenerate }: MessageBubblePr
             >
               <RefreshCw className="h-4 w-4" /> {/* Regenerate (Refresh) Icon */}
             </Button>
-            <Button variant="ghost" size="icon" className="active:bg-gray-300">
-              <Volume2 className="h-4 w-4" />
-            </Button>
+            <div className="relative">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="active:bg-gray-300"
+                onClick={handleAudioClick}
+              >
+                <Volume2 className="h-4 w-4" />
+              </Button>
+              {audioClicked && (
+                <span className="absolute top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 bg-white p-1 rounded whitespace-nowrap">
+                  Coming soon
+                </span>
+              )}
+            </div>
           </div>
         )}
       </div>

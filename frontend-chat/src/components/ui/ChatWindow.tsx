@@ -29,7 +29,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
         <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
             <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
-              <MessageBubble message={message} onCopy={onCopy} onRegenerate={onRegenerate} /> {/* 2. Pass onRegenerate */}
+              <MessageBubble 
+                message={message} 
+                onCopy={onCopy} 
+                onRegenerate={() => onRegenerate(message)}
+              />
             </div>
           ))}
         </div>
