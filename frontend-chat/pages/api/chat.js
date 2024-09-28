@@ -47,16 +47,16 @@ export default async function handler(req, res) {
 
             for await (const chunk of stream) {
                 if (shouldStopStream) {
-                    res.write('data: [STOPPED]\n\n');
+                    res.write('data: {"stopped":true}\n\n');
                     res.end();
-                    break; // Exit the loop if the stream should be stopped
+                    break;
                 }
                 const payload = JSON.stringify(chunk.choices[0]?.delta || {});
                 res.write(`data: ${payload}\n\n`);
                 res.flush();
             }
 
-            res.write('data: [DONE]\n\n');
+            res.write('data: {"done":true}\n\n');
             res.end();
         } catch (error) {
             console.error('OpenAI API Error:', error.response ? error.response.data : error.message);
