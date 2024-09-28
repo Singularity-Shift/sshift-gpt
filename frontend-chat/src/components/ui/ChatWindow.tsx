@@ -6,10 +6,11 @@ import { Message } from '../../../app/chat/page';
 interface ChatWindowProps {
   messages: Message[];
   onCopy: (text: string) => void;
-  onRegenerate: (message: Message) => void; // 1. Add onRegenerate to props
+  onRegenerate: (message: Message) => void;
+  onEdit: (message: Message, newContent: string) => void; // Add this prop
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRegenerate }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRegenerate, onEdit }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -33,6 +34,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
                 message={message} 
                 onCopy={onCopy} 
                 onRegenerate={() => onRegenerate(message)}
+                onEdit={(editedMessage, newContent) => onEdit(editedMessage, newContent)}
               />
             </div>
           ))}

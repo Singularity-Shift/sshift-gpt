@@ -367,6 +367,87 @@ export default function ChatPage() {
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
+  const handleEdit = (editedMessage: Message, newContent: string) => {
+    const editedMessageIndex = currentChat?.messages.findIndex(msg => msg.id === editedMessage.id);
+    if (editedMessageIndex !== undefined && editedMessageIndex !== -1 && currentChat) {
+      const updatedMessages = currentChat.messages.slice(0, editedMessageIndex + 1);
+      updatedMessages[editedMessageIndex] = { ...editedMessage, content: newContent };
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === currentChatId ? { ...chat, messages: updatedMessages } : chat
+        )
+      );
+      // Regenerate the conversation from this point forward
+      regenerateConversation(updatedMessages);
+    }
+  };
+
+  const regenerateConversation = async (messagesUpToEdit: Message[]) => {
+    if (!currentChatId) return;
+
+    try {
+      console.log('Regenerating conversation...');
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messagesUpToEdit,
+          model: selectedModel,
+        }),
+      });
+      console.log('API response received for regeneration:', response);
+
+      if (!response.ok) {
+        throw new Error('Failed to regenerate conversation');
+      }
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let done = false;
+
+      const newAssistantMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+      };
+
+      while (!done) {
+        const { value, done: doneReading } = await reader?.read()!;
+        done = doneReading;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n');
+
+        for (const line of lines) {
+          if (line.trim() === '') continue;
+          if (line.startsWith('data: ')) {
+            const data = JSON.parse(line.substring(6));
+            console.log('Parsed data for regeneration:', data);
+            if (data.content) {
+              newAssistantMessage.content += data.content;
+              setChats((prevChats) =>
+                prevChats.map((c) =>
+                  c.id === currentChatId
+                    ? {
+                        ...c,
+                        messages: [...messagesUpToEdit, newAssistantMessage],
+                      }
+                    : c
+                )
+              );
+              scrollToBottom();
+            }
+          }
+        }
+      }
+
+      console.log('Final regenerated assistant message:', newAssistantMessage);
+    } catch (error) {
+      console.error('Error in regenerateConversation:', error);
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <ChatSidebar
@@ -396,6 +477,7 @@ export default function ChatPage() {
             messages={currentChat?.messages || []}
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
             onRegenerate={handleRegenerateMessage} // 2. Pass the regenerate handler
+            onEdit={handleEdit}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
