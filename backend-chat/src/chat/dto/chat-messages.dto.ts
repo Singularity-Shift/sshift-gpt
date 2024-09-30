@@ -1,7 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Type } from 'class-transformer';
-import { IsString, ValidateNested } from 'class-validator';
-import { ChatContentDto } from './chat-content.dto';
+import { IsOptional, IsString } from 'class-validator';
 
 export class ChatMessagesDto {
   @ApiProperty({
@@ -13,9 +11,15 @@ export class ChatMessagesDto {
 
   @ApiProperty({
     description: 'Message contents',
-    type: [ChatContentDto],
+    example: 'Hello world',
   })
-  @Type(() => ChatContentDto)
-  @ValidateNested({ each: true })
-  content: ChatContentDto[];
+  content: string;
+
+  @ApiProperty({
+    description: 'Image url',
+    example: 'https://example.com/image.png',
+    required: false,
+  })
+  @IsOptional()
+  image: string;
 }

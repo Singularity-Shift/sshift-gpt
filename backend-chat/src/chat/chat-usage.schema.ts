@@ -3,7 +3,7 @@ import { HydratedDocument } from 'mongoose';
 
 export type ChatUsageDocument = HydratedDocument<ChatUsage>;
 
-@Schema()
+@Schema({ _id: false })
 export class ChatUsage {
   @Prop({ type: Number, required: true })
   prompt_tokens: number;

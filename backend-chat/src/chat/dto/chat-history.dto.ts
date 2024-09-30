@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, ValidateNested } from 'class-validator';
+import { IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ChatMessagesDto } from './chat-messages.dto';
 import { Type } from 'class-transformer';
 import { ChatUsageDto } from './chat-usage.dto';
@@ -11,6 +11,14 @@ export class ChatHistoryDto {
   })
   @IsString()
   id: string;
+
+  @ApiProperty({
+    description: 'Chat title',
+    example: 'My first chat',
+  })
+  @IsOptional()
+  @IsString()
+  title: string;
 
   @ApiProperty({
     description: 'AI model used in this chat',
