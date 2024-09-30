@@ -8,6 +8,9 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
+// Variable to track if the stream should be stopped
+let shouldStopStream = false;
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -38,27 +41,33 @@ export default async function handler(req, res) {
             res.setHeader('Content-Type', 'text/event-stream');
             res.setHeader('Cache-Control', 'no-cache');
             res.setHeader('Connection', 'keep-alive');
-            
-            // Add CORS headers if needed
             res.setHeader('Access-Control-Allow-Origin', '*');
             res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
             res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
 
             for await (const chunk of stream) {
+                if (shouldStopStream) {
+                    res.write('data: {"stopped":true}\n\n');
+                    res.end();
+                    break;
+                }
                 const payload = JSON.stringify(chunk.choices[0]?.delta || {});
                 res.write(`data: ${payload}\n\n`);
-                // Flush the response to ensure immediate sending
                 res.flush();
             }
 
-            res.write('data: [DONE]\n\n');
+            res.write('data: {"done":true}\n\n');
             res.end();
         } catch (error) {
             console.error('OpenAI API Error:', error.response ? error.response.data : error.message);
             res.status(500).json({ error: 'Internal Server Error', details: error.message });
         }
+    } else if (req.method === 'DELETE') {
+        // Handle stop request
+        shouldStopStream = true; // Set the flag to stop the stream
+        res.status(200).json({ message: 'Stream stopping initiated' });
     } else {
-        res.setHeader('Allow', ['POST']);
+        res.setHeader('Allow', ['POST', 'DELETE']);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
 }

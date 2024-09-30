@@ -6,9 +6,11 @@ import { Message } from '../../../app/chat/page';
 interface ChatWindowProps {
   messages: Message[];
   onCopy: (text: string) => void;
+  onRegenerate: (message: Message) => void;
+  onEdit: (message: Message, newContent: string) => void; // Add this prop
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRegenerate, onEdit }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -23,12 +25,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy }) => {
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-hidden">
-      <ScrollArea className="h-full">
-        <div className="w-full px-4 py-8 space-y-4"> {/* Removed max-w-3xl */}
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto"> {/* Adjusted max width */}
+      <ScrollArea className="flex-1">
+        <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
             <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
-              <MessageBubble message={message} onCopy={onCopy} />
+              <MessageBubble 
+                message={message} 
+                onCopy={onCopy} 
+                onRegenerate={() => onRegenerate(message)}
+                onEdit={(editedMessage, newContent) => onEdit(editedMessage, newContent)}
+              />
             </div>
           ))}
         </div>
