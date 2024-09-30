@@ -127,7 +127,8 @@ export default function ChatPage() {
           },
           body: JSON.stringify({
             messages: [
-              ...(chats.find((chat) => chat.id === currentChatId)?.messages || []),
+              ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
+                []),
               formattedMessage,
             ],
             model: selectedModel,
@@ -351,26 +352,35 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    const savedChats = localStorage.getItem('chats');
-    if (savedChats) {
-      const parsedChats = JSON.parse(savedChats);
-      const updatedChats = parsedChats.map((chat: Chat) => ({
-        ...chat,
-        createdAt: chat.createdAt || Date.now(),
-        lastUpdated: chat.lastUpdated || Date.now(),
-      }));
-      setChats(updatedChats);
-      if (updatedChats.length > 0) {
-        setCurrentChatId(updatedChats[0].id);
+    (async () => {
+      const chatResponse = await backend.get('/history', {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+      });
+
+      const savedChats = chatResponse.data;
+      if (savedChats) {
+        const updatedChats = savedChats.chats.map((chat: Chat) => ({
+          ...chat,
+          createdAt: chat.createdAt || Date.now(),
+          lastUpdated: chat.lastUpdated || Date.now(),
+        }));
+        setChats(updatedChats);
+        if (updatedChats.length > 0) {
+          setCurrentChatId(updatedChats[0].id);
+        } else {
+          handleNewChat();
+        }
       } else {
         handleNewChat();
       }
-    } else {
-      handleNewChat();
-    }
+    })();
   }, []);
 
   useEffect(() => {
+    if (!chats?.length) return;
+
     void (async () => {
       await backend.put('/history', [...chats], {
         headers: {
@@ -383,13 +393,27 @@ export default function ChatPage() {
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
   const handleEdit = (editedMessage: Message, newContent: string) => {
-    const editedMessageIndex = currentChat?.messages.findIndex(msg => msg.id === editedMessage.id);
-    if (editedMessageIndex !== undefined && editedMessageIndex !== -1 && currentChat) {
-      const updatedMessages = currentChat.messages.slice(0, editedMessageIndex + 1);
-      updatedMessages[editedMessageIndex] = { ...editedMessage, content: newContent };
+    const editedMessageIndex = currentChat?.messages.findIndex(
+      (msg) => msg.id === editedMessage.id
+    );
+    if (
+      editedMessageIndex !== undefined &&
+      editedMessageIndex !== -1 &&
+      currentChat
+    ) {
+      const updatedMessages = currentChat.messages.slice(
+        0,
+        editedMessageIndex + 1
+      );
+      updatedMessages[editedMessageIndex] = {
+        ...editedMessage,
+        content: newContent,
+      };
       setChats((prevChats) =>
         prevChats.map((chat) =>
-          chat.id === currentChatId ? { ...chat, messages: updatedMessages } : chat
+          chat.id === currentChatId
+            ? { ...chat, messages: updatedMessages }
+            : chat
         )
       );
       // Regenerate the conversation from this point forward

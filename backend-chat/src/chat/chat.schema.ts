@@ -10,6 +10,9 @@ export class Chat {
   @Prop({ type: String, required: true })
   id: string;
 
+  @Prop({ type: String, required: false })
+  title: string;
+
   @Prop({ type: String, required: true })
   model: string;
 
