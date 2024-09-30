@@ -36,7 +36,6 @@ export class AuthController {
     description: 'Unauthorized access',
   })
   async signIn(@Body() payloadDto: PayloadDto) {
-    this.logger.debug(payloadDto);
     const isValid = this.authService.isValid(payloadDto);
 
     if (!isValid) {
