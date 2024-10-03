@@ -29,7 +29,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
       <ScrollArea className="flex-1">
         <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
-            <div key={message.id} ref={index === messages.length - 1 ? lastMessageRef : null}>
+            <div
+              key={`${message.id || 'message'}-${index}`}
+              ref={index === messages.length - 1 ? lastMessageRef : null}
+            >
               <MessageBubble 
                 message={message} 
                 onCopy={onCopy} 

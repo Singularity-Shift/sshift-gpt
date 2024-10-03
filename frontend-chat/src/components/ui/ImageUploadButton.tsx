@@ -1,35 +1,40 @@
 import { useState, useRef } from 'react';
 import { Button } from './button';
 import { Image } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
 
 interface ImageUploadButtonProps {
-  onImageSelect: (imageData: string) => void;
+  onImageSelect: (imageUrl: string) => void;
 }
 
 export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (file) {
+      if (file.size > 4 * 1024 * 1024) {
+        alert('File size exceeds 4MB.');
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append('file', file);
+
       try {
-        const options = {
-          maxSizeMB: 1,
-          maxWidthOrHeight: 1920,
-          useWebWorker: true,
-        };
-        const compressedFile = await imageCompression(file, options);
-        const reader = new FileReader();
-        reader.onloadend = () => {
-          const base64String = reader.result as string;
-          setSelectedImage(base64String);
-          onImageSelect(base64String);
-        };
-        reader.readAsDataURL(compressedFile);
+        const response = await fetch('/api/bucket', {
+          method: 'POST',
+          body: formData,
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to upload image');
+        }
+
+        const data = await response.json();
+        onImageSelect(data.url);
       } catch (error) {
-        console.error('Error compressing image:', error);
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image.');
       }
     }
   };
@@ -47,12 +52,7 @@ export function ImageUploadButton({ onImageSelect }: ImageUploadButtonProps) {
         style={{ display: 'none' }}
         ref={fileInputRef}
       />
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={handleButtonClick}
-        className={selectedImage ? 'text-primary' : ''}
-      >
+      <Button variant="ghost" size="icon" onClick={handleButtonClick}>
         <Image className="h-4 w-4" />
       </Button>
     </>
