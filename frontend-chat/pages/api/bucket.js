@@ -1,7 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import formidable from 'formidable';
 import fs from 'fs';
-import path from 'path';
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid package
 
 // Disable Next.js's default body parsing to handle file uploads
