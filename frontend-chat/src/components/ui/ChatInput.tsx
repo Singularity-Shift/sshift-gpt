@@ -2,12 +2,11 @@ import React, { useState, useRef } from 'react';
 import { Button } from './button';
 import { Textarea } from './textarea';
 import { Image, Send, Upload } from 'lucide-react';
-import imageCompression from 'browser-image-compression';
-import { StopButton } from './StopButton'; // Import the StopButton
-import { SendButton } from './SendButton'; // Import the SendButton
+import { StopButton } from './StopButton';
+import { SendButton } from './SendButton';
 
 interface ChatInputProps {
-  onSendMessage: (message: string, image: string | null) => void;
+  onSendMessage: (message: string, imageUrl: string | null) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
@@ -25,41 +24,39 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
 
   const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (!file) return;
-
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      alert('Unsupported file type. Please upload PNG, JPEG, WEBP, or GIF images.');
+    if (!file) {
+      console.error('No file selected');
       return;
     }
 
-    if (file.type === 'image/gif') {
-      const isAnimated = await checkIfGifIsAnimated(file);
-      if (isAnimated) {
-        alert('Animated GIFs are not supported.');
-        return;
-      }
+    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
+    if (!validTypes.includes(file.type)) {
+      alert('Please select a valid image file (PNG, JPEG, WebP, or GIF).');
+      return;
     }
+
+    const formData = new FormData();
+    formData.append('file', file);
 
     try {
       setUploading(true);
-      const options = {
-        maxSizeMB: 0.25,
-        maxWidthOrHeight: 1920,
-        useWebWorker: true,
-      };
-      const compressedFile = await imageCompression(file, options);
-      const base64 = await convertToBase64(compressedFile);
-      setSelectedImage(base64);
-      setUploadedFile(base64);
+      const response = await fetch('/api/bucket', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to upload image');
+      }
+
+      const data = await response.json();
+      setUploadedFile(data.url);
+      setSelectedImage(data.url);
     } catch (error) {
-      console.error('Error compressing image:', error);
+      console.error('Error uploading image:', error);
       alert('Failed to upload image.');
     } finally {
       setUploading(false);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -85,42 +82,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
     setSelectedImage(null);
   };
 
-  const checkIfGifIsAnimated = (file: File): Promise<boolean> => {
-    return new Promise((resolve) => {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const arr = new Uint8Array(e.target?.result as ArrayBuffer).subarray(0, 3);
-        const header = arr.every((c, i) => c === [0x47, 0x49, 0x46][i]);
-        if (!header) {
-          resolve(false);
-          return;
-        }
-        const view = new Uint8Array(e.target?.result as ArrayBuffer);
-        for (let i = 0; i < view.length - 3; i++) {
-          if (view[i] === 0x21 && view[i + 1] === 0xF9 && view[i + 2] === 0x04) {
-            resolve(true);
-            return;
-          }
-        }
-        resolve(false);
-      };
-      reader.readAsArrayBuffer(file);
-    });
-  };
-
-  const convertToBase64 = (file: File): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result as string);
-      reader.onerror = (error) => reject(error);
-      reader.readAsDataURL(file);
-    });
-  };
-
-  const handleStop = async () => {
-    await fetch('/api/chat', {
-      method: 'DELETE',
-    });
+  const handleStop = () => {
+    console.log('Stop button clicked');
+    // Implement stop functionality here
   };
 
   return (
@@ -137,13 +101,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
         </div>
         <input
           type="file"
-          accept=".png, .jpeg, .jpg, .webp, .gif"
+          accept="image/*"
           ref={fileInputRef}
           className="hidden"
           onChange={handleImageChange}
         />
         <Button
-          variant="outline" // Use outline variant for the image upload button
+          variant="outline"
           size="icon"
           className="shrink-0 hover:bg-gray-200 relative"
           onClick={handleImageButtonClick}
@@ -170,8 +134,8 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
             </div>
           )}
         </Button>
-        <StopButton onStop={handleStop} /> {/* Add StopButton here */}
-        <SendButton onClick={handleSendMessage} /> {/* Use SendButton component */}
+        <StopButton onStop={handleStop} />
+        <SendButton onClick={handleSendMessage} />
       </div>
     </div>
   );

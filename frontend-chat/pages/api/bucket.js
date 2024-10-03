@@ -78,12 +78,13 @@ export default async function handler(req, res) {
         })
         .on('finish', () => {
           const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
+          console.log('Upload successful:', publicUrl);
           res.status(200).json({ url: publicUrl });
         });
 
     } catch (error) {
       console.error('Error:', error);
-      res.status(500).json({ error: 'Server error', details: error.message, stack: error.stack });
+      res.status(500).json({ error: 'Server error', details: error.message });
     }
   } else {
     res.status(405).json({ error: 'Method not allowed' });
