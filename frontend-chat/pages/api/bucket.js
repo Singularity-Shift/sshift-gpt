@@ -13,37 +13,54 @@ export const config = {
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    // Initialize formidable to parse the incoming form data
-    const form = new formidable.IncomingForm();
-
-    form.parse(req, async (err, fields, files) => {
-      if (err) {
-        console.error('Error parsing the files');
-        return res.status(500).json({ error: 'Error parsing the files' });
-      }
-
-      // Access the uploaded file
-      const file = files.file;
-
-      // Read the credentials JSON file to get the project ID
-      const credentialsPath = path.join(process.cwd(), 'credentials/sshiftdao-ai-38be1dbd83df.json');
-      const credentials = JSON.parse(fs.readFileSync(credentialsPath, 'utf8'));
-      const projectId = credentials.project_id;
-
-      // Set up Google Cloud Storage
-      const storage = new Storage({
-        projectId: projectId,
-        keyFilename: credentialsPath,
+    try {
+      const form = formidable({
+        multiples: true,
+        maxFileSize: 50 * 1024 * 1024,
+        uploadDir: '/tmp',
+        keepExtensions: true,
       });
 
+      const [fields, files] = await new Promise((resolve, reject) => {
+        form.parse(req, (err, fields, files) => {
+          if (err) reject(err);
+          resolve([fields, files]);
+        });
+      });
+
+      console.log('Fields:', fields);
+      console.log('Files:', files);
+
+      if (!files.file) {
+        console.error('No file uploaded');
+        return res.status(400).json({ error: 'No file uploaded' });
+      }
+
+      const file = Array.isArray(files.file) ? files.file[0] : files.file;
+      console.log('File:', file);
+
+      const filepath = file.filepath;
+      console.log('File path:', filepath);
+
+      if (!filepath) {
+        console.error('File path is undefined');
+        return res.status(500).json({ error: 'File path is undefined' });
+      }
+
+      // ... rest of your code for uploading to Google Cloud Storage ...
+
+      // For example:
+      const filename = `${uuidv4()}-${file.originalFilename}`;
       const bucketName = 'sshift-gpt-bucket'; // Replace with your bucket name
+
+      // Set up Google Cloud Storage
+      console.log('Setting up Google Cloud Storage...');
+      const storage = new Storage({
+        projectId: 'sshiftdao-ai', // This should be your project ID
+        keyFilename: '/home/sshiftdao/sshift-gpt-app/credentials/sshiftdao-ai-38be1dbd83df.json'
+      });
+
       const bucket = storage.bucket(bucketName);
-
-      // Generate a unique filename using UUID
-      const extension = path.extname(file.originalFilename);
-      const filename = `${uuidv4()}${extension}`;
-
-      // Create a write stream to upload the file
       const blob = bucket.file(filename);
       const blobStream = blob.createWriteStream({
         resumable: false,
@@ -53,21 +70,22 @@ export default async function handler(req, res) {
         },
       });
 
-      // Read the file and pipe it to Google Cloud Storage
-      fs.createReadStream(file.filepath)
+      fs.createReadStream(filepath)
         .pipe(blobStream)
         .on('error', (err) => {
           console.error('Upload error:', err);
-          res.status(500).json({ error: 'Upload error' });
+          res.status(500).json({ error: 'Upload error', details: err.message });
         })
         .on('finish', () => {
-          // The public URL can be used to access the file via HTTP.
           const publicUrl = `https://storage.googleapis.com/${bucket.name}/${blob.name}`;
           res.status(200).json({ url: publicUrl });
         });
-    });
+
+    } catch (error) {
+      console.error('Error:', error);
+      res.status(500).json({ error: 'Server error', details: error.message, stack: error.stack });
+    }
   } else {
-    // Handle any other HTTP method
     res.status(405).json({ error: 'Method not allowed' });
   }
 }
