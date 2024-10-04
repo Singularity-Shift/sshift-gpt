@@ -1,6 +1,7 @@
 import React, { useRef, useEffect } from 'react';
 import { ScrollArea } from './scrollarea';
 import { MessageBubble } from './MessageBubble';
+import { StatusIndicator } from './statusIndicator';
 import { Message } from '../../../app/chat/page';
 
 interface ChatWindowProps {
@@ -8,9 +9,18 @@ interface ChatWindowProps {
   onCopy: (text: string) => void;
   onRegenerate: (message: Message) => void;
   onEdit: (message: Message, newContent: string) => void;
+  isWaiting: boolean;
+  isTyping: boolean;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRegenerate, onEdit }) => {
+export const ChatWindow: React.FC<ChatWindowProps> = ({ 
+  messages, 
+  onCopy, 
+  onRegenerate, 
+  onEdit,
+  isWaiting,
+  isTyping
+}) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -22,7 +32,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, isWaiting, isTyping]);
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto">
@@ -31,7 +41,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
           {messages.map((message, index) => (
             <div
               key={`${message.id || 'message'}-${index}`}
-              ref={index === messages.length - 1 ? lastMessageRef : null}
+              ref={index === messages.length - 1 && !isWaiting && !isTyping ? lastMessageRef : null}
             >
               <MessageBubble 
                 message={message} 
@@ -41,6 +51,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
               />
             </div>
           ))}
+          {(isWaiting || isTyping) && (
+            <div ref={lastMessageRef}>
+              <StatusIndicator status={isTyping ? "typing" : "thinking"} className="ml-2" />
+            </div>
+          )}
         </div>
       </ScrollArea>
     </div>

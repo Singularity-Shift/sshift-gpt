@@ -61,3 +61,27 @@
     --ring: 212.7 26.8% 83.9%;
   }
 }
+
+@keyframes ellipsis {
+  0% {
+    opacity: 0;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-ellipsis {
+  animation: ellipsis 1.5s infinite;
+}
+
+.animation-delay-200 {
+  animation-delay: 200ms;
+}
+
+.animation-delay-400 {
+  animation-delay: 400ms;
+}

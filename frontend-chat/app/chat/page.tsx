@@ -38,6 +38,8 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [isWaiting, setIsWaiting] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +75,7 @@ export default function ChatPage() {
     inputMessage: string,
     selectedImage: string | null
   ) => {
+    setIsWaiting(true);
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -159,6 +162,13 @@ export default function ChatPage() {
 
           const chunk = decoder.decode(value, { stream: true });
           console.log('Received chunk:', chunk);
+
+          // Set isTyping to true when we start receiving the response
+          if (!isTyping) {
+            setIsTyping(true);
+            setIsWaiting(false);
+          }
+
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
           for (const line of lines) {
@@ -216,8 +226,12 @@ export default function ChatPage() {
         }
 
         console.log('Final assistant message:', assistantMessage);
+        setIsWaiting(false);
+        setIsTyping(false);
       } catch (error) {
         console.error('Error in handleSendMessage:', error);
+        setIsWaiting(false);
+        setIsTyping(false);
       }
     }
   };
@@ -240,6 +254,8 @@ export default function ChatPage() {
 
     try {
       console.log('Regenerating message...');
+      setIsWaiting(true);
+      setIsTyping(false);
       const currentChat = chats.find(chat => chat.id === currentChatId);
       if (!currentChat) return;
 
@@ -254,6 +270,9 @@ export default function ChatPage() {
       await regenerateConversation(messagesUpToLastUser);
     } catch (error) {
       console.error('Error in handleRegenerateMessage:', error);
+    } finally {
+      setIsWaiting(false);
+      setIsTyping(false);
     }
   };
 
@@ -323,7 +342,13 @@ export default function ChatPage() {
         )
       );
       // Regenerate the conversation from this point forward
-      regenerateConversation(updatedMessages);
+      setIsWaiting(true);
+      setIsTyping(false);
+      regenerateConversation(updatedMessages)
+        .finally(() => {
+          setIsWaiting(false);
+          setIsTyping(false);
+        });
     }
   };
 
@@ -332,6 +357,9 @@ export default function ChatPage() {
 
     try {
       console.log('Regenerating conversation...');
+      setIsWaiting(true);
+      setIsTyping(false);
+
       const response = await fetch('/api/chat', {
         method: 'POST',
         headers: {
@@ -380,6 +408,13 @@ export default function ChatPage() {
         const { value, done: doneReading } = await reader?.read()!;
         done = doneReading;
         const chunk = decoder.decode(value, { stream: true });
+
+        // Set isTyping to true when we start receiving the response
+        if (!isTyping) {
+          setIsTyping(true);
+          setIsWaiting(false);
+        }
+
         const lines = chunk.split('\n');
 
         for (const line of lines) {
@@ -408,6 +443,9 @@ export default function ChatPage() {
       console.log('Final regenerated assistant message:', newAssistantMessage);
     } catch (error) {
       console.error('Error in regenerateConversation:', error);
+    } finally {
+      setIsWaiting(false);
+      setIsTyping(false);
     }
   };
 
@@ -441,6 +479,8 @@ export default function ChatPage() {
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
             onRegenerate={handleRegenerateMessage}
             onEdit={handleEdit}
+            isWaiting={isWaiting}
+            isTyping={isTyping}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
