@@ -284,8 +284,17 @@ export default function ChatPage() {
             ...chat.messages.slice(0, messageIndex), // Messages up to the user message
             {
               role: 'user',
-              content: userMessage.content,
-              image: userMessage.image || null,
+              content: [
+                ...(userMessage.image
+                  ? [
+                      {
+                        type: 'image_url',
+                        image_url: { url: userMessage.image, detail: 'high' },
+                      },
+                    ]
+                  : []),
+                { type: 'text', text: userMessage.content },
+              ],
             },
           ],
           model: selectedModel,
@@ -432,14 +441,32 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messagesUpToEdit,
+          messages: messagesUpToEdit.map(msg => {
+            if (msg.role === 'user' && msg.image) {
+              return {
+                role: msg.role,
+                content: [
+                  {
+                    type: 'image_url',
+                    image_url: { url: msg.image, detail: 'high' },
+                  },
+                  { type: 'text', text: msg.content },
+                ],
+              };
+            } else {
+              return {
+                role: msg.role,
+                content: msg.content,
+              };
+            }
+          }),
           model: selectedModel,
         }),
       });
       console.log('API response received for regeneration:', response);
 
       if (!response.ok) {
-        throw new Error('Failed to regenerate conversation');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const reader = response.body?.getReader();
