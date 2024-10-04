@@ -235,126 +235,23 @@ export default function ChatPage() {
     }
   };
 
-  // 1. Add the handleRegenerateMessage function
   const handleRegenerateMessage = async (assistantMessage: Message) => {
     if (!currentChatId) return;
 
-    const chat = chats.find((c) => c.id === currentChatId);
-    if (!chat) return;
-
-    const messageIndex = chat.messages.findIndex(
-      (msg) => msg.id === assistantMessage.id
-    );
-
-    if (messageIndex === -1) return;
-
-    // Find the corresponding user message before this assistant message
-    const userMessage = chat.messages
-      .slice(0, messageIndex)
-      .reverse()
-      .find((msg) => msg.role === 'user');
-
-    if (!userMessage) {
-      console.error('No corresponding user message found.');
-      return;
-    }
-
-    // Remove the old assistant message and all messages after it
-    const updatedChat = {
-      ...chat,
-      messages: chat.messages.slice(0, messageIndex),
-      lastUpdated: Date.now(),
-    };
-
-    setChats((prevChats) =>
-      prevChats.map((c) => (c.id === currentChatId ? updatedChat : c))
-    );
-
-    scrollToBottom();
-
     try {
       console.log('Regenerating message...');
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            ...chat.messages.slice(0, messageIndex), // Messages up to the user message
-            {
-              role: 'user',
-              content: [
-                ...(userMessage.image
-                  ? [
-                      {
-                        type: 'image_url',
-                        image_url: { url: userMessage.image, detail: 'high' },
-                      },
-                    ]
-                  : []),
-                { type: 'text', text: userMessage.content },
-              ],
-            },
-          ],
-          model: selectedModel,
-        }),
-      });
-      console.log('API response received for regeneration:', response);
+      const currentChat = chats.find(chat => chat.id === currentChatId);
+      if (!currentChat) return;
 
-      if (!response.ok) {
-        throw new Error('Failed to regenerate message');
-      }
+      // Find the index of the assistant message to regenerate
+      const messageIndex = currentChat.messages.findIndex(msg => msg.id === assistantMessage.id);
+      if (messageIndex === -1) return;
 
-      const reader = response.body?.getReader();
-      const decoder = new TextDecoder();
-      let done = false;
+      // Get all messages up to and including the previous user message
+      const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
 
-      const newAssistantMessage: Message = {
-        id: Date.now().toString(),
-        role: 'assistant',
-        content: '',
-      };
-
-      while (!done) {
-        const { value, done: doneReading } = await reader?.read()!;
-        done = doneReading;
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n');
-
-        for (const line of lines) {
-          if (line.trim() === '') {
-            continue;
-          }
-          if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.substring(6));
-            console.log('Parsed data for regeneration:', data);
-            if (data.content) {
-              newAssistantMessage.content += data.content;
-              // Update the chat with the current state of the assistant message
-              setChats((prevChats) =>
-                prevChats.map((c) =>
-                  c.id === currentChatId
-                    ? {
-                        ...c,
-                        messages: c.messages.includes(newAssistantMessage)
-                          ? c.messages.map((m) =>
-                              m.id === newAssistantMessage.id
-                                ? newAssistantMessage
-                                : m
-                            )
-                          : [...c.messages, newAssistantMessage],
-                      }
-                    : c
-                )
-              );
-              scrollToBottom();
-            }
-          }
-        }
-      }
-
-      console.log('Final regenerated assistant message:', newAssistantMessage);
+      // Call regenerateConversation with these messages
+      await regenerateConversation(messagesUpToLastUser);
     } catch (error) {
       console.error('Error in handleRegenerateMessage:', error);
     }
@@ -542,7 +439,7 @@ export default function ChatPage() {
           <ChatWindow
             messages={currentChat?.messages || []}
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
-            onRegenerate={handleRegenerateMessage} // 2. Pass the regenerate handler
+            onRegenerate={handleRegenerateMessage}
             onEdit={handleEdit}
           />
           <ChatInput onSendMessage={handleSendMessage} />

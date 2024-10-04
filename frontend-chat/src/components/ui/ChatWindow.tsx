@@ -7,7 +7,7 @@ interface ChatWindowProps {
   messages: Message[];
   onCopy: (text: string) => void;
   onRegenerate: (message: Message) => void;
-  onEdit: (message: Message, newContent: string) => void; // Add this prop
+  onEdit: (message: Message, newContent: string) => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRegenerate, onEdit }) => {
@@ -25,7 +25,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({ messages, onCopy, onRege
   }, [messages]);
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto"> {/* Adjusted max width */}
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto">
       <ScrollArea className="flex-1">
         <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
