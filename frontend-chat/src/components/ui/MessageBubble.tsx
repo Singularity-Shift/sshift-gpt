@@ -5,6 +5,8 @@ import { Copy, Volume2, RefreshCw, Edit2, Check } from 'lucide-react'; // Add Ed
 import ReactMarkdown from 'react-markdown';
 import { Prism as SyntaxHighlighter } from 'react-syntax-highlighter';
 import { materialDark } from 'react-syntax-highlighter/dist/esm/styles/prism';
+import { AssistantButtonArray } from './assistantButtonArray';
+import { UserButtonArray } from './userButtonArray';
 
 interface Message {
   id: string;
@@ -169,60 +171,17 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
           />
         )}
         {!isUser && (
-          <div className="relative flex space-x-2 mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="active:bg-gray-300"
-              onClick={() => handleCopy(message.content)}
-            >
-              <Copy className="h-4 w-4" />
-            </Button>
-            {copied && (
-              <span className="absolute top-8 left-0 text-xs text-gray-500 bg-white p-1 rounded">
-                Copied
-              </span>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="active:bg-gray-300"
-              onClick={handleRegenerate} // 4. Add onClick handler for regenerate
-            >
-              <RefreshCw className="h-4 w-4" /> {/* Regenerate (Refresh) Icon */}
-            </Button>
-            <div className="relative">
-              <Button 
-                variant="ghost" 
-                size="icon" 
-                className="active:bg-gray-300"
-                onClick={handleAudioClick}
-              >
-                <Volume2 className="h-4 w-4" />
-              </Button>
-              {audioClicked && (
-                <span className="absolute top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 bg-white p-1 rounded whitespace-nowrap">
-                  Coming soon
-                </span>
-              )}
-            </div>
-          </div>
+          <AssistantButtonArray
+            onCopy={onCopy}
+            onRegenerate={() => onRegenerate(message)}
+            content={message.content}
+          />
         )}
-        {isUser ? (
-          <div className="flex justify-start mt-2">
-            <Button
-              variant="ghost"
-              size="icon"
-              className="active:bg-blue-200"
-              onClick={handleEditClick}
-            >
-              {isEditing ? <Check className="h-4 w-4" /> : <Edit2 className="h-4 w-4" />}
-            </Button>
-          </div>
-        ) : (
-          <div className="relative flex space-x-2 mt-2">
-            {/* ... existing buttons for assistant messages */}
-          </div>
+        {isUser && (
+          <UserButtonArray
+            onEdit={(newContent) => onEdit(message, newContent)}
+            content={message.content}
+          />
         )}
       </div>
       {isUser && (
