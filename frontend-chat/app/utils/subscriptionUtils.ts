@@ -37,5 +37,5 @@ export function calculateDates(days: number): {
 }
 
 export function calculateDiscount(owned: number, supply: number): number {
-    return Math.min((owned / supply) * 100 * 100, 30);
+    return Math.min((owned / supply) * 100 * 100, config.MAX_DISCOUNT);
 }
