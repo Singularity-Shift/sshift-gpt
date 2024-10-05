@@ -122,7 +122,6 @@ export default function ChatPage() {
       scrollToBottom();
 
       try {
-        console.log('Sending message to API...');
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
@@ -137,7 +136,6 @@ export default function ChatPage() {
             model: selectedModel,
           }),
         });
-        console.log('API response received:', response);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,71 +153,31 @@ export default function ChatPage() {
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) {
-            console.log('Stream complete');
-            break;
-          }
+          if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          console.log('Received chunk:', chunk);
-
-          // Set isTyping to true when we start receiving the response
-          if (!isTyping) {
-            setIsTyping(true);
-            setIsWaiting(false);
-          }
-
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
           for (const line of lines) {
-            if (line === 'data: [DONE]') {
-              console.log('Received DONE signal');
-              // Add the final assistant message to the chat
-              setChats((prevChats) =>
-                prevChats.map((chat) =>
-                  chat.id === currentChatId
-                    ? {
-                        ...chat,
-                        messages: chat.messages.some(
-                          (m) => m.id === assistantMessage.id
-                        )
-                          ? chat.messages.map((m) =>
-                              m.id === assistantMessage.id
-                                ? assistantMessage
-                                : m
-                            )
-                          : [...chat.messages, assistantMessage],
-                      }
-                    : chat
-                )
-              );
-              return;
-            }
             if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.substring(6));
-              console.log('Parsed data:', data);
-              if (data.content) {
-                assistantMessage.content += data.content;
-                // Update the chat with the current state of the assistant message
-                setChats((prevChats) =>
-                  prevChats.map((chat) =>
-                    chat.id === currentChatId
-                      ? {
-                          ...chat,
-                          messages: chat.messages.some(
-                            (m) => m.id === assistantMessage.id
-                          )
-                            ? chat.messages.map((m) =>
-                                m.id === assistantMessage.id
-                                  ? assistantMessage
-                                  : m
-                              )
-                            : [...chat.messages, assistantMessage],
-                        }
-                      : chat
-                  )
-                );
-                scrollToBottom();
+              const data = line.substring(6);
+              if (data === '[DONE]') {
+                setIsTyping(false);
+                break;
+              }
+              try {
+                const parsedData = JSON.parse(data);
+                if (parsedData.content) {
+                  assistantMessage.content += parsedData.content;
+                  updateChat(assistantMessage);
+                } else if (parsedData.tool_response) {
+                  if (parsedData.tool_response.name === 'generateImage') {
+                    assistantMessage.image = parsedData.tool_response.result.image_url;
+                    updateChat(assistantMessage);
+                  }
+                }
+              } catch (error) {
+                console.error('Error parsing JSON:', error);
               }
             }
           }
@@ -234,6 +192,24 @@ export default function ChatPage() {
         setIsTyping(false);
       }
     }
+  };
+
+  const updateChat = (message: Message) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === currentChatId
+          ? {
+              ...chat,
+              messages: chat.messages.some((m) => m.id === message.id)
+                ? chat.messages.map((m) =>
+                    m.id === message.id ? message : m
+                  )
+                : [...chat.messages, message],
+            }
+          : chat
+      )
+    );
+    scrollToBottom();
   };
 
   const handleDeleteChat = (chatId: number) => {

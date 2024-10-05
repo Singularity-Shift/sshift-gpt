@@ -40,7 +40,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
             <div
-              key={`${message.id || 'message'}-${index}`}
+              key={`${message.id}-${index}`}
               ref={index === messages.length - 1 && !isWaiting && !isTyping ? lastMessageRef : null}
             >
               <MessageBubble 

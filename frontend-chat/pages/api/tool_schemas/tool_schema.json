@@ -1,0 +1,27 @@
+{
+  "type": "function",
+  "function": {
+    "name": "generateImage",
+    "description": "Generates an image using DALL-E 3 based on a text prompt, if the user hasn't provided a size or style, use your best judgement to choose appropriate values based on the prompt",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "prompt": {
+          "type": "string",
+          "description": "A detailed text description of the desired image"
+        },
+        "size": {
+          "type": "string",
+          "enum": ["1024x1024", "1792x1024", "1024x1792"],
+          "description": "The size of the generated image"
+        },
+        "style": {
+          "type": "string",
+          "enum": ["vivid", "natural"],
+          "description": "The style of the generated image. 'vivid' for hyper-real and dramatic, 'natural' for less hyper-real"
+        }
+      },
+      "required": ["prompt", "size", "style"]
+    }
+  }
+}
