@@ -11,6 +11,7 @@ interface ChatWindowProps {
   onEdit: (message: Message, newContent: string) => void;
   isWaiting: boolean;
   isTyping: boolean;
+  showNoChatsMessage: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ 
@@ -19,7 +20,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onRegenerate, 
   onEdit,
   isWaiting,
-  isTyping
+  isTyping,
+  showNoChatsMessage
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -35,7 +37,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   }, [messages, isWaiting, isTyping]);
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto">
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative">
       <ScrollArea className="flex-1">
         <div className="w-full px-4 py-8 space-y-4">
           {messages.map((message, index) => (
@@ -58,6 +60,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           )}
         </div>
       </ScrollArea>
+      {showNoChatsMessage && (
+        <div className="absolute inset-0 flex items-center justify-center bg-background bg-opacity-50">
+          <div className="bg-background border border-border rounded-md p-4 shadow-lg">
+            <h3 className="font-semibold mb-2">No active chat</h3>
+            <p>Please start a NEW CHAT to send a message</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

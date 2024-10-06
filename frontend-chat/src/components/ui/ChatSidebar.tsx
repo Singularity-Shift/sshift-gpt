@@ -3,6 +3,7 @@ import { Button } from './button';
 import { ScrollArea } from './scrollarea';
 import { Input } from './input';
 import { Pencil, Trash2, Trash } from 'lucide-react';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface Chat {
   id: string; // Change this to string
@@ -30,6 +31,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 }) => {
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null); // Change this to string | null
   const [newChatTitle, setNewChatTitle] = useState('');
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
   const handleRenameClick = (chatId: string) => {
     setRenamingChatId(chatId);
@@ -43,9 +45,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   const handleClearAllChats = () => {
-    if (window.confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
-      onClearAllChats();
-    }
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmClearAllChats = () => {
+    onClearAllChats();
+    setIsConfirmModalOpen(false);
   };
 
   const groupChats = () => {
@@ -185,6 +190,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           )}
         </div>
       </ScrollArea>
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={confirmClearAllChats}
+        title="Clear All Chats"
+        message="Are you sure you want to clear all chat history? This action cannot be undone."
+      />
     </div>
   );
 };

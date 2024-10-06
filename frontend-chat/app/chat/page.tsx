@@ -41,6 +41,7 @@ export default function ChatPage() {
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -76,6 +77,12 @@ export default function ChatPage() {
     inputMessage: string,
     selectedImage: string | null
   ) => {
+    if (chats.length === 0) {
+      setShowNoChatsMessage(true);
+      setTimeout(() => setShowNoChatsMessage(false), 3000);
+      return;
+    }
+
     setIsWaiting(true);
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
@@ -436,22 +443,20 @@ export default function ChatPage() {
   };
 
   const handleClearAllChats = async () => {
-    if (window.confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
-      setChats([]); // Clear all chats from state
-      setCurrentChatId(null); // Reset current chat ID
+    setChats([]); // Clear all chats from state
+    setCurrentChatId(null); // Reset current chat ID
 
-      try {
-        // Clear chats from the database
-        await backend.put('/history', [], {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-          },
-        });
-        console.log('All chats cleared from database');
-      } catch (error) {
-        console.error('Error clearing chats from database:', error);
-        // Optionally, you could show an error message to the user here
-      }
+    try {
+      // Clear chats from the database
+      await backend.put('/history', [], {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+      });
+      console.log('All chats cleared from database');
+    } catch (error) {
+      console.error('Error clearing chats from database:', error);
+      // Optionally, you could show an error message to the user here
     }
   };
 
@@ -488,6 +493,7 @@ export default function ChatPage() {
             onEdit={handleEdit}
             isWaiting={isWaiting}
             isTyping={isTyping}
+            showNoChatsMessage={showNoChatsMessage}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
