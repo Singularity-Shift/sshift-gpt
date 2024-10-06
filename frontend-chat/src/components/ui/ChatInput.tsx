@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from './button';
 import { Textarea } from './textarea';
-import { Image, Send, Upload } from 'lucide-react';
+import { Image, Send, Upload, X } from 'lucide-react';
 import { StopButton } from './StopButton';
 import { SendButton } from './SendButton';
 
@@ -106,34 +106,36 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
           className="hidden"
           onChange={handleImageChange}
         />
-        <Button
-          variant="outline"
-          size="icon"
-          className="shrink-0 hover:bg-gray-200 relative"
-          onClick={handleImageButtonClick}
-          disabled={uploading}
-        >
-          {uploading ? (
-            <Upload className="animate-spin h-4 w-4" />
-          ) : (
-            <Image className="h-4 w-4" />
-          )}
+        <div className="flex flex-col items-center">
           {uploadedFile && (
-            <div className="absolute top-[-40px] right-0 flex items-center">
+            <div className="mb-2 relative">
               <img
                 src={uploadedFile}
                 alt="Uploaded Preview"
-                className="h-8 w-8 rounded border border-gray-300"
+                className="h-12 w-12 rounded border border-gray-300"
               />
               <button
-                className="ml-2 text-red-500"
+                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
                 onClick={handleRemoveUploadedFile}
               >
-                &times;
+                <X className="h-3 w-3" />
               </button>
             </div>
           )}
-        </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            className="shrink-0 hover:bg-gray-200"
+            onClick={handleImageButtonClick}
+            disabled={uploading}
+          >
+            {uploading ? (
+              <Upload className="animate-spin h-4 w-4" />
+            ) : (
+              <Image className="h-4 w-4" />
+            )}
+          </Button>
+        </div>
         <StopButton onStop={handleStop} />
         <SendButton onClick={handleSendMessage} />
       </div>

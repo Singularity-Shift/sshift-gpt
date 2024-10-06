@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid'; // Add this import
 import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
 import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
@@ -20,7 +21,7 @@ export interface Message {
 }
 
 interface Chat {
-  id: number;
+  id: string; // Change this to string
   title: string;
   messages: Message[];
   isRenaming?: boolean;
@@ -37,7 +38,7 @@ export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
 
@@ -52,7 +53,7 @@ export default function ChatPage() {
   const handleNewChat = () => {
     const currentTime = Date.now();
     const newChat: Chat = {
-      id: chats.length + 1,
+      id: uuidv4(), // Use UUID for the id
       title: `New Chat ${chats.length + 1}`,
       messages: [],
       createdAt: currentTime,
@@ -62,7 +63,7 @@ export default function ChatPage() {
     setCurrentChatId(newChat.id);
   };
 
-  const handleChatSelect = (chatId: number) => {
+  const handleChatSelect = (chatId: string) => {
     setCurrentChatId(chatId);
     setChats((prevChats) =>
       prevChats.map((chat) =>
@@ -212,7 +213,7 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleDeleteChat = (chatId: number) => {
+  const handleDeleteChat = (chatId: string) => {
     setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
     if (currentChatId === chatId) {
       const remainingChats = chats.filter((chat) => chat.id !== chatId);
@@ -282,13 +283,22 @@ export default function ChatPage() {
   useEffect(() => {
     if (!chats?.length) return;
 
-    void (async () => {
-      await backend.put('/history', [...chats], {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-        },
-      });
-    })();
+    const syncChats = async () => {
+      try {
+        await backend.put('/history', [...chats], {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          },
+        });
+      } catch (error) {
+        console.error('Error syncing chats with database:', error);
+      }
+    };
+
+    // Debounce the sync operation
+    const timeoutId = setTimeout(syncChats, 1000);
+
+    return () => clearTimeout(timeoutId);
   }, [chats]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
@@ -425,6 +435,26 @@ export default function ChatPage() {
     }
   };
 
+  const handleClearAllChats = async () => {
+    if (window.confirm('Are you sure you want to clear all chat history? This action cannot be undone.')) {
+      setChats([]); // Clear all chats from state
+      setCurrentChatId(null); // Reset current chat ID
+
+      try {
+        // Clear chats from the database
+        await backend.put('/history', [], {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          },
+        });
+        console.log('All chats cleared from database');
+      } catch (error) {
+        console.error('Error clearing chats from database:', error);
+        // Optionally, you could show an error message to the user here
+      }
+    }
+  };
+
   return (
     <div className="flex h-screen bg-background">
       <ChatSidebar
@@ -439,6 +469,7 @@ export default function ChatPage() {
             )
           );
         }}
+        onClearAllChats={handleClearAllChats}
       />
 
       <div className="flex flex-col flex-1">
