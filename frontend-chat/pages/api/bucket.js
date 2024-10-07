@@ -2,6 +2,7 @@ import { Storage } from '@google-cloud/storage';
 import formidable from 'formidable';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid package
+import path from 'path';
 
 // Disable Next.js's default body parsing to handle file uploads
 export const config = {
@@ -56,7 +57,7 @@ export default async function handler(req, res) {
       console.log('Setting up Google Cloud Storage...');
       const storage = new Storage({
         projectId: 'sshiftdao-ai', // This should be your project ID
-        keyFilename: '/home/sshiftdao/sshift-gpt-app/credentials/sshiftdao-ai-38be1dbd83df.json'
+        keyFilename: process.env.KEY_FILE_PATH,
       });
 
       const bucket = storage.bucket(bucketName);

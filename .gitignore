@@ -50,3 +50,6 @@ out
 # credentials
 /credentials/*
 !/credentials/.gitkeep
+
+.aptos
+contracts/**/build
