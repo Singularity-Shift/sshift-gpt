@@ -117,20 +117,12 @@ async function generateImage(prompt, size, style) {
 
         console.log('Image generation response status:', response.status);
         
-        const responseText = await response.text();
-        console.log('Image generation response text:', responseText);
-
         if (!response.ok) {
+            const responseText = await response.text();
             throw new Error(`Failed to generate image: ${response.status} ${response.statusText}\nResponse: ${responseText}`);
         }
 
-        let data;
-        try {
-            data = JSON.parse(responseText);
-        } catch (parseError) {
-            console.error('Error parsing JSON:', parseError);
-            throw new Error(`Invalid JSON response: ${responseText}`);
-        }
+        const data = await response.json();
 
         if (!data.url) {
             throw new Error(`No image URL returned from the API. Response: ${JSON.stringify(data)}`);
