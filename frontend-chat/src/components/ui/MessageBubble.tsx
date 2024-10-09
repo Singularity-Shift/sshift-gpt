@@ -75,6 +75,7 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
   const [audioClicked, setAudioClicked] = useState(false); // New state for audio button
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
+  const [isImageExpanded, setIsImageExpanded] = useState(false);
 
   const handleCopy = (text: string) => {
     onCopy(text);
@@ -164,11 +165,18 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
           </ReactMarkdown>
         )}
         {message.image && (
-          <img
-            src={message.image}
-            alt="Attached"
-            className="mt-2 max-w-full rounded"
-          />
+          <div className="mt-2">
+            <img
+              src={message.image}
+              alt="Attached"
+              className={`cursor-pointer rounded ${
+                isImageExpanded
+                  ? 'max-w-full h-auto'
+                  : 'max-w-[200px] max-h-[200px] object-cover'
+              }`}
+              onClick={() => setIsImageExpanded(!isImageExpanded)}
+            />
+          </div>
         )}
         {!isUser && (
           <AssistantButtonArray
