@@ -402,7 +402,6 @@ export default function ChatPage() {
         done = doneReading;
         const chunk = decoder.decode(value, { stream: true });
 
-        // Set isTyping to true when we start receiving the response
         if (!isTyping) {
           setIsTyping(true);
           setIsWaiting(false);
@@ -413,10 +412,22 @@ export default function ChatPage() {
         for (const line of lines) {
           if (line.trim() === '') continue;
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.substring(6));
-            console.log('Parsed data for regeneration:', data);
-            if (data.content) {
-              newAssistantMessage.content += data.content;
+            const data = line.substring(6).trim();
+            if (data === '[DONE]') {
+              console.log('Regeneration complete');
+              done = true;
+              break;
+            }
+            try {
+              const parsedData = JSON.parse(data);
+              console.log('Parsed data for regeneration:', parsedData);
+              if (parsedData.content) {
+                newAssistantMessage.content += parsedData.content;
+              } else if (parsedData.tool_response) {
+                if (parsedData.tool_response.name === 'generateImage') {
+                  newAssistantMessage.image = parsedData.tool_response.result.image_url;
+                }
+              }
               setChats((prevChats) =>
                 prevChats.map((c) =>
                   c.id === currentChatId
@@ -428,6 +439,8 @@ export default function ChatPage() {
                 )
               );
               scrollToBottom();
+            } catch (error) {
+              console.error('Error parsing JSON:', error);
             }
           }
         }
