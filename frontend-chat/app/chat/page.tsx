@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { v4 as uuidv4 } from 'uuid'; // Add this import
 import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
 import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
@@ -20,7 +21,7 @@ export interface Message {
 }
 
 interface Chat {
-  id: number;
+  id: string; // Change this to string
   title: string;
   messages: Message[];
   isRenaming?: boolean;
@@ -37,9 +38,10 @@ export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [chats, setChats] = useState<Chat[]>([]);
-  const [currentChatId, setCurrentChatId] = useState<number | null>(null);
+  const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
+  const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -52,7 +54,7 @@ export default function ChatPage() {
   const handleNewChat = () => {
     const currentTime = Date.now();
     const newChat: Chat = {
-      id: chats.length + 1,
+      id: uuidv4(), // Use UUID for the id
       title: `New Chat ${chats.length + 1}`,
       messages: [],
       createdAt: currentTime,
@@ -62,7 +64,7 @@ export default function ChatPage() {
     setCurrentChatId(newChat.id);
   };
 
-  const handleChatSelect = (chatId: number) => {
+  const handleChatSelect = (chatId: string) => {
     setCurrentChatId(chatId);
     setChats((prevChats) =>
       prevChats.map((chat) =>
@@ -75,6 +77,12 @@ export default function ChatPage() {
     inputMessage: string,
     selectedImage: string | null
   ) => {
+    if (chats.length === 0) {
+      setShowNoChatsMessage(true);
+      setTimeout(() => setShowNoChatsMessage(false), 3000);
+      return;
+    }
+
     setIsWaiting(true);
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
@@ -122,7 +130,6 @@ export default function ChatPage() {
       scrollToBottom();
 
       try {
-        console.log('Sending message to API...');
         const response = await fetch('/api/chat', {
           method: 'POST',
           headers: {
@@ -137,7 +144,6 @@ export default function ChatPage() {
             model: selectedModel,
           }),
         });
-        console.log('API response received:', response);
 
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
@@ -155,71 +161,31 @@ export default function ChatPage() {
 
         while (true) {
           const { done, value } = await reader.read();
-          if (done) {
-            console.log('Stream complete');
-            break;
-          }
+          if (done) break;
 
           const chunk = decoder.decode(value, { stream: true });
-          console.log('Received chunk:', chunk);
-
-          // Set isTyping to true when we start receiving the response
-          if (!isTyping) {
-            setIsTyping(true);
-            setIsWaiting(false);
-          }
-
           const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
           for (const line of lines) {
-            if (line === 'data: [DONE]') {
-              console.log('Received DONE signal');
-              // Add the final assistant message to the chat
-              setChats((prevChats) =>
-                prevChats.map((chat) =>
-                  chat.id === currentChatId
-                    ? {
-                        ...chat,
-                        messages: chat.messages.some(
-                          (m) => m.id === assistantMessage.id
-                        )
-                          ? chat.messages.map((m) =>
-                              m.id === assistantMessage.id
-                                ? assistantMessage
-                                : m
-                            )
-                          : [...chat.messages, assistantMessage],
-                      }
-                    : chat
-                )
-              );
-              return;
-            }
             if (line.startsWith('data: ')) {
-              const data = JSON.parse(line.substring(6));
-              console.log('Parsed data:', data);
-              if (data.content) {
-                assistantMessage.content += data.content;
-                // Update the chat with the current state of the assistant message
-                setChats((prevChats) =>
-                  prevChats.map((chat) =>
-                    chat.id === currentChatId
-                      ? {
-                          ...chat,
-                          messages: chat.messages.some(
-                            (m) => m.id === assistantMessage.id
-                          )
-                            ? chat.messages.map((m) =>
-                                m.id === assistantMessage.id
-                                  ? assistantMessage
-                                  : m
-                              )
-                            : [...chat.messages, assistantMessage],
-                        }
-                      : chat
-                  )
-                );
-                scrollToBottom();
+              const data = line.substring(6);
+              if (data === '[DONE]') {
+                setIsTyping(false);
+                break;
+              }
+              try {
+                const parsedData = JSON.parse(data);
+                if (parsedData.content) {
+                  assistantMessage.content += parsedData.content;
+                  updateChat(assistantMessage);
+                } else if (parsedData.tool_response) {
+                  if (parsedData.tool_response.name === 'generateImage') {
+                    assistantMessage.image = parsedData.tool_response.result.image_url;
+                    updateChat(assistantMessage);
+                  }
+                }
+              } catch (error) {
+                console.error('Error parsing JSON:', error);
               }
             }
           }
@@ -236,7 +202,25 @@ export default function ChatPage() {
     }
   };
 
-  const handleDeleteChat = (chatId: number) => {
+  const updateChat = (message: Message) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === currentChatId
+          ? {
+              ...chat,
+              messages: chat.messages.some((m) => m.id === message.id)
+                ? chat.messages.map((m) =>
+                    m.id === message.id ? message : m
+                  )
+                : [...chat.messages, message],
+            }
+          : chat
+      )
+    );
+    scrollToBottom();
+  };
+
+  const handleDeleteChat = (chatId: string) => {
     setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
     if (currentChatId === chatId) {
       const remainingChats = chats.filter((chat) => chat.id !== chatId);
@@ -306,13 +290,22 @@ export default function ChatPage() {
   useEffect(() => {
     if (!chats?.length) return;
 
-    void (async () => {
-      await backend.put('/history', [...chats], {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-        },
-      });
-    })();
+    const syncChats = async () => {
+      try {
+        await backend.put('/history', [...chats], {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          },
+        });
+      } catch (error) {
+        console.error('Error syncing chats with database:', error);
+      }
+    };
+
+    // Debounce the sync operation
+    const timeoutId = setTimeout(syncChats, 1000);
+
+    return () => clearTimeout(timeoutId);
   }, [chats]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
@@ -409,7 +402,6 @@ export default function ChatPage() {
         done = doneReading;
         const chunk = decoder.decode(value, { stream: true });
 
-        // Set isTyping to true when we start receiving the response
         if (!isTyping) {
           setIsTyping(true);
           setIsWaiting(false);
@@ -420,10 +412,22 @@ export default function ChatPage() {
         for (const line of lines) {
           if (line.trim() === '') continue;
           if (line.startsWith('data: ')) {
-            const data = JSON.parse(line.substring(6));
-            console.log('Parsed data for regeneration:', data);
-            if (data.content) {
-              newAssistantMessage.content += data.content;
+            const data = line.substring(6).trim();
+            if (data === '[DONE]') {
+              console.log('Regeneration complete');
+              done = true;
+              break;
+            }
+            try {
+              const parsedData = JSON.parse(data);
+              console.log('Parsed data for regeneration:', parsedData);
+              if (parsedData.content) {
+                newAssistantMessage.content += parsedData.content;
+              } else if (parsedData.tool_response) {
+                if (parsedData.tool_response.name === 'generateImage') {
+                  newAssistantMessage.image = parsedData.tool_response.result.image_url;
+                }
+              }
               setChats((prevChats) =>
                 prevChats.map((c) =>
                   c.id === currentChatId
@@ -435,6 +439,8 @@ export default function ChatPage() {
                 )
               );
               scrollToBottom();
+            } catch (error) {
+              console.error('Error parsing JSON:', error);
             }
           }
         }
@@ -446,6 +452,24 @@ export default function ChatPage() {
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
+    }
+  };
+
+  const handleClearAllChats = async () => {
+    setChats([]); // Clear all chats from state
+    setCurrentChatId(null); // Reset current chat ID
+
+    try {
+      // Clear chats from the database
+      await backend.put('/history', [], {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+        },
+      });
+      console.log('All chats cleared from database');
+    } catch (error) {
+      console.error('Error clearing chats from database:', error);
+      // Optionally, you could show an error message to the user here
     }
   };
 
@@ -463,6 +487,7 @@ export default function ChatPage() {
             )
           );
         }}
+        onClearAllChats={handleClearAllChats}
       />
 
       <div className="flex flex-col flex-1">
@@ -481,6 +506,7 @@ export default function ChatPage() {
             onEdit={handleEdit}
             isWaiting={isWaiting}
             isTyping={isTyping}
+            showNoChatsMessage={showNoChatsMessage}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>

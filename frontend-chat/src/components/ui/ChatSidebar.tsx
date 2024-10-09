@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Button } from './button';
 import { ScrollArea } from './scrollarea';
 import { Input } from './input';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, Trash } from 'lucide-react';
+import { ConfirmationModal } from './ConfirmationModal';
 
 interface Chat {
-  id: number;
+  id: string; // Change this to string
   title: string;
   messages: any[]; // You might want to define a more specific type for messages
   lastUpdated: number;
@@ -13,10 +14,11 @@ interface Chat {
 
 interface ChatSidebarProps {
   chats: Chat[];
-  currentChatId: number | null;
-  onChatSelect: (chatId: number) => void;
-  onDeleteChat: (chatId: number) => void;
-  onRenameChat: (chatId: number, newTitle: string) => void;
+  currentChatId: string | null; // Change this to string | null
+  onChatSelect: (chatId: string) => void; // Change this to accept string
+  onDeleteChat: (chatId: string) => void; // Change this to accept string
+  onRenameChat: (chatId: string, newTitle: string) => void; // Change this to accept string
+  onClearAllChats: () => void; // Add this new prop
 }
 
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
@@ -25,19 +27,30 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   onChatSelect,
   onDeleteChat,
   onRenameChat,
+  onClearAllChats, // Add this new prop
 }) => {
-  const [renamingChatId, setRenamingChatId] = useState<number | null>(null);
+  const [renamingChatId, setRenamingChatId] = useState<string | null>(null); // Change this to string | null
   const [newChatTitle, setNewChatTitle] = useState('');
+  const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
 
-  const handleRenameClick = (chatId: number) => {
+  const handleRenameClick = (chatId: string) => {
     setRenamingChatId(chatId);
     const chat = chats.find((c) => c.id === chatId);
     setNewChatTitle(chat?.title || '');
   };
 
-  const handleRenameSubmit = (chatId: number) => {
+  const handleRenameSubmit = (chatId: string) => {
     onRenameChat(chatId, newChatTitle);
     setRenamingChatId(null);
+  };
+
+  const handleClearAllChats = () => {
+    setIsConfirmModalOpen(true);
+  };
+
+  const confirmClearAllChats = () => {
+    onClearAllChats();
+    setIsConfirmModalOpen(false);
   };
 
   const groupChats = () => {
@@ -86,8 +99,18 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
   return (
     <div className="w-80 border-r border-border bg-background hidden md:block">
-      <div className="p-4 border-b border-border h-[73px] flex items-center">
+      <div className="p-4 border-b border-border h-[73px] flex items-center justify-between">
         <h2 className="text-lg font-semibold">Chat History</h2>
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={handleClearAllChats}
+          className="flex items-center"
+          disabled={chats.length === 0}
+        >
+          <Trash className="h-4 w-4 mr-2" />
+          Clear All
+        </Button>
       </div>
       <ScrollArea className="h-[calc(100%-73px)]">
         <div className="p-4 space-y-2">
@@ -167,6 +190,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
           )}
         </div>
       </ScrollArea>
+      <ConfirmationModal
+        isOpen={isConfirmModalOpen}
+        onClose={() => setIsConfirmModalOpen(false)}
+        onConfirm={confirmClearAllChats}
+        title="Clear All Chats"
+        message="Are you sure you want to clear all chat history? This action cannot be undone."
+      />
     </div>
   );
 };
