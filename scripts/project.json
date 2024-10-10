@@ -37,21 +37,10 @@
         }
       }
     },
-    "serve": {
-      "executor": "@nx/js:node",
-      "defaultConfiguration": "development",
-      "dependsOn": ["build"],
+    "subscription:compile": {
+      "executor": "nx:run-commands",
       "options": {
-        "buildTarget": "scripts:build",
-        "runBuildTargetDependencies": false
-      },
-      "configurations": {
-        "development": {
-          "buildTarget": "scripts:build:development"
-        },
-        "production": {
-          "buildTarget": "scripts:build:production"
-        }
+        "command": "npm run subscrition:compile"
       }
     }
   }

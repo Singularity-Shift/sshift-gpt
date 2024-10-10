@@ -57,7 +57,7 @@ export default async function handler(req, res) {
       console.log('Setting up Google Cloud Storage...');
       const storage = new Storage({
         projectId: 'sshiftdao-ai', // This should be your project ID
-        keyFilename: process.env.KEY_FILE_PATH,
+        keyFilename: process.env.KEY_FILE_PATH
       });
 
       const bucket = storage.bucket(bucketName);

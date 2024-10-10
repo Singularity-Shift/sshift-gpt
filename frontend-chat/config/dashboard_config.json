@@ -5,6 +5,7 @@
     "MIN_PRICE": 2,
     "MAX_PRICE": 22,
     "MAX_DAYS": 30,
+    "MAX_DISCOUNT": 50,
     "MOVEBOT_BUY": "https://wapal.io/collection/Move-Bots-1b79f347b8c1d6c63738c09033123e77c9a3274f87349ea9cd5cf0ef1f0c9485",
     "QRIBBLE_BUY": "https://www.tradeport.xyz/aptos/collection/qribbles?bottomTab=trades&tab=items",
     "SSHIFT_RECORDS_BUY": "https://www.tradeport.xyz/aptos/collection/0x5d05e2e6a6de5041032fa684383439c7dc93dbc4ad9d05eba614727db70e78c7?bottomTab=trades&tab=items"
