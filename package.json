@@ -12,8 +12,7 @@
     "bn-chat:start": "nx run backend-chat:start:production",
     "dev": "nx run-many -t dev serve -p frontend-chat backend-chat -c development",
     "build": "nx run-many -t build",
-    "start": "nx run-many -t start serve:production",
-    "subscrition:compile": "ts-node scripts/src/subscription/compile.ts"
+    "start": "nx run-many -t start serve:production"
   },
   "dependencies": {
     "@aptos-labs/ts-sdk": "^1.27.1",
@@ -47,6 +46,7 @@
     "class-validator": "^0.14.1",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
+    "commander": "^12.1.0",
     "dotenv": "^16.4.5",
     "formidable": "^3.5.1",
     "ioredis": "^5.4.1",
@@ -67,6 +67,7 @@
     "tailwind-merge": "^2.5.2",
     "tailwindcss-animate": "^1.0.7",
     "toast": "^0.5.4",
+    "tree-kill": "^1.2.2",
     "tslib": "^2.3.0",
     "uuid": "^10.0.0",
     "yaml": "^2.5.1"
@@ -112,6 +113,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "jest-environment-node": "^29.7.0",
     "nx": "19.6.5",
+    "pkg": "^5.8.1",
     "postcss": "8.4.38",
     "prettier": "^2.6.2",
     "tailwindcss": "3.4.3",

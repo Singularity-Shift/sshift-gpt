@@ -5,43 +5,5 @@
   "projectType": "application",
   "tags": [],
   "targets": {
-    "build": {
-      "executor": "@nx/esbuild:esbuild",
-      "outputs": ["{options.outputPath}"],
-      "defaultConfiguration": "production",
-      "options": {
-        "platform": "node",
-        "outputPath": "dist/scripts",
-        "format": ["cjs"],
-        "bundle": false,
-        "main": "scripts/src/main.ts",
-        "tsConfig": "scripts/tsconfig.app.json",
-        "assets": ["scripts/src/assets"],
-        "generatePackageJson": true,
-        "esbuildOptions": {
-          "sourcemap": true,
-          "outExtension": {
-            ".js": ".js"
-          }
-        }
-      },
-      "configurations": {
-        "development": {},
-        "production": {
-          "esbuildOptions": {
-            "sourcemap": false,
-            "outExtension": {
-              ".js": ".js"
-            }
-          }
-        }
-      }
-    },
-    "subscription:compile": {
-      "executor": "nx:run-commands",
-      "options": {
-        "command": "npm run subscrition:compile"
-      }
-    }
   }
 }

@@ -21,6 +21,8 @@ module sshift_dao_addr::fees {
     struct Config has key {
         admin_addr: address,
         pending_admin_addr: Option<address>,
+        reviewer_addr: Option<address>,
+        pending_reviewer_addr: Option<address>,
     }
 
     struct FeesAdmin has key {
@@ -43,6 +45,8 @@ module sshift_dao_addr::fees {
         move_to(sender, Config {
             admin_addr: signer::address_of(sender),
             pending_admin_addr: option::none(),
+            reviewer_addr: option::none(),
+            pending_reviewer_addr: option::none(),
         });
 
         move_to(sender, FeesAdmin {
@@ -95,7 +99,7 @@ module sshift_dao_addr::fees {
         });
     }
 
-    public entry fun add_collector(account: &signer, collector: address) acquires FeesAdmin, Config {
+    public entry fun add_collector(account: &signer, reviewer: &signer, collector: address) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_dao_addr);
         assert!(is_admin(config, account_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
@@ -201,6 +205,21 @@ module sshift_dao_addr::fees {
         config.pending_admin_addr = option::none();
     }
 
+    public entry fun set_pending_reviewer(sender: &signer, new_admin: address) acquires Config {
+        let sender_addr = signer::address_of(sender);
+        let config = borrow_global_mut<Config>(@sshift_dao_addr);
+        assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
+        config.pending_reviewer_addr = option::some(new_admin);
+    }
+
+    public entry fun accept_reviewer(sender: &signer) acquires Config {
+        let sender_addr = signer::address_of(sender);
+        let config = borrow_global_mut<Config>(@sshift_dao_addr);
+        assert!(config.pending_admin_addr == option::some(sender_addr), ENOT_PENDING_ADMIN);
+        config.reviewer_addr = option::some(sender_addr);
+        config.pending_reviewer_addr = option::none();
+    }
+
     #[view]
     /// Get contract admin
     public fun get_admin(): address acquires Config {
@@ -208,11 +227,25 @@ module sshift_dao_addr::fees {
         config.admin_addr
     }
 
+        #[view]
+    /// Get contract reviewer
+    public fun get_reviewer(): address acquires Config {
+        let config = borrow_global<Config>(@sshift_dao_addr);
+        *option::borrow(&config.reviewer_addr)
+    }
+
     #[view]
     /// Get contract pending admin
-    public fun get_pending_admin(): Option<address> acquires Config {
+    public fun get_pending_admin(): address acquires Config {
         let config = borrow_global<Config>(@sshift_dao_addr);
-        config.pending_admin_addr
+        *option::borrow(&config.pending_admin_addr)
+    }
+
+    #[view]
+    /// Get contract reviewer
+    public fun get_pending_reviewer(): address acquires Config {
+        let config = borrow_global<Config>(@sshift_dao_addr);
+        *option::borrow(&config.pending_reviewer_addr)
     }
 
     #[view]
@@ -273,7 +306,15 @@ module sshift_dao_addr::fees {
             false
         }
     }
-    
+
+    fun is_reviewer(config: &Config, sender: address): bool {
+        if (sender == *option::borrow<address>(&config.reviewer_addr) || sender == @sshift_dao_addr) {
+            true
+        } else {
+            false
+        }
+    }
+
     fun get_signer_cap(signer_cap_opt: &Option<SignerCapability>): &SignerCapability {
         assert!(option::is_some<SignerCapability>(signer_cap_opt), error::not_implemented(ENOT_RESOURCE_ACCOUNT_ADDED));
         option::borrow<SignerCapability>(signer_cap_opt)
@@ -509,7 +550,7 @@ module sshift_dao_addr::fees {
     }
     
     #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
-    #[expected_failure(abort_code = 327683, location = Self)]
+    #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_collector_with_not_admin_account(
         sender: &signer,
         user1: &signer,
@@ -541,7 +582,7 @@ module sshift_dao_addr::fees {
     }
 
     #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
-    #[expected_failure(abort_code = 327683, location = Self)]
+    #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_collector_with_not_owner_account(
         sender: &signer,
         user1: &signer,
@@ -573,7 +614,7 @@ module sshift_dao_addr::fees {
     }
 
     #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
-    #[expected_failure(abort_code = 327683, location = Self)]
+    #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_collector_with_not_admin_accout(
         sender: &signer,
         user1: &signer,
@@ -604,7 +645,7 @@ module sshift_dao_addr::fees {
     }
 
     #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
-    #[expected_failure(abort_code = 327683, location = Self)]
+    #[expected_failure(abort_code = 327681, location = Self)]
     fun test_payment_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
@@ -715,7 +756,7 @@ module sshift_dao_addr::fees {
     }
 
     #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
-    #[expected_failure(abort_code = 327683, location = Self)]
+    #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_resource_account_with_not_authorized_account(
         sender: &signer,
         user1: &signer,
