@@ -53,3 +53,5 @@ out
 
 .aptos
 contracts/**/build
+
+.vscode
