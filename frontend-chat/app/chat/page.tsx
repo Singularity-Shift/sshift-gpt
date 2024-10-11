@@ -42,6 +42,7 @@ export default function ChatPage() {
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
+  const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>('thinking');
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -83,7 +84,9 @@ export default function ChatPage() {
       return;
     }
 
+    setStatus('thinking');
     setIsWaiting(true);
+    setIsTyping(false);
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -159,6 +162,9 @@ export default function ChatPage() {
           content: '',
         };
 
+        setIsWaiting(false);
+        setIsTyping(true);
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -170,7 +176,7 @@ export default function ChatPage() {
             if (line.startsWith('data: ')) {
               const data = line.substring(6);
               if (data === '[DONE]') {
-                setIsTyping(false);
+                setStatus('thinking');
                 break;
               }
               try {
@@ -178,11 +184,15 @@ export default function ChatPage() {
                 if (parsedData.content) {
                   assistantMessage.content += parsedData.content;
                   updateChat(assistantMessage);
+                  setStatus('typing');
+                } else if (parsedData.tool_call) {
+                  setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
                   if (parsedData.tool_response.name === 'generateImage') {
                     assistantMessage.image = parsedData.tool_response.result.image_url;
                     updateChat(assistantMessage);
                   }
+                  setStatus('typing');
                 }
               } catch (error) {
                 console.error('Error parsing JSON:', error);
@@ -192,12 +202,10 @@ export default function ChatPage() {
         }
 
         console.log('Final assistant message:', assistantMessage);
-        setIsWaiting(false);
-        setIsTyping(false);
       } catch (error) {
         console.error('Error in handleSendMessage:', error);
-        setIsWaiting(false);
-        setIsTyping(false);
+      } finally {
+        setStatus('thinking');
       }
     }
   };
@@ -504,8 +512,7 @@ export default function ChatPage() {
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
             onRegenerate={handleRegenerateMessage}
             onEdit={handleEdit}
-            isWaiting={isWaiting}
-            isTyping={isTyping}
+            status={status}
             showNoChatsMessage={showNoChatsMessage}
           />
           <ChatInput onSendMessage={handleSendMessage} />

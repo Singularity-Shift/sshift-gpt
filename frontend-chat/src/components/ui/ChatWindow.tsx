@@ -9,8 +9,7 @@ interface ChatWindowProps {
   onCopy: (text: string) => void;
   onRegenerate: (message: Message) => void;
   onEdit: (message: Message, newContent: string) => void;
-  isWaiting: boolean;
-  isTyping: boolean;
+  status: 'thinking' | 'tool-calling' | 'typing';
   showNoChatsMessage: boolean;
 }
 
@@ -19,8 +18,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onCopy, 
   onRegenerate, 
   onEdit,
-  isWaiting,
-  isTyping,
+  status,
   showNoChatsMessage
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
@@ -34,7 +32,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isWaiting, isTyping]);
+  }, [messages, status]);
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative">
@@ -43,7 +41,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {messages.map((message, index) => (
             <div
               key={`${message.id}-${index}`}
-              ref={index === messages.length - 1 && !isWaiting && !isTyping ? lastMessageRef : null}
+              ref={index === messages.length - 1 ? lastMessageRef : null}
             >
               <MessageBubble 
                 message={message} 
@@ -53,9 +51,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               />
             </div>
           ))}
-          {(isWaiting || isTyping) && (
+          {status !== 'thinking' && (
             <div ref={lastMessageRef}>
-              <StatusIndicator status={isTyping ? "typing" : "thinking"} className="ml-2" />
+              <StatusIndicator status={status} className="ml-2" />
             </div>
           )}
         </div>
