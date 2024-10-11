@@ -29,7 +29,6 @@ const getConfig = () => {
 };
 
 export const compile = async () => {
-  console.log(cli);
   const move = new cli.Move();
 
   const { accountAddress } = getConfig();

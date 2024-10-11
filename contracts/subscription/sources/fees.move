@@ -20,7 +20,7 @@ module sshift_dao_addr::fees {
     const ENOT_PENDING_REVIEWER: u64 = 10;
 
 
-    struct Config has key {
+    struct Config has key, copy {
         admin_addr: address,
         pending_admin_addr: Option<address>,
         reviewer_addr: address,
@@ -280,8 +280,8 @@ module sshift_dao_addr::fees {
 
     #[view]
     public fun get_balance_to_claim(account_addr: address): u64 acquires FeesToClaim {
-        let salary_to_claim = borrow_global<FeesToClaim>(account_addr);
-        salary_to_claim.amount
+        let fees_to_claim = borrow_global<FeesToClaim>(account_addr);
+        fees_to_claim.amount
     }
 
     #[view]
@@ -301,8 +301,6 @@ module sshift_dao_addr::fees {
 
         resource_signer_addr
     }
-
-
 
     fun is_admin(config: &Config, sender: address): bool {
         if (sender == config.admin_addr) {
