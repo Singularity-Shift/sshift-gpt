@@ -59,6 +59,7 @@ export default async function handler(req, res) {
                     const toolCall = chunk.choices[0].delta.tool_calls[0];
                     if (!currentToolCall) {
                         currentToolCall = { function: { name: '', arguments: '' } };
+                        res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
                     }
                     if (toolCall.function) {
                         if (toolCall.function.name) {
