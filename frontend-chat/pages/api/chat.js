@@ -82,7 +82,11 @@ export default async function handler(req, res) {
                             res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', result: { image_url: imageUrl } } })}\n\n`);
                         } catch (error) {
                             console.error('Error generating image:', error);
-                            res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', error: 'Failed to generate image' } })}\n\n`);
+                            if (error.message.includes('content policy violation')) {
+                                res.write(`data: ${JSON.stringify({ content: "I apologize, but I can't assist with that request due to content policy restrictions." })}\n\n`);
+                            } else {
+                                res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', error: 'Failed to generate image' } })}\n\n`);
+                            }
                         }
                     }
                     currentToolCall = null;
@@ -98,7 +102,11 @@ export default async function handler(req, res) {
             res.end();
         } catch (error) {
             console.error('OpenAI API Error:', error);
-            res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            if (error.response && error.response.status === 400 && error.response.data.error.code === 'content_policy_violation') {
+                res.status(400).json({ error: "I apologize, but I can't assist with that request due to content policy restrictions." });
+            } else {
+                res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            }
         }
     } else if (req.method === 'DELETE') {
         // Handle stop request
@@ -125,6 +133,9 @@ async function generateImage(prompt, size, style) {
         
         if (!response.ok) {
             const responseText = await response.text();
+            if (response.status === 400 && responseText.includes('content policy violation')) {
+                throw new Error('content policy violation');
+            }
             throw new Error(`Failed to generate image: ${response.status} ${response.statusText}\nResponse: ${responseText}`);
         }
 
