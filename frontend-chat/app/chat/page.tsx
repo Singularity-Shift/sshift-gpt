@@ -44,6 +44,7 @@ export default function ChatPage() {
   const [isTyping, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
   const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>('thinking');
+  const [isAssistantResponding, setIsAssistantResponding] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +106,8 @@ export default function ChatPage() {
     setStatus('thinking');
     setIsWaiting(true);
     setIsTyping(false);
+    setIsAssistantResponding(true); // Set this to true when sending a message
+
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -231,6 +234,7 @@ export default function ChatPage() {
         console.error('Error in handleSendMessage:', error);
       } finally {
         setStatus('thinking');
+        setIsAssistantResponding(false); // Set this to false when the response is complete
       }
     }
   };
@@ -274,6 +278,7 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true); // Add this line
       const currentChat = chats.find(chat => chat.id === currentChatId);
       if (!currentChat) return;
 
@@ -292,6 +297,7 @@ export default function ChatPage() {
       setIsWaiting(false);
       setIsTyping(false);
       setStatus('thinking');
+      setIsAssistantResponding(false); // Add this line
     }
   };
 
@@ -373,11 +379,13 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true); // Add this line
       regenerateConversation(updatedMessages)
         .finally(() => {
           setIsWaiting(false);
           setIsTyping(false);
           setStatus('thinking');
+          setIsAssistantResponding(false); // Add this line
         });
     }
   };
@@ -390,6 +398,7 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true); // Add this line
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -495,6 +504,7 @@ export default function ChatPage() {
       setIsWaiting(false);
       setIsTyping(false);
       setStatus('thinking');
+      setIsAssistantResponding(false); // Add this line
     }
   };
 
@@ -550,6 +560,7 @@ export default function ChatPage() {
             onEdit={handleEdit}
             status={status}
             showNoChatsMessage={showNoChatsMessage}
+            isAssistantResponding={isAssistantResponding} // Pass the new state here
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
