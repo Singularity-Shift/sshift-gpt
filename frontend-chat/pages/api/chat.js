@@ -47,6 +47,7 @@ export default async function handler(req, res) {
             });
 
             let currentToolCall = null;
+            let assistantMessage = { content: '', image: null };
 
             for await (const chunk of stream) {
                 if (shouldStopStream) {
@@ -70,16 +71,22 @@ export default async function handler(req, res) {
                         }
                     }
                 } else if (chunk.choices[0]?.delta?.content) {
-                    res.write(`data: ${JSON.stringify(chunk.choices[0].delta)}\n\n`);
+                    assistantMessage.content += chunk.choices[0].delta.content;
+                    res.write(`data: ${JSON.stringify({ content: chunk.choices[0].delta.content })}\n\n`);
                 } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
                     if (currentToolCall && currentToolCall.function.name === 'generateImage') {
                         try {
                             const args = JSON.parse(currentToolCall.function.arguments);
                             const imageUrl = await generateImage(args.prompt, args.size, args.style);
+                            assistantMessage.image = imageUrl;
                             res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', result: { image_url: imageUrl } } })}\n\n`);
                         } catch (error) {
                             console.error('Error generating image:', error);
-                            res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', error: 'Failed to generate image' } })}\n\n`);
+                            if (error.message.includes('content policy violation')) {
+                                res.write(`data: ${JSON.stringify({ content: "I apologize, but I can't assist with that request due to content policy restrictions." })}\n\n`);
+                            } else {
+                                res.write(`data: ${JSON.stringify({ tool_response: { name: 'generateImage', error: 'Failed to generate image' } })}\n\n`);
+                            }
                         }
                     }
                     currentToolCall = null;
@@ -89,11 +96,17 @@ export default async function handler(req, res) {
                 res.flush();
             }
 
+            // Send the final message with both content and image
+            res.write(`data: ${JSON.stringify({ final_message: assistantMessage })}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
         } catch (error) {
             console.error('OpenAI API Error:', error);
-            res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            if (error.response && error.response.status === 400 && error.response.data.error.code === 'content_policy_violation') {
+                res.status(400).json({ error: "I apologize, but I can't assist with that request due to content policy restrictions." });
+            } else {
+                res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            }
         }
     } else if (req.method === 'DELETE') {
         // Handle stop request
@@ -120,6 +133,9 @@ async function generateImage(prompt, size, style) {
         
         if (!response.ok) {
             const responseText = await response.text();
+            if (response.status === 400 && responseText.includes('content policy violation')) {
+                throw new Error('content policy violation');
+            }
             throw new Error(`Failed to generate image: ${response.status} ${response.statusText}\nResponse: ${responseText}`);
         }
 
