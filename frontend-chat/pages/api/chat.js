@@ -108,6 +108,20 @@ export default async function handler(req, res) {
 
                     const toolResults = await Promise.all(toolPromises);
 
+                    // Prepare tool call message
+                    const toolCallMessage = {
+                        role: 'assistant',
+                        content: null,
+                        tool_calls: currentToolCalls.map(call => ({
+                            id: call.id,
+                            type: 'function',
+                            function: {
+                                name: call.function.name,
+                                arguments: call.function.arguments
+                            }
+                        }))
+                    };
+
                     // Prepare tool response messages
                     const toolResponseMessages = toolResults.map(result => ({
                         role: 'tool',
@@ -119,7 +133,7 @@ export default async function handler(req, res) {
                     for (const result of toolResults) {
                         res.write(`data: ${JSON.stringify({ tool_response: result })}\n\n`);
                         if (result.name === 'generateImage' && result.result.image_url) {
-                            assistantMessage.image = result.result.image_url;
+                            assistantMessage.content += `\n\n![Generated Image](${result.result.image_url})\n\n`;
                         }
                         if (result.name === 'searchWeb' && result.result) {
                             assistantMessage.content += `\n\nWeb search result:\n${result.result}\n\n`;
@@ -132,9 +146,10 @@ export default async function handler(req, res) {
                             model: model || 'gpt-4o-mini',
                             messages: [
                                 ...messagesWithSystemPrompt,
+                                toolCallMessage, // Add the tool call message
                                 ...toolResponseMessages,
                                 { role: 'assistant', content: assistantMessage.content },
-                                { role: 'user', content: 'Please analyze and respond to all the tool results.' }
+                                { role: 'user', content: 'Please analyze and respond to all the tool results, including creating any requested content like poems.' }
                             ],
                             max_tokens: 1000,
                             temperature: temperature,
