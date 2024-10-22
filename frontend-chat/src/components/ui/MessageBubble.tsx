@@ -69,7 +69,7 @@ const CodeBlock = ({
   );
 };
 
-export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: MessageBubbleProps) { // 2. Destructure onRegenerate
+export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [audioClicked, setAudioClicked] = useState(false); // New state for audio button
@@ -115,7 +115,7 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
       )}
       <div
         className={`max-w-[75%] w-auto p-3 rounded-lg ${
-          isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800' // Updated class for user message bubble
+          isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
         }`}
       >
         {isUser && isEditing ? (
