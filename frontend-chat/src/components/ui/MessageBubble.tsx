@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import { Button } from './button';
 import { Copy, Volume2, RefreshCw, Edit2, Check } from 'lucide-react';
@@ -16,7 +16,40 @@ interface Message {
   model?: string;
   finish_reason?: string;
   system_fingerprint?: string;
+  image?: string;
 }
+
+interface CodeBlockProps {
+  language: string;
+  value: string;
+  onCopy: (text: string) => void;
+}
+
+const CodeBlock: React.FC<CodeBlockProps> = ({ language, value, onCopy }) => {
+  return (
+    <div className="relative">
+      <Button 
+        variant="ghost" 
+        size="icon" 
+        className="absolute right-2 top-2"
+        onClick={() => onCopy(value)}
+      >
+        <Copy className="h-4 w-4" />
+      </Button>
+      <SyntaxHighlighter
+        language={language}
+        style={materialDark}
+        customStyle={{
+          margin: 0,
+          borderRadius: '0.5rem',
+          padding: '1rem',
+        }}
+      >
+        {value}
+      </SyntaxHighlighter>
+    </div>
+  );
+};
 
 interface MessageBubbleProps {
   message: Message;
@@ -27,12 +60,13 @@ interface MessageBubbleProps {
 
 const ImageThumbnail: React.FC<{ src: string }> = ({ src }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+  const imageKey = useRef(Math.random().toString(36).substring(7));
 
   return (
-    <div className="mt-2">
+    <div className="mt-2" key={imageKey.current}>
       <img
         src={src}
-        alt="Attached"
+        alt="Generated or Uploaded"
         className={`cursor-pointer rounded ${
           isExpanded
             ? 'max-w-full h-auto'
@@ -48,6 +82,25 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
+  const [parsedContent, setParsedContent] = useState<{ text: string; image?: string }>({ text: message.content });
+
+  useEffect(() => {
+    // Parse the content to extract image URL if present
+    try {
+      const contentObj = JSON.parse(message.content);
+      if (contentObj.final_message) {
+        setParsedContent({
+          text: contentObj.final_message.content,
+          image: contentObj.final_message.image
+        });
+      } else {
+        setParsedContent({ text: message.content });
+      }
+    } catch (e) {
+      // If parsing fails, it's not JSON, so use the content as is
+      setParsedContent({ text: message.content });
+    }
+  }, [message.content]);
 
   const handleEditClick = () => {
     if (isEditing) {
@@ -70,45 +123,48 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
     }
 
     return (
-      <ReactMarkdown
-        components={{
-          code: ({ node, inline, className, children, ...props }: any) => {
-            const match = /language-(\w+)/.exec(className || '');
-            return !inline && match ? (
-              <CodeBlock
-                language={match[1]}
-                value={String(children).replace(/\n$/, '')}
-                onCopy={onCopy}
-              />
-            ) : (
-              <code className={className} {...props}>
-                {children}
-              </code>
-            );
-          },
-          p: ({ children }) => <p className="mb-2">{children}</p>,
-          h1: ({ children }) => (
-            <h1 className="text-2xl font-bold mb-2">{children}</h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="text-xl font-bold mb-2">{children}</h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="text-lg font-bold mb-2">{children}</h3>
-          ),
-          ul: ({ children }) => (
-            <ul className="list-disc pl-4 mb-2">{children}</ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="list-decimal pl-4 mb-2">{children}</ol>
-          ),
-          li: ({ children }) => <li className="mb-1">{children}</li>,
-          img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
-        }}
-        className="prose max-w-none"
-      >
-        {message.content}
-      </ReactMarkdown>
+      <>
+        <ReactMarkdown
+          components={{
+            code: ({ node, inline, className, children, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <CodeBlock
+                  language={match[1]}
+                  value={String(children).replace(/\n$/, '')}
+                  onCopy={onCopy}
+                />
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            p: ({ children }) => <p className="mb-2">{children}</p>,
+            h1: ({ children }) => (
+              <h1 className="text-2xl font-bold mb-2">{children}</h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-xl font-bold mb-2">{children}</h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-lg font-bold mb-2">{children}</h3>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc pl-4 mb-2">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-4 mb-2">{children}</ol>
+            ),
+            li: ({ children }) => <li className="mb-1">{children}</li>,
+            img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
+          }}
+          className="prose max-w-none"
+        >
+          {parsedContent.text}
+        </ReactMarkdown>
+        {(parsedContent.image || message.image) && <ImageThumbnail src={parsedContent.image || message.image || ''} />}
+      </>
     );
   };
 

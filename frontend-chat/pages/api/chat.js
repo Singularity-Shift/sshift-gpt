@@ -21,10 +21,22 @@ export default async function handler(req, res) {
         }
 
         // Ensure each message has a role and content
-        const formattedMessages = messages.map(msg => ({
-            role: msg.role || 'user', // Default to 'user' if role is missing
-            content: msg.content || ''
-        }));
+        const formattedMessages = messages.map(msg => {
+            if (msg.role === 'user' && msg.image) {
+                // Handle user messages with uploaded images
+                return {
+                    role: 'user',
+                    content: [
+                        { type: 'text', text: msg.content || "I've uploaded an image." },
+                        { type: 'image_url', image_url: { url: msg.image } }
+                    ]
+                };
+            }
+            return {
+                role: msg.role || 'user',
+                content: msg.content || ''
+            };
+        });
 
         // Add the system prompt to the beginning of the messages array
         const messagesWithSystemPrompt = [systemPrompt, ...formattedMessages];
@@ -39,6 +51,7 @@ export default async function handler(req, res) {
                 stream: true,
                 tools: toolSchema,
                 tool_choice: "auto",
+                parallel_tool_calls: true, // Enable parallel tool calling
             });
 
             res.writeHead(200, {
@@ -48,7 +61,9 @@ export default async function handler(req, res) {
             });
 
             let currentToolCalls = [];
-            let assistantMessage = { content: '', image: null };
+            let assistantMessage = { 
+                content: ''
+            }; // Remove initial image property
 
             for await (const chunk of stream) {
                 if (shouldStopStream) {
@@ -76,20 +91,23 @@ export default async function handler(req, res) {
                     res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
                 } else if (chunk.choices[0]?.delta?.content) {
                     assistantMessage.content += chunk.choices[0].delta.content;
-                    res.write(`data: ${JSON.stringify({ content: chunk.choices[0].delta.content })}\n\n`);
+                    res.write(`data: ${JSON.stringify({ 
+                        content: chunk.choices[0].delta.content 
+                    })}\n\n`);
                 } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-                    // Process all tool calls in parallel
-                    const toolPromises = currentToolCalls.map(async (toolCall) => {
+                    // Process tool calls one at a time
+                    for (const toolCall of currentToolCalls) {
                         console.log('Processing tool call:', toolCall);
-                        let result;
+                        
                         if (toolCall.function.name === 'generateImage') {
                             try {
                                 const args = JSON.parse(toolCall.function.arguments);
                                 const imageUrl = await generateImage(args.prompt, args.size, args.style);
-                                result = { image_url: imageUrl };
+                                toolCall.result = { image_url: imageUrl };
+                                assistantMessage.image = imageUrl;
+                                // Don't write the tool response to the client
                             } catch (error) {
                                 console.error('Error generating image:', error);
-                                result = { error: 'Failed to generate image' };
                             }
                         } else if (toolCall.function.name === 'searchWeb') {
                             try {
@@ -97,75 +115,65 @@ export default async function handler(req, res) {
                                 console.log('Searching web with query:', args.query);
                                 const searchResult = await searchWeb(args.query);
                                 console.log('Web search result:', searchResult);
-                                result = searchResult;
+                                toolCall.result = searchResult;
+                                // Don't write the tool response to the client
                             } catch (error) {
                                 console.error('Error searching web:', error);
-                                result = { error: 'Failed to search web' };
                             }
-                        }
-                        return { id: toolCall.id, name: toolCall.function.name, result };
-                    });
-
-                    const toolResults = await Promise.all(toolPromises);
-
-                    // Prepare tool call message
-                    const toolCallMessage = {
-                        role: 'assistant',
-                        content: null,
-                        tool_calls: currentToolCalls.map(call => ({
-                            id: call.id,
-                            type: 'function',
-                            function: {
-                                name: call.function.name,
-                                arguments: call.function.arguments
-                            }
-                        }))
-                    };
-
-                    // Prepare tool response messages
-                    const toolResponseMessages = toolResults.map(result => ({
-                        role: 'tool',
-                        content: JSON.stringify(result.result),
-                        tool_call_id: result.id
-                    }));
-
-                    // Send all tool responses
-                    for (const result of toolResults) {
-                        res.write(`data: ${JSON.stringify({ tool_response: result })}\n\n`);
-                        if (result.name === 'generateImage' && result.result.image_url) {
-                            assistantMessage.content += `\n\n![Generated Image](${result.result.image_url})\n\n`;
-                        }
-                        if (result.name === 'searchWeb' && result.result) {
-                            assistantMessage.content += `\n\nWeb search result:\n${result.result}\n\n`;
                         }
                     }
 
-                    // Continue the conversation with all tool results
+                    // Let the model continue with the conversation
                     try {
+                        const continuationMessages = [
+                            ...messagesWithSystemPrompt,
+                            { 
+                                role: 'assistant', 
+                                content: assistantMessage.content,
+                                tool_calls: currentToolCalls.map(call => ({
+                                    id: call.id,
+                                    type: 'function',
+                                    function: {
+                                        name: call.function.name,
+                                        arguments: call.function.arguments
+                                    }
+                                }))
+                            }
+                        ];
+
+                        // Add tool results to the messages
+                        for (const toolCall of currentToolCalls) {
+                            if (toolCall.result) {
+                                continuationMessages.push({
+                                    role: 'tool',
+                                    content: JSON.stringify(toolCall.result),
+                                    tool_call_id: toolCall.id
+                                });
+                            }
+                        }
+
                         const continuationResponse = await openai.chat.completions.create({
                             model: model || 'gpt-4o-mini',
-                            messages: [
-                                ...messagesWithSystemPrompt,
-                                toolCallMessage, // Add the tool call message
-                                ...toolResponseMessages,
-                                { role: 'assistant', content: assistantMessage.content },
-                                { role: 'user', content: 'Please analyze and respond to all the tool results, including creating any requested content like poems.' }
-                            ],
+                            messages: continuationMessages,
                             max_tokens: 1000,
                             temperature: temperature,
                             stream: true,
                         });
 
+                        // Reset assistantMessage content before appending the continuation
+                        assistantMessage.content = '';
+
                         for await (const continuationChunk of continuationResponse) {
                             if (continuationChunk.choices[0]?.delta?.content) {
                                 assistantMessage.content += continuationChunk.choices[0].delta.content;
-                                res.write(`data: ${JSON.stringify({ content: continuationChunk.choices[0].delta.content })}\n\n`);
+                                res.write(`data: ${JSON.stringify({ 
+                                    content: continuationChunk.choices[0].delta.content 
+                                })}\n\n`);
                             }
                             res.flush();
                         }
                     } catch (error) {
                         console.error('Error in continuation response:', error);
-                        res.write(`data: ${JSON.stringify({ error: 'Failed to generate continuation response' })}\n\n`);
                     }
 
                     currentToolCalls = [];
@@ -174,18 +182,19 @@ export default async function handler(req, res) {
                 res.flush();
             }
 
-            // Send the final message with both content and image
+            // Send the final message
             console.log('Sending final message:', assistantMessage);
-            res.write(`data: ${JSON.stringify({ final_message: assistantMessage })}\n\n`);
+            res.write(`data: ${JSON.stringify({ 
+                final_message: {
+                    content: assistantMessage.content,
+                    image: assistantMessage.image
+                }
+            })}\n\n`);
             res.write('data: [DONE]\n\n');
             res.end();
         } catch (error) {
             console.error('OpenAI API Error:', error);
-            if (error.response && error.response.status === 400 && error.response.data.error.code === 'content_policy_violation') {
-                res.status(400).json({ error: "I apologize, but I can't assist with that request due to content policy restrictions." });
-            } else {
-                res.status(500).json({ error: 'Internal Server Error', details: error.message });
-            }
+            res.status(500).json({ error: 'Internal Server Error', details: error.message });
         }
     } else if (req.method === 'DELETE') {
         // Handle stop request

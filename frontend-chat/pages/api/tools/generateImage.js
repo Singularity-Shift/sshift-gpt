@@ -33,38 +33,30 @@ async function uploadImageToBucket(imageUrl) {
 }
 
 async function generateImage(prompt, size, style) {
-    // Define valid options
-    const validSizes = ["1024x1024", "1792x1024", "1024x1792"];
-    const validStyles = ["vivid", "natural"];
-
-    // Validate size and style, provide defaults if invalid
-    const selectedSize = validSizes.includes(size) ? size : "1024x1024";
-    const selectedStyle = validStyles.includes(style) ? style : "vivid";
-
     try {
-        console.log('Calling OpenAI API with params:', { prompt, size: selectedSize, style: selectedStyle });
+        console.log('Calling OpenAI API with params:', { prompt, size, style });
         const response = await openai.images.generate({
             model: 'dall-e-3',
             prompt: prompt,
-            size: selectedSize,
-            style: selectedStyle,
+            n: 1, // Hardcoded to 1 image only
+            size: size,
+            style: style,
             response_format: 'url',
         });
 
         console.log('OpenAI API response:', JSON.stringify(response, null, 2));
 
-        const imageUrl = response.data[0]?.url;
-        if (imageUrl) {
-            console.log('Image generated successfully:', imageUrl);
-            
-            // Upload the image to Google Cloud Storage using bucket.js
-            const bucketUrl = await uploadImageToBucket(imageUrl);
-            console.log('Image uploaded to bucket:', bucketUrl);
-            
-            return bucketUrl;
-        } else {
-            throw new Error('Failed to generate image: No URL returned');
+        if (!response.data || response.data.length === 0) {
+            throw new Error('No image generated');
         }
+
+        const imageUrl = response.data[0].url;
+        console.log('Image generated successfully:', imageUrl);
+        
+        const bucketUrl = await uploadImageToBucket(imageUrl);
+        console.log('Image uploaded to bucket:', bucketUrl);
+        
+        return bucketUrl;
     } catch (error) {
         console.error('Error:', error);
         throw error;
@@ -77,9 +69,7 @@ export default async function handler(req, res) {
 
         console.log('Received image generation request:', { prompt, size, style });
 
-        // Validate prompt
-        if (typeof prompt !== 'string' || prompt.trim() === '') {
-            console.error('Invalid prompt');
+        if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
             return res.status(400).json({ error: 'Invalid prompt format' });
         }
 
@@ -90,8 +80,7 @@ export default async function handler(req, res) {
             console.error('Error:', error);
             res.status(500).json({ 
                 error: 'Internal Server Error', 
-                details: error.message,
-                stack: error.stack
+                details: error.message 
             });
         }
     } else {
