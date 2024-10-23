@@ -160,8 +160,8 @@ export default async function handler(req, res) {
                             stream: true,
                         });
 
-                        // Reset assistantMessage content before appending the continuation
-                        assistantMessage.content = '';
+                        // Remove this line that was resetting the content
+                        // assistantMessage.content = '';
 
                         for await (const continuationChunk of continuationResponse) {
                             if (continuationChunk.choices[0]?.delta?.content) {
