@@ -106,7 +106,7 @@ export default function ChatPage() {
     setStatus('thinking');
     setIsWaiting(true);
     setIsTyping(false);
-    setIsAssistantResponding(true); // Set this to true when sending a message
+    setIsAssistantResponding(true);
 
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
@@ -212,6 +212,9 @@ export default function ChatPage() {
                   if (parsedData.tool_response.name === 'generateImage') {
                     assistantMessage.image = parsedData.tool_response.result.image_url;
                     updateChat(assistantMessage);
+                  } else if (parsedData.tool_response.name === 'searchWeb') {
+                    assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
+                    updateChat(assistantMessage);
                   }
                   setStatus('typing');
                 } else if (parsedData.final_message) {
@@ -234,7 +237,7 @@ export default function ChatPage() {
         console.error('Error in handleSendMessage:', error);
       } finally {
         setStatus('thinking');
-        setIsAssistantResponding(false); // Set this to false when the response is complete
+        setIsAssistantResponding(false);
       }
     }
   };
@@ -398,7 +401,7 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
-      setIsAssistantResponding(true); // Add this line
+      setIsAssistantResponding(true);
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -475,6 +478,10 @@ export default function ChatPage() {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.image = parsedData.tool_response.result.image_url;
                   setStatus('tool-calling');
+                } else if (parsedData.tool_response.name === 'searchWeb') {
+                  // Incorporate the web search result into the assistant's message
+                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
+                  setStatus('tool-calling');
                 }
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
@@ -504,7 +511,7 @@ export default function ChatPage() {
       setIsWaiting(false);
       setIsTyping(false);
       setStatus('thinking');
-      setIsAssistantResponding(false); // Add this line
+      setIsAssistantResponding(false);
     }
   };
 
