@@ -82,23 +82,24 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
-  const [parsedContent, setParsedContent] = useState<{ text: string; image?: string }>({ text: message.content });
+  const [parsedContent, setParsedContent] = useState<{ 
+    text: string; 
+    images?: string[] 
+  }>({ text: message.content });
 
   useEffect(() => {
-    // Parse the content to extract image URL if present
     try {
-      const contentObj = JSON.parse(message.content);
-      if (contentObj.final_message) {
-        setParsedContent({
-          text: contentObj.final_message.content,
-          image: contentObj.final_message.image
-        });
-      } else {
-        setParsedContent({ text: message.content });
-      }
+        const contentObj = JSON.parse(message.content);
+        if (contentObj.final_message) {
+            setParsedContent({
+                text: contentObj.final_message.content,
+                images: contentObj.final_message.images || [] // Handle array of images
+            });
+        } else {
+            setParsedContent({ text: message.content });
+        }
     } catch (e) {
-      // If parsing fails, it's not JSON, so use the content as is
-      setParsedContent({ text: message.content });
+        setParsedContent({ text: message.content });
     }
   }, [message.content]);
 
@@ -163,7 +164,10 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
         >
           {parsedContent.text}
         </ReactMarkdown>
-        {(parsedContent.image || message.image) && <ImageThumbnail src={parsedContent.image || message.image || ''} />}
+        {/* Render all images in the array */}
+        {parsedContent.images?.map((imageUrl, index) => (
+          <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
+        ))}
       </>
     );
   };
