@@ -46,5 +46,28 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "wikiSearch",
+      "description": "Searches Wikipedia using a string search query and returns results for the LLM to use in crafting a thoughtful, informed response to the user's request.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "action": {
+            "type": "string",
+            "description": "The action to perform, typically 'query'."
+          },
+          "searchString": {
+            "type": "string",
+            "description": "The search query to be used for Wikipedia search."
+          }
+        },
+        "required": ["action", "searchString"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
   }
 ]
