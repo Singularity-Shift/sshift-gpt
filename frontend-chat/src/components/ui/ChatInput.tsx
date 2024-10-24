@@ -84,7 +84,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
 
   const handleStop = () => {
     console.log('Stop button clicked');
-    // Implement stop functionality here
+    // Implement any additional client-side logic if needed
   };
 
   return (
