@@ -161,6 +161,16 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
+            a: ({ href, children }) => (
+              <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-blue-800 hover:underline"
+              >
+                {children}
+              </a>
+            ),
           }}
           className="prose max-w-none"
         >
