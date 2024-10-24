@@ -38,6 +38,7 @@ export const compile = async () => {
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
+    extraArguments: ['--move-2'],
   });
 };
 

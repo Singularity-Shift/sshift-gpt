@@ -19,12 +19,11 @@ module sshift_dao_addr::fees {
     const ENOT_PENDING_ADMIN: u64 = 9;
     const ENOT_PENDING_REVIEWER: u64 = 10;
 
-
     struct Config has key, copy {
         admin_addr: address,
         pending_admin_addr: Option<address>,
         reviewer_addr: address,
-        pending_reviewer_addr: Option<address>,
+        pending_reviewer_addr: Option<address>
     }
 
     struct FeesAdmin has key {
@@ -34,52 +33,72 @@ module sshift_dao_addr::fees {
     }
 
     struct FeesToClaim has key {
-        amount: u64,
+        amount: u64
     }
 
     #[event]
     struct Claimed has store, drop {
         collector: address,
-        amount: u64,
+        amount: u64
     }
 
     fun init_module(sender: &signer) {
-        move_to(sender, Config {
-            admin_addr: signer::address_of(sender),
-            pending_admin_addr: option::none(),
-            reviewer_addr: signer::address_of(sender),
-            pending_reviewer_addr: option::none(),
-        });
+        move_to(
+            sender,
+            Config {
+                admin_addr: signer::address_of(sender),
+                pending_admin_addr: option::none(),
+                reviewer_addr: signer::address_of(sender),
+                pending_reviewer_addr: option::none()
+            }
+        );
 
-        move_to(sender, FeesAdmin {
-            collectors: vector::empty(),
-            salary_not_claimed: 0,
-            signer_cap: option::none(),
-        });
+        move_to(
+            sender,
+            FeesAdmin {
+                collectors: vector::empty(),
+                salary_not_claimed: 0,
+                signer_cap: option::none()
+            }
+        );
     }
 
-    public entry fun create_resource_account(account: &signer, seed: vector<u8>, collectors: vector<address>) acquires FeesAdmin, Config {
+    public entry fun create_resource_account(
+        account: &signer, seed: vector<u8>, collectors: vector<address>
+    ) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_dao_addr);
 
-        assert!(is_admin(config, account_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
+        assert!(
+            is_admin(config, account_addr),
+            error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
+        );
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (_resource_signer, signer_cap) = account::create_resource_account(account, seed);
+        let (_resource_signer, signer_cap) =
+            account::create_resource_account(account, seed);
 
         fees_admin.signer_cap = option::some(signer_cap);
 
-        vector::for_each<address>(collectors, |account| {
-            vector::push_back(&mut fees_admin.collectors, account);
-        });
+        vector::for_each<address>(
+            collectors,
+            |account| {
+                vector::push_back(&mut fees_admin.collectors, account);
+            }
+        );
     }
 
-    public entry fun remove_resource_account(account: &signer, reviewer: &signer) acquires FeesAdmin, Config {
+    public entry fun remove_resource_account(
+        account: &signer, reviewer: &signer
+    ) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let reviewer_addr = signer::address_of(reviewer);
         let config = borrow_global<Config>(@sshift_dao_addr);
-        assert!(is_admin(config, account_addr) && is_reviewer(config, reviewer_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
+        assert!(
+            is_admin(config, account_addr) && is_reviewer(config, reviewer_addr),
+            error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
+        );
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
@@ -91,38 +110,46 @@ module sshift_dao_addr::fees {
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-
-
-        let (is_found, _index) = vector::find(&fees_admin.collectors, |collector| collector == &account_addr);
+        let (is_found, _index) = vector::find(
+            &fees_admin.collectors, |collector| collector == &account_addr
+        );
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
-        move_to(account, FeesToClaim {
-            amount: 0,
-        });
+        move_to(account, FeesToClaim { amount: 0 });
     }
 
-    public entry fun add_collector(account: &signer, reviewer: &signer, collector: address) acquires FeesAdmin, Config {
+    public entry fun add_collector(
+        account: &signer, reviewer: &signer, collector: address
+    ) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let reviewer_addr = signer::address_of(reviewer);
         let config = borrow_global<Config>(@sshift_dao_addr);
-        assert!(is_admin(config, account_addr)  && is_reviewer(config, reviewer_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
+        assert!(
+            is_admin(config, account_addr) && is_reviewer(config, reviewer_addr),
+            error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
+        );
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
         vector::push_back(&mut fees_admin.collectors, collector);
     }
 
-    public entry fun remove_collector(account: &signer, reviewer: &signer, collector: address) acquires FeesAdmin, Config {
+    public entry fun remove_collector(
+        account: &signer, reviewer: &signer, collector: address
+    ) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let reviewer_addr = signer::address_of(reviewer);
         let config = borrow_global<Config>(@sshift_dao_addr);
-        assert!(is_admin(config, account_addr) && is_reviewer(config, reviewer_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
+        assert!(
+            is_admin(config, account_addr) && is_reviewer(config, reviewer_addr),
+            error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
+        );
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, index) = vector::find<address>(&fees_admin.collectors, |c| {
-            c == &collector
-        });
+        let (is_found, index) = vector::find<address>(
+            &fees_admin.collectors, |c| { c == &collector }
+        );
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
@@ -134,14 +161,13 @@ module sshift_dao_addr::fees {
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, _index) = vector::find<address>(&fees_admin.collectors, |c| {
-            c == &account_addr
-        });
+        let (is_found, _index) = vector::find<address>(
+            &fees_admin.collectors, |c| { c == &account_addr }
+        );
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
         let salary_to_claim = borrow_global_mut<FeesToClaim>(account_addr);
-
 
         assert!(salary_to_claim.amount > 0, error::invalid_state(ENOTHING_TO_CLAIM));
 
@@ -149,50 +175,65 @@ module sshift_dao_addr::fees {
 
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        aptos_account::transfer_coins<AptosCoin>(&resource_signer, account_addr, salary_to_claim.amount);
+        aptos_account::transfer_coins<AptosCoin>(
+            &resource_signer, account_addr, salary_to_claim.amount
+        );
 
-        fees_admin.salary_not_claimed = fees_admin.salary_not_claimed - salary_to_claim.amount;
+        fees_admin.salary_not_claimed = fees_admin.salary_not_claimed
+            - salary_to_claim.amount;
 
-
-        event::emit(Claimed {
-            collector: account_addr,
-            amount: salary_to_claim.amount
-        });
-
+        event::emit(
+            Claimed { collector: account_addr, amount: salary_to_claim.amount }
+        );
 
         salary_to_claim.amount = 0;
     }
 
-    public entry fun payment<AptosCoin>(account: &signer, collectors: vector<address>, amounts: vector<u64>) acquires FeesAdmin, Config, FeesToClaim {
+    public entry fun payment<AptosCoin>(
+        account: &signer, collectors: vector<address>, amounts: vector<u64>
+    ) acquires FeesAdmin, Config, FeesToClaim {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_dao_addr);
-        assert!(is_admin(config, account_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
+        assert!(
+            is_admin(config, account_addr),
+            error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
+        );
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, _index) = vector::find<address>(&fees_admin.collectors, |c| {
-            vector::any(&collectors, |e| e == c)
-        });
+        let (is_found, _index) = vector::find<address>(
+            &fees_admin.collectors,
+            |c| {
+                vector::any(&collectors, |e| e == c)
+            }
+        );
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
-
 
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        assert!(coin::balance<AptosCoin>(signer::address_of(&resource_signer)) > vector::fold(amounts, 0, |curr, acc| acc + curr) + fees_admin.salary_not_claimed, error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE));
+        assert!(
+            coin::balance<AptosCoin>(signer::address_of(&resource_signer))
+                > vector::fold(amounts, 0, |curr, acc| acc + curr)
+                    + fees_admin.salary_not_claimed,
+            error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE)
+        );
 
-        vector::for_each(collectors, |e| {
-            let (_has_amount, index) = vector::index_of(&collectors, &e);
+        vector::for_each(
+            collectors,
+            |e| {
+                let (_has_amount, index) = vector::index_of(&collectors, &e);
 
-            let amount = *vector::borrow<u64>(&amounts, index);
+                let amount = *vector::borrow<u64>(&amounts, index);
 
-            let salary_to_claim = borrow_global_mut<FeesToClaim>(e);
+                let salary_to_claim = borrow_global_mut<FeesToClaim>(e);
 
-            salary_to_claim.amount = amount;
+                salary_to_claim.amount = amount;
 
-            fees_admin.salary_not_claimed = fees_admin.salary_not_claimed + amount;
-        });
+                fees_admin.salary_not_claimed = fees_admin.salary_not_claimed + amount;
+            }
+        );
     }
 
     public entry fun set_pending_admin(sender: &signer, new_admin: address) acquires Config {
@@ -205,22 +246,31 @@ module sshift_dao_addr::fees {
     public entry fun accept_admin(sender: &signer) acquires Config {
         let sender_addr = signer::address_of(sender);
         let config = borrow_global_mut<Config>(@sshift_dao_addr);
-        assert!(config.pending_admin_addr == option::some(sender_addr), ENOT_PENDING_ADMIN);
+        assert!(
+            config.pending_admin_addr == option::some(sender_addr), ENOT_PENDING_ADMIN
+        );
         config.admin_addr = sender_addr;
         config.pending_admin_addr = option::none();
     }
 
-    public entry fun set_pending_reviewer(sender: &signer, new_admin: address) acquires Config {
+    public entry fun set_pending_reviewer(
+        sender: &signer, new_admin: address
+    ) acquires Config {
         let sender_addr = signer::address_of(sender);
         let config = borrow_global_mut<Config>(@sshift_dao_addr);
-        assert!(is_reviewer(config, sender_addr), EONLY_REVIEWER_CAN_SET_PENDING_REVIEWER);
+        assert!(
+            is_reviewer(config, sender_addr), EONLY_REVIEWER_CAN_SET_PENDING_REVIEWER
+        );
         config.pending_reviewer_addr = option::some(new_admin);
     }
 
     public entry fun accept_reviewer(sender: &signer) acquires Config {
         let sender_addr = signer::address_of(sender);
         let config = borrow_global_mut<Config>(@sshift_dao_addr);
-        assert!(config.pending_reviewer_addr == option::some(sender_addr), ENOT_PENDING_REVIEWER);
+        assert!(
+            config.pending_reviewer_addr == option::some(sender_addr),
+            ENOT_PENDING_REVIEWER
+        );
         config.reviewer_addr = sender_addr;
         config.pending_reviewer_addr = option::none();
     }
@@ -303,23 +353,20 @@ module sshift_dao_addr::fees {
     }
 
     fun is_admin(config: &Config, sender: address): bool {
-        if (sender == config.admin_addr) {
-            true
-        } else {
-            false
-        }
+        if (sender == config.admin_addr) { true }
+        else { false }
     }
 
     fun is_reviewer(config: &Config, sender: address): bool {
-        if (sender == config.reviewer_addr) {
-            true
-        } else {
-            false
-        }
+        if (sender == config.reviewer_addr) { true }
+        else { false }
     }
 
     fun get_signer_cap(signer_cap_opt: &Option<SignerCapability>): &SignerCapability {
-        assert!(option::is_some<SignerCapability>(signer_cap_opt), error::not_implemented(ENOT_RESOURCE_ACCOUNT_ADDED));
+        assert!(
+            option::is_some<SignerCapability>(signer_cap_opt),
+            error::not_implemented(ENOT_RESOURCE_ACCOUNT_ADDED)
+        );
         option::borrow<SignerCapability>(signer_cap_opt)
     }
 
@@ -342,22 +389,55 @@ module sshift_dao_addr::fees {
     const ESIGN_CAP_SHOULD_NOT_EXISTS: u64 = 20;
 
     #[test_only]
+    public fun initialize_for_test(sender: &signer) {
+        move_to(
+            sender,
+            Config {
+                admin_addr: signer::address_of(sender),
+                pending_admin_addr: option::none(),
+                reviewer_addr: signer::address_of(sender),
+                pending_reviewer_addr: option::none()
+            }
+        );
+
+        move_to(
+            sender,
+            FeesAdmin {
+                collectors: vector::empty(),
+                salary_not_claimed: 0,
+                signer_cap: option::none()
+            }
+        );
+    }
+
+    #[test_only]
     fun bounded_percentage(amount: u64, numerator: u64, denominator: u64): u64 {
-        if (denominator == 0) {
-            0
-        } else {
-            math64::min(amount, math64::mul_div(amount, numerator, denominator))
+        if (denominator == 0) { 0 }
+        else {
+            math64::min(
+                amount,
+                math64::mul_div(amount, numerator, denominator)
+            )
         }
     }
 
-    #[test(aptos_framework = @0x1, sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     fun test_payment(
         aptos_framework: &signer,
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer,
+        user4: &signer
     ) acquires Config, FeesAdmin, FeesToClaim {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         let user1_addr = signer::address_of(user1);
@@ -371,7 +451,7 @@ module sshift_dao_addr::fees {
         account::create_account_for_test(user2_addr);
         account::create_account_for_test(user3_addr);
         account::create_account_for_test(user4_addr);
-        
+
         coin::register<AptosCoin>(user1);
         coin::register<AptosCoin>(user2);
 
@@ -408,7 +488,11 @@ module sshift_dao_addr::fees {
         add_collector(user1, user4, user4_addr);
         create_collector_object(user4);
 
-        payment<AptosCoin>(user1, vector[user2_addr, user3_addr, user4_addr], vector[2000000, 1000000, 1500000]);
+        payment<AptosCoin>(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            vector[2000000, 1000000, 1500000]
+        );
 
         let user2_addr_balance = get_balance_to_claim(user2_addr);
         let user3_addr_balance = get_balance_to_claim(user3_addr);
@@ -424,9 +508,13 @@ module sshift_dao_addr::fees {
         let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr);
         let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
         let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
-        
+
         assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
-        assert!(resource_balance_after_user3_claimed == resource_balance - user3_addr_balance, EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balance_after_user3_claimed
+                == resource_balance - user3_addr_balance,
+            EBALANCE_NOT_EQUAL
+        );
         assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
         assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
 
@@ -436,7 +524,11 @@ module sshift_dao_addr::fees {
         let resource_balance_after_user4_claimed = get_resource_balance<AptosCoin>();
 
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
-        assert!(resource_balance_after_user4_claimed == resource_balance - (user3_addr_balance + user4_addr_balance), EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balance_after_user4_claimed
+                == resource_balance - (user3_addr_balance + user4_addr_balance),
+            EBALANCE_NOT_EQUAL
+        );
 
         assert!(coin::balance<AptosCoin>(user2_addr) == 0, EBALANCE_NOT_EQUAL);
         assert!(coin::balance<AptosCoin>(user3_addr) == 1000000, EBALANCE_NOT_EQUAL);
@@ -446,13 +538,22 @@ module sshift_dao_addr::fees {
         coin::destroy_mint_cap(mint_cap);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     fun test_add_collector(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -465,7 +566,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -480,20 +585,29 @@ module sshift_dao_addr::fees {
 
         let collectors = get_collectors();
 
-        let (is_found, _index) = vector::find<address>(&collectors, |c| {
-            c == &user4_addr
-        });
+        let (is_found, _index) = vector::find<address>(
+            &collectors, |c| { c == &user4_addr }
+        );
 
         assert!(is_found, ECOLLECTOR_NOT_FOUND);
-    } 
+    }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     fun test_remove_collector(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -506,7 +620,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
         create_collector_object(user2);
         create_collector_object(user3);
 
@@ -520,20 +638,29 @@ module sshift_dao_addr::fees {
 
         let collectors = get_collectors();
 
-        let (is_found, _index) = vector::find<address>(&collectors, |c| {
-            c == &user4_addr
-        });
+        let (is_found, _index) = vector::find<address>(
+            &collectors, |c| { c == &user4_addr }
+        );
 
         assert!(!is_found, Ecollector_SHOULD_NOT_EXISTS);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     fun test_remove_resource_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -546,7 +673,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -563,15 +694,24 @@ module sshift_dao_addr::fees {
 
         assert!(&fees_admin.signer_cap == &option::none(), ESIGN_CAP_SHOULD_NOT_EXISTS);
     }
-    
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_add_collector_with_not_admin_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
 
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
@@ -585,14 +725,17 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
 
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
-
 
         set_pending_reviewer(sender, user4_addr);
         accept_reviewer(user4);
@@ -600,14 +743,23 @@ module sshift_dao_addr::fees {
         add_collector(user2, user4, user4_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_add_collector_with_not_reviewer_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
 
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
@@ -621,7 +773,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -632,14 +788,23 @@ module sshift_dao_addr::fees {
         add_collector(user2, user4, user4_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_collector_with_not_admin_accout(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -652,7 +817,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -666,14 +835,23 @@ module sshift_dao_addr::fees {
         remove_collector(user2, user4, user4_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_collector_with_not_reviewer_accout(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -686,7 +864,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -697,14 +879,23 @@ module sshift_dao_addr::fees {
         remove_collector(user1, user4, user4_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_payment_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config, FeesToClaim {
+        user4: &signer
+    ) acquires FeesAdmin, Config, FeesToClaim {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -717,7 +908,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -725,18 +920,30 @@ module sshift_dao_addr::fees {
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
 
-        
-        payment<AptosCoin>(user4, vector[user2_addr, user3_addr], vector[2000000, 1000000]);
+        payment<AptosCoin>(
+            user4,
+            vector[user2_addr, user3_addr],
+            vector[2000000, 1000000]
+        );
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 393218, location = Self)]
     fun test_claim_fees_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config, FeesToClaim {
+        user4: &signer
+    ) acquires FeesAdmin, Config, FeesToClaim {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -749,7 +956,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr]
+        );
 
         create_collector_object(user2);
         create_collector_object(user3);
@@ -760,14 +971,23 @@ module sshift_dao_addr::fees {
         claim_salary<AptosCoin>(user4);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 7, location = Self)]
     fun test_set_pending_admin_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires Config {
+        user4: &signer
+    ) acquires Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -783,14 +1003,23 @@ module sshift_dao_addr::fees {
         set_pending_admin(user4, user1_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 9, location = Self)]
     fun test_accept_admin_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires Config {
+        user4: &signer
+    ) acquires Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -808,14 +1037,23 @@ module sshift_dao_addr::fees {
         accept_admin(user4);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 8, location = Self)]
     fun test_set_pending_reviewer_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires Config {
+        user4: &signer
+    ) acquires Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -831,14 +1069,23 @@ module sshift_dao_addr::fees {
         set_pending_reviewer(user4, user1_addr);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 10, location = Self)]
     fun test_accept_reviewer_with_not_autorized_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires Config {
+        user4: &signer
+    ) acquires Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -856,14 +1103,23 @@ module sshift_dao_addr::fees {
         accept_reviewer(user4);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_resource_account_with_not_admin_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -876,7 +1132,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
 
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
@@ -887,14 +1147,23 @@ module sshift_dao_addr::fees {
         remove_resource_account(user2, user4);
     }
 
-    #[test(sender = @sshift_dao_addr, user1 = @0x200, user2 = @0x201, user3 = @0x202, user4= @0x203)]
+    #[
+        test(
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
     #[expected_failure(abort_code = 327681, location = Self)]
     fun test_remove_resource_account_with_not_reviewer_account(
         sender: &signer,
         user1: &signer,
         user2: &signer,
         user3: &signer,
-        user4: &signer) acquires FeesAdmin, Config {
+        user4: &signer
+    ) acquires FeesAdmin, Config {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -907,7 +1176,11 @@ module sshift_dao_addr::fees {
 
         init_module(sender);
 
-        create_resource_account(sender, b"test", vector[user2_addr, user3_addr, user4_addr]);
+        create_resource_account(
+            sender,
+            b"test",
+            vector[user2_addr, user3_addr, user4_addr]
+        );
 
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
