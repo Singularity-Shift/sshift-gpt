@@ -28,20 +28,22 @@ interface CodeBlockProps {
 const CodeBlock: React.FC<CodeBlockProps> = ({ language, value, onCopy }) => {
   return (
     <div className="relative">
-      <Button 
-        variant="ghost" 
-        size="icon" 
-        className="absolute right-2 top-2"
-        onClick={() => onCopy(value)}
-      >
-        <Copy className="h-4 w-4" />
-      </Button>
+      <div className="flex justify-between items-center bg-gray-800 text-white p-2 rounded-t">
+        <span className="text-sm">{language}</span>
+        <Button 
+          variant="ghost" 
+          size="icon" 
+          onClick={() => onCopy(value)}
+        >
+          <Copy className="h-4 w-4" />
+        </Button>
+      </div>
       <SyntaxHighlighter
         language={language}
         style={materialDark}
         customStyle={{
           margin: 0,
-          borderRadius: '0.5rem',
+          borderRadius: '0 0 0.5rem 0.5rem',
           padding: '1rem',
         }}
       >
