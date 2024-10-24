@@ -9,21 +9,18 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-let shouldStopStream = false;
+let shouldStopStream = false; // Move this outside the handler to persist across requests
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
 
-        // Validate messages array
         if (!Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Invalid messages format' });
         }
 
-        // Ensure each message has a role and content
         const formattedMessages = messages.map(msg => {
             if (msg.role === 'user' && msg.image) {
-                // Handle user messages with uploaded images
                 return {
                     role: 'user',
                     content: [
@@ -38,20 +35,19 @@ export default async function handler(req, res) {
             };
         });
 
-        // Add the system prompt to the beginning of the messages array
         const messagesWithSystemPrompt = [systemPrompt, ...formattedMessages];
 
         try {
             console.log('Sending request to OpenAI API...');
             const stream = await openai.chat.completions.create({
-                model: model || 'gpt-4o-mini', // Use a default model if not provided
+                model: model || 'gpt-4o-mini',
                 messages: messagesWithSystemPrompt,
                 max_tokens: 4000,
                 temperature: temperature,
                 stream: true,
                 tools: toolSchema,
                 tool_choice: "auto",
-                parallel_tool_calls: true, // Enable parallel tool calling
+                parallel_tool_calls: true,
             });
 
             res.writeHead(200, {
@@ -63,14 +59,16 @@ export default async function handler(req, res) {
             let currentToolCalls = [];
             let assistantMessage = { 
                 content: '',
-                images: [] // Add an array to store multiple images
-            }; // Remove initial image property
+                images: []
+            };
 
             for await (const chunk of stream) {
                 if (shouldStopStream) {
+                    console.log('Stream stopping...');
                     res.write('data: [DONE]\n\n');
                     res.end();
-                    break;
+                    shouldStopStream = false; // Reset the flag
+                    return;
                 }
 
                 console.log('Received chunk:', JSON.stringify(chunk));
@@ -96,7 +94,6 @@ export default async function handler(req, res) {
                         content: chunk.choices[0].delta.content 
                     })}\n\n`);
                 } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-                    // Process tool calls one at a time
                     for (const toolCall of currentToolCalls) {
                         console.log('Processing tool call:', toolCall);
                         
@@ -105,7 +102,7 @@ export default async function handler(req, res) {
                                 const args = JSON.parse(toolCall.function.arguments);
                                 const imageUrl = await generateImage(args.prompt, args.size, args.style);
                                 toolCall.result = { image_url: imageUrl };
-                                assistantMessage.images.push(imageUrl); // Add image to array
+                                assistantMessage.images.push(imageUrl);
                             } catch (error) {
                                 console.error('Error generating image:', error);
                             }
@@ -116,14 +113,12 @@ export default async function handler(req, res) {
                                 const searchResult = await searchWeb(args.query);
                                 console.log('Web search result:', searchResult);
                                 toolCall.result = searchResult;
-                                // Don't write the tool response to the client
                             } catch (error) {
                                 console.error('Error searching web:', error);
                             }
                         }
                     }
 
-                    // Let the model continue with the conversation
                     try {
                         const continuationMessages = [
                             ...messagesWithSystemPrompt,
@@ -141,7 +136,6 @@ export default async function handler(req, res) {
                             }
                         ];
 
-                        // Add tool results to the messages
                         for (const toolCall of currentToolCalls) {
                             if (toolCall.result) {
                                 continuationMessages.push({
@@ -159,9 +153,6 @@ export default async function handler(req, res) {
                             temperature: temperature,
                             stream: true,
                         });
-
-                        // Remove this line that was resetting the content
-                        // assistantMessage.content = '';
 
                         for await (const continuationChunk of continuationResponse) {
                             if (continuationChunk.choices[0]?.delta?.content) {
@@ -182,12 +173,11 @@ export default async function handler(req, res) {
                 res.flush();
             }
 
-            // Send the final message with image only in the content
             console.log('Sending final message:', assistantMessage);
             res.write(`data: ${JSON.stringify({ 
                 final_message: {
                     content: assistantMessage.content,
-                    images: assistantMessage.images // Send array of images
+                    images: assistantMessage.images
                 }
             })}\n\n`);
             res.write('data: [DONE]\n\n');
@@ -197,8 +187,7 @@ export default async function handler(req, res) {
             res.status(500).json({ error: 'Internal Server Error', details: error.message });
         }
     } else if (req.method === 'DELETE') {
-        // Handle stop request
-        shouldStopStream = true; // Set the flag to stop the stream
+        shouldStopStream = true;
         res.status(200).json({ message: 'Stream stopping initiated' });
     } else {
         res.setHeader('Allow', ['POST', 'DELETE']);
