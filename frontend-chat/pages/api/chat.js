@@ -62,7 +62,8 @@ export default async function handler(req, res) {
 
             let currentToolCalls = [];
             let assistantMessage = { 
-                content: ''
+                content: '',
+                images: [] // Add an array to store multiple images
             }; // Remove initial image property
 
             for await (const chunk of stream) {
@@ -104,8 +105,7 @@ export default async function handler(req, res) {
                                 const args = JSON.parse(toolCall.function.arguments);
                                 const imageUrl = await generateImage(args.prompt, args.size, args.style);
                                 toolCall.result = { image_url: imageUrl };
-                                assistantMessage.image = imageUrl;
-                                // Don't write the tool response to the client
+                                assistantMessage.images.push(imageUrl); // Add image to array
                             } catch (error) {
                                 console.error('Error generating image:', error);
                             }
@@ -182,12 +182,12 @@ export default async function handler(req, res) {
                 res.flush();
             }
 
-            // Send the final message
+            // Send the final message with image only in the content
             console.log('Sending final message:', assistantMessage);
             res.write(`data: ${JSON.stringify({ 
                 final_message: {
                     content: assistantMessage.content,
-                    image: assistantMessage.image
+                    images: assistantMessage.images // Send array of images
                 }
             })}\n\n`);
             res.write('data: [DONE]\n\n');
