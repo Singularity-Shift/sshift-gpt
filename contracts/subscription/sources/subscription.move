@@ -1,7 +1,6 @@
 module sshift_dao_addr::subscription {
     use std::signer;
     use std::vector;
-    use std::string::{Self, String};
     use std::option::{Self, Option};
     use std::debug;
 
@@ -143,7 +142,7 @@ module sshift_dao_addr::subscription {
         let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions, |s| {
             let FreeSubscription {
                 account,
-                duration,
+                duration: _duration,
             }= *s;
 
             account == account_addr
@@ -201,8 +200,6 @@ module sshift_dao_addr::subscription {
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
 
-        debug::print(&discount_per_day);
-
         let discount: u64;
 
         if (hold_move_token > 0) {
@@ -214,8 +211,6 @@ module sshift_dao_addr::subscription {
                 discount = discount_per_day * days;
             };
         };
-
-        debug::print(&discount);
 
         aptos_account::transfer_coins<CoinType>(
             sender,
@@ -253,6 +248,21 @@ module sshift_dao_addr::subscription {
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
         plan.price_per_day
+    }
+
+    #[view]
+    public fun has_subscription_active(account: address): bool acquires UserSubscription {
+        let is_active = false;
+
+        if(exists<UserSubscription>(account)) {
+            let user_subsciption = borrow_global<UserSubscription>(account);
+
+            if(timestamp::now_seconds() < user_subsciption.end_time) {
+                is_active = true;
+            }
+        };
+        
+        is_active
     }
 
     fun check_admin(sender: &signer) {
@@ -312,9 +322,6 @@ module sshift_dao_addr::subscription {
     }
 
     #[test_only]
-    use std::bcs;
-
-    #[test_only]
     use aptos_token_objects::collection::{Self, Collection};
 
     #[test_only]
@@ -327,7 +334,22 @@ module sshift_dao_addr::subscription {
     use aptos_framework::coin;
 
     #[test_only]
+    use std::string::{Self, String};
+
+    #[test_only]
+    use aptos_std::string_utils;
+
+    #[test_only]
     const EINCORRECT_BALANCE: u64 = 7;
+    
+    #[test_only]
+    const ECLAIM_FREE_SUBSCRIPTION: u64 = 8;
+
+    #[test_only]
+    const ESHOULD_HAVE_SUBSCRIPTION_ACTIVE: u64 = 9;
+
+    #[test_only]
+    const ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE: u64 = 10;
 
     #[test_only]
     struct UsdcCoin {}
@@ -383,21 +405,6 @@ module sshift_dao_addr::subscription {
     fun mint_move_bot(sender: &signer, owner: &signer, token_data_id: token_v1::TokenDataId): token_v1::TokenId {
         let token_id = token_v1::mint_token(owner, token_data_id, 1);
         token_v1::direct_transfer(owner, sender, token_id, 1);
- 
-        let (create_address, collection, name) = token_v1::get_token_data_id_fields(&token_data_id);
-
-        token_v1::mutate_token_properties(
-            owner,
-            signer::address_of(sender),
-            create_address,
-            collection,
-            name,
-            0,
-            1,
-            vector<String>[string::utf8(b"given_to")],
-            vector<vector<u8>>[bcs::to_bytes(&signer::address_of(sender))],
-            vector<String>[ string::utf8(b"address") ],
-        );
 
         token_id
     }
@@ -455,7 +462,7 @@ module sshift_dao_addr::subscription {
     }
 
     #[test_only]
-    fun create_subscription<CoinType>(sender: &signer, admin: &signer): (token_v1::TokenId, address, address) acquires SubscriptionPlan, MoveBot {
+    fun create_subscription<CoinType>(sender: &signer, admin: &signer): (token_v1::TokenDataId, address, address) acquires SubscriptionPlan, MoveBot {
         let admin_addr = signer::address_of(admin);
 
         create_resource_account(sender, admin);
@@ -519,7 +526,7 @@ module sshift_dao_addr::subscription {
             move_bot_obj,
         );
 
-        (token_id, collection_addr_1, collection_addr_2)
+        (token_data_id, collection_addr_1, collection_addr_2)
     }
 
     #[
@@ -609,7 +616,7 @@ module sshift_dao_addr::subscription {
 
         aptos_coin::mint(aptos_framework, user_addr, 20000000000);
 
-        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+        let (_token_data_id, collection_addr_1, _collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
 
         aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
 
@@ -654,7 +661,7 @@ module sshift_dao_addr::subscription {
 
         aptos_coin::mint(aptos_framework, user_addr, 20000000000);
 
-        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+        let (_token_data_id, collection_addr_1, _collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
 
         aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
 
@@ -704,7 +711,7 @@ module sshift_dao_addr::subscription {
 
         aptos_coin::mint(aptos_framework, user_addr, 20000000000);
 
-        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+        let (_token_data_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
 
         aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
 
@@ -724,6 +731,314 @@ module sshift_dao_addr::subscription {
 
         assert!(user_balance == 19999999342000, EINCORRECT_BALANCE);
         
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        let (token_data_id, _collection_addr_1, _collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        mint_move_bot(user, admin, token_data_id);
+
+        buy_plan<UsdcCoin>(user, 604800, vector::empty());
+
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999650000, EINCORRECT_BALANCE);
+        
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        let (_token_data_id, collection_addr_1, _collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        let token_holding = vector::empty();
+
+        for(i in 0..20) {
+            let token_addr = mint_nft(admin, collection_addr_1, string_utils::format1(&b"Sshift token n{} v1", i), string_utils::format1(&b"Sshift token n{}", i), string::utf8(b"Sshift"), user_addr);
+            vector::push_back(&mut token_holding, token_addr);
+        };
+
+        buy_plan<UsdcCoin>(user, 604800, token_holding);
+
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999650000, EINCORRECT_BALANCE);
+        
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+          let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        let (start_time, end_time) = get_plan(user_addr);
+
+        assert!(start_time > 0 && end_time > start_time, ECLAIM_FREE_SUBSCRIPTION);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        buy_plan<UsdcCoin>(user, 604800, vector::empty());
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == true, ESHOULD_HAVE_SUBSCRIPTION_ACTIVE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        buy_plan<UsdcCoin>(user, 604800, vector::empty());
+
+        timestamp::update_global_time_for_test_secs(804800);
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == false, ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+          let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == true, ESHOULD_HAVE_SUBSCRIPTION_ACTIVE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+          let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        timestamp::update_global_time_for_test_secs(804800);
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == false, ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_not_have_active_subscription_without_claiming_or_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription {
+          let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription<UsdcCoin>(owner, admin);
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == false, ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
