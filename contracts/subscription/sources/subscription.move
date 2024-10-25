@@ -3,6 +3,7 @@ module sshift_dao_addr::subscription {
     use std::vector;
     use std::string::{Self, String};
     use std::option::{Self, Option};
+    use std::debug;
 
     use aptos_framework::event;
     use aptos_framework::aptos_account;
@@ -200,6 +201,8 @@ module sshift_dao_addr::subscription {
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
 
+        debug::print(&discount_per_day);
+
         let discount: u64;
 
         if (hold_move_token > 0) {
@@ -211,6 +214,8 @@ module sshift_dao_addr::subscription {
                 discount = discount_per_day * days;
             };
         };
+
+        debug::print(&discount);
 
         aptos_account::transfer_coins<CoinType>(
             sender,
@@ -322,6 +327,12 @@ module sshift_dao_addr::subscription {
     use aptos_framework::coin;
 
     #[test_only]
+    const EINCORRECT_BALANCE: u64 = 7;
+
+    #[test_only]
+    struct UsdcCoin {}
+
+    #[test_only]
     fun create_resource_account(sender: &signer, admin: &signer) {
         let admin_addr = signer::address_of(admin);
 
@@ -331,9 +342,6 @@ module sshift_dao_addr::subscription {
 
         fees::create_collector_object(admin);
     }
-
-    #[test_only]
-    struct UsdcCoin {}
 
     #[test_only]
     fun create_move_bot(sender: &signer): token_v1::TokenDataId {
@@ -447,7 +455,7 @@ module sshift_dao_addr::subscription {
     }
 
     #[test_only]
-    fun create_subscription<CoinType>(sender: &signer, admin: &signer): token_v1::TokenId acquires SubscriptionPlan, MoveBot {
+    fun create_subscription<CoinType>(sender: &signer, admin: &signer): (token_v1::TokenId, address, address) acquires SubscriptionPlan, MoveBot {
         let admin_addr = signer::address_of(admin);
 
         create_resource_account(sender, admin);
@@ -494,7 +502,7 @@ module sshift_dao_addr::subscription {
             nft_id: token_id
         };
 
-        let construct_ref = object::create_object(signer::address_of(sender));
+        let construct_ref = object::create_object(signer::address_of(admin));
         let object_signer = object::generate_signer(&construct_ref);
 
         move_to(&object_signer, move_bot);
@@ -511,7 +519,7 @@ module sshift_dao_addr::subscription {
             move_bot_obj,
         );
 
-        token_id
+        (token_id, collection_addr_1, collection_addr_2)
     }
 
     #[
@@ -568,6 +576,10 @@ module sshift_dao_addr::subscription {
 
         buy_plan<UsdcCoin>(user, 604800, vector::empty());
 
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999300000, EINCORRECT_BALANCE);
+
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
     }
@@ -597,11 +609,121 @@ module sshift_dao_addr::subscription {
 
         aptos_coin::mint(aptos_framework, user_addr, 20000000000);
 
-        create_subscription<UsdcCoin>(owner, admin);
+        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
 
         aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
 
-        buy_plan<UsdcCoin>(user, 604800, vector::empty());
+        let token_addr = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+
+        let token_holding = vector::empty();
+
+        vector::push_back(&mut token_holding, token_addr);
+
+        buy_plan<UsdcCoin>(user, 604800, token_holding);
+
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999321000, EINCORRECT_BALANCE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_2 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n2 v1"), string::utf8(b"Sshift token n2"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_3 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n3 v1"), string::utf8(b"Sshift token n3"), string::utf8(b"Sshift"), user_addr);
+
+        let token_holding = vector::empty();
+
+        vector::push_back(&mut token_holding, token_addr_1);
+        vector::push_back(&mut token_holding, token_addr_2);
+        vector::push_back(&mut token_holding, token_addr_3);
+
+        buy_plan<UsdcCoin>(user, 604800, token_holding);
+
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999363000, EINCORRECT_BALANCE);
+        
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        aptos_coin::mint(aptos_framework, user_addr, 20000000000);
+
+        let (_token_id, collection_addr_1, collection_addr_2) = create_subscription<UsdcCoin>(owner, admin);
+
+        aptos_account::transfer_coins<UsdcCoin>(admin, user_addr, 20000000000000);
+
+        let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_2 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n2 v1"), string::utf8(b"Sshift token n2"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_3 = mint_nft(admin, collection_addr_2, string::utf8(b"Sshift token n1 v2"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+
+        let token_holding = vector::empty();
+
+        vector::push_back(&mut token_holding, token_addr_1);
+        vector::push_back(&mut token_holding, token_addr_2);
+        vector::push_back(&mut token_holding, token_addr_3);
+
+        buy_plan<UsdcCoin>(user, 604800, token_holding);
+
+        let user_balance = coin::balance<UsdcCoin>(user_addr);
+
+        assert!(user_balance == 19999999342000, EINCORRECT_BALANCE);
+        
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
