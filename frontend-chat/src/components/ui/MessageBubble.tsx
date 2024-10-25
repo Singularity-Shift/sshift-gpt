@@ -180,6 +180,10 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
         {parsedContent.images?.map((imageUrl, index) => (
           <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
         ))}
+        {/* Render user's uploaded image if present */}
+        {isUser && message.image && (
+          <ImageThumbnail src={message.image} />
+        )}
       </>
     );
   };
