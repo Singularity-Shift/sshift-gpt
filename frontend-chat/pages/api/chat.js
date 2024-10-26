@@ -11,6 +11,36 @@ const openai = new OpenAI({
 
 let shouldStopStream = false; // Move this outside the handler to persist across requests
 
+async function wikiSearch(action, searchString) {
+    try {
+        console.log('Searching Wikipedia with query:', searchString);
+        const response = await fetch('http://localhost:3000/api/tools/wikiSearch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, searchString }),
+        });
+
+        console.log('Wikipedia search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search Wikipedia: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Wikipedia search response data:', data);
+
+        if (!data.result) {
+            throw new Error(`No search result returned from the API. Response: ${JSON.stringify(data)}`);
+        }
+        return data.result;
+    } catch (error) {
+        console.error('Error in wikiSearch:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -115,6 +145,16 @@ export default async function handler(req, res) {
                                 toolCall.result = searchResult;
                             } catch (error) {
                                 console.error('Error searching web:', error);
+                            }
+                        } else if (toolCall.function.name === 'wikiSearch') {
+                            try {
+                                const args = JSON.parse(toolCall.function.arguments);
+                                console.log('Searching Wikipedia with query:', args.searchString);
+                                const wikiResult = await wikiSearch(args.action, args.searchString);
+                                console.log('Wikipedia search result:', wikiResult);
+                                toolCall.result = wikiResult;
+                            } catch (error) {
+                                console.error('Error searching Wikipedia:', error);
                             }
                         }
                     }

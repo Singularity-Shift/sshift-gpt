@@ -56,7 +56,7 @@ async function generateImage(prompt, size, style) {
         const bucketUrl = await uploadImageToBucket(imageUrl);
         console.log('Image uploaded to bucket:', bucketUrl);
         
-        return bucketUrl;
+        return { imageUrl: bucketUrl, prompt }; // Return the final prompt along with the image URL
     } catch (error) {
         console.error('Error:', error);
         throw error;
@@ -74,8 +74,8 @@ export default async function handler(req, res) {
         }
 
         try {
-            const imageUrl = await generateImage(prompt, size, style);
-            res.status(200).json({ url: imageUrl });
+            const { imageUrl, prompt: finalPrompt } = await generateImage(prompt, size, style);
+            res.status(200).json({ url: imageUrl, prompt: finalPrompt }); // Include the final prompt in the response
         } catch (error) {
             console.error('Error:', error);
             res.status(500).json({ 
