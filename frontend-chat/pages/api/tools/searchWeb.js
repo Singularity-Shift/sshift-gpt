@@ -38,9 +38,9 @@ async function searchWeb(query) {
             'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-            model: "llama-3.1-sonar-small-128k-online",
+            model: "llama-3.1-sonar-large-128k-online",
             messages: [
-                { role: "system", content: "Be precise and concise." },
+                { role: "system", content: "Be precise and and accurate as possible, maximising the amount of information you can provide." },
                 { role: "user", content: query }
             ],
             max_tokens: 1000,
