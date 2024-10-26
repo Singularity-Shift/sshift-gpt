@@ -50,15 +50,26 @@ export default async function handler(req, res) {
         }
 
         const formattedMessages = messages.map(msg => {
+            // Handle messages with uploaded images
             if (msg.role === 'user' && msg.image) {
                 return {
                     role: 'user',
                     content: [
-                        { type: 'text', text: msg.content || "I've uploaded an image." },
-                        { type: 'image_url', image_url: { url: msg.image } }
+                        { 
+                            type: 'text', 
+                            text: msg.content || "Here's an image." 
+                        },
+                        { 
+                            type: 'image_url', 
+                            image_url: { 
+                                url: msg.image,
+                                detail: "auto"  // Add detail level for image analysis
+                            } 
+                        }
                     ]
                 };
             }
+            // Handle regular text messages
             return {
                 role: msg.role || 'user',
                 content: msg.content || ''
