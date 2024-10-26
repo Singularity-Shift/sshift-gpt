@@ -21,7 +21,7 @@ export interface Message {
 }
 
 interface Chat {
-  id: string; // Change this to string
+  id: string;
   title: string;
   messages: Message[];
   isRenaming?: boolean;
@@ -32,6 +32,7 @@ interface Chat {
   };
   createdAt: number;
   lastUpdated: number;
+  model: string; // Add this line
 }
 
 export default function ChatPage() {
@@ -42,6 +43,8 @@ export default function ChatPage() {
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
+  const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>('thinking');
+  const [isAssistantResponding, setIsAssistantResponding] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -54,23 +57,40 @@ export default function ChatPage() {
   const handleNewChat = () => {
     const currentTime = Date.now();
     const newChat: Chat = {
-      id: uuidv4(), // Use UUID for the id
+      id: uuidv4(),
       title: `New Chat ${chats.length + 1}`,
       messages: [],
       createdAt: currentTime,
       lastUpdated: currentTime,
+      model: 'gpt-4o-mini', // Set default model for new chats
     };
     setChats([...chats, newChat]);
     setCurrentChatId(newChat.id);
+    setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
   };
 
   const handleChatSelect = (chatId: string) => {
     setCurrentChatId(chatId);
+    const selectedChat = chats.find(chat => chat.id === chatId);
+    if (selectedChat) {
+      setSelectedModel(selectedChat.model);
+    }
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.id === chatId ? { ...chat, lastUpdated: Date.now() } : chat
       )
     );
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    if (currentChatId) {
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === currentChatId ? { ...chat, model } : chat
+        )
+      );
+    }
   };
 
   const handleSendMessage = async (
@@ -83,7 +103,11 @@ export default function ChatPage() {
       return;
     }
 
+    setStatus('thinking');
     setIsWaiting(true);
+    setIsTyping(false);
+    setIsAssistantResponding(true);
+
     if (inputMessage.trim() || selectedImage) {
       const userMessage: Message = {
         id: Date.now().toString(),
@@ -159,6 +183,9 @@ export default function ChatPage() {
           content: '',
         };
 
+        setIsWaiting(false);
+        setIsTyping(true);
+
         while (true) {
           const { done, value } = await reader.read();
           if (done) break;
@@ -170,7 +197,7 @@ export default function ChatPage() {
             if (line.startsWith('data: ')) {
               const data = line.substring(6);
               if (data === '[DONE]') {
-                setIsTyping(false);
+                setStatus('thinking');
                 break;
               }
               try {
@@ -178,11 +205,25 @@ export default function ChatPage() {
                 if (parsedData.content) {
                   assistantMessage.content += parsedData.content;
                   updateChat(assistantMessage);
+                  setStatus('typing');
+                } else if (parsedData.tool_call) {
+                  setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
                   if (parsedData.tool_response.name === 'generateImage') {
                     assistantMessage.image = parsedData.tool_response.result.image_url;
                     updateChat(assistantMessage);
+                  } else if (parsedData.tool_response.name === 'searchWeb') {
+                    assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
+                    updateChat(assistantMessage);
                   }
+                  setStatus('typing');
+                } else if (parsedData.final_message) {
+                  assistantMessage = {
+                    ...assistantMessage,
+                    content: parsedData.final_message.content,
+                    image: parsedData.final_message.image,
+                  };
+                  updateChat(assistantMessage);
                 }
               } catch (error) {
                 console.error('Error parsing JSON:', error);
@@ -192,12 +233,11 @@ export default function ChatPage() {
         }
 
         console.log('Final assistant message:', assistantMessage);
-        setIsWaiting(false);
-        setIsTyping(false);
       } catch (error) {
         console.error('Error in handleSendMessage:', error);
-        setIsWaiting(false);
-        setIsTyping(false);
+      } finally {
+        setStatus('thinking');
+        setIsAssistantResponding(false);
       }
     }
   };
@@ -238,8 +278,10 @@ export default function ChatPage() {
 
     try {
       console.log('Regenerating message...');
+      setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true); // Add this line
       const currentChat = chats.find(chat => chat.id === currentChatId);
       if (!currentChat) return;
 
@@ -257,6 +299,8 @@ export default function ChatPage() {
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
+      setStatus('thinking');
+      setIsAssistantResponding(false); // Add this line
     }
   };
 
@@ -335,12 +379,16 @@ export default function ChatPage() {
         )
       );
       // Regenerate the conversation from this point forward
+      setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true); // Add this line
       regenerateConversation(updatedMessages)
         .finally(() => {
           setIsWaiting(false);
           setIsTyping(false);
+          setStatus('thinking');
+          setIsAssistantResponding(false); // Add this line
         });
     }
   };
@@ -350,8 +398,10 @@ export default function ChatPage() {
 
     try {
       console.log('Regenerating conversation...');
+      setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
+      setIsAssistantResponding(true);
 
       const response = await fetch('/api/chat', {
         method: 'POST',
@@ -405,6 +455,7 @@ export default function ChatPage() {
         if (!isTyping) {
           setIsTyping(true);
           setIsWaiting(false);
+          setStatus('typing');
         }
 
         const lines = chunk.split('\n');
@@ -426,7 +477,14 @@ export default function ChatPage() {
               } else if (parsedData.tool_response) {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.image = parsedData.tool_response.result.image_url;
+                  setStatus('tool-calling');
+                } else if (parsedData.tool_response.name === 'searchWeb') {
+                  // Incorporate the web search result into the assistant's message
+                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
+                  setStatus('tool-calling');
                 }
+              } else if (parsedData.tool_call) {
+                setStatus('tool-calling');
               }
               setChats((prevChats) =>
                 prevChats.map((c) =>
@@ -452,6 +510,8 @@ export default function ChatPage() {
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
+      setStatus('thinking');
+      setIsAssistantResponding(false);
     }
   };
 
@@ -493,9 +553,10 @@ export default function ChatPage() {
       <div className="flex flex-col flex-1">
         <ChatHeader
           selectedModel={selectedModel}
-          onModelChange={setSelectedModel}
+          onModelChange={handleModelChange}
           onNewChat={handleNewChat}
           onNavigateToDashboard={() => router.push('/dashboard')}
+          currentChatModel={currentChat?.model || null}
         />
 
         <div className="flex-1 overflow-hidden flex flex-col">
@@ -504,9 +565,9 @@ export default function ChatPage() {
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
             onRegenerate={handleRegenerateMessage}
             onEdit={handleEdit}
-            isWaiting={isWaiting}
-            isTyping={isTyping}
+            status={status}
             showNoChatsMessage={showNoChatsMessage}
+            isAssistantResponding={isAssistantResponding} // Pass the new state here
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>

@@ -3,15 +3,16 @@ import { ScrollArea } from './scrollarea';
 import { MessageBubble } from './MessageBubble';
 import { StatusIndicator } from './statusIndicator';
 import { Message } from '../../../app/chat/page';
+import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 
 interface ChatWindowProps {
   messages: Message[];
   onCopy: (text: string) => void;
   onRegenerate: (message: Message) => void;
   onEdit: (message: Message, newContent: string) => void;
-  isWaiting: boolean;
-  isTyping: boolean;
+  status: 'thinking' | 'tool-calling' | 'typing';
   showNoChatsMessage: boolean;
+  isAssistantResponding: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({ 
@@ -19,9 +20,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onCopy, 
   onRegenerate, 
   onEdit,
-  isWaiting,
-  isTyping,
-  showNoChatsMessage
+  status,
+  showNoChatsMessage,
+  isAssistantResponding
 }) => {
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -34,7 +35,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages, isWaiting, isTyping]);
+  }, [messages, status, isAssistantResponding]);
 
   return (
     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative">
@@ -43,7 +44,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           {messages.map((message, index) => (
             <div
               key={`${message.id}-${index}`}
-              ref={index === messages.length - 1 && !isWaiting && !isTyping ? lastMessageRef : null}
+              ref={index === messages.length - 1 ? lastMessageRef : null}
             >
               <MessageBubble 
                 message={message} 
@@ -53,9 +54,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               />
             </div>
           ))}
-          {(isWaiting || isTyping) && (
-            <div ref={lastMessageRef}>
-              <StatusIndicator status={isTyping ? "typing" : "thinking"} className="ml-2" />
+          {isAssistantResponding && (
+            <div className="flex items-start space-x-2" ref={lastMessageRef}>
+              {status === 'thinking' && (
+                <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
+                  <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
+                  <AvatarFallback>AI</AvatarFallback>
+                </Avatar>
+              )}
+              <StatusIndicator status={status} className={status === 'thinking' ? "mt-2" : ""} />
             </div>
           )}
         </div>

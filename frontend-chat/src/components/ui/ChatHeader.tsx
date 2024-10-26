@@ -15,6 +15,7 @@ interface ChatHeaderProps {
   onModelChange: (value: string) => void;
   onNewChat: () => void;
   onNavigateToDashboard: () => void;
+  currentChatModel: string | null; // Add this line
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -22,6 +23,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onModelChange,
   onNewChat,
   onNavigateToDashboard,
+  currentChatModel, // Add this line
 }) => {
   return (
     <div className="flex items-center justify-between p-4 border-b border-border h-[73px] w-full">
@@ -35,7 +37,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <ArrowLeft className="h-4 w-4" />
           <span>Dashboard</span>
         </Button>
-        <Select value={selectedModel} onValueChange={onModelChange}>
+        <Select value={currentChatModel || selectedModel} onValueChange={onModelChange}>
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Select model" />
           </SelectTrigger>
@@ -48,7 +50,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           New Chat
         </Button>
       </div>
-      <UserLoginStatus /> {/* Use the new component here */}
+      <UserLoginStatus />
     </div>
   );
 };
