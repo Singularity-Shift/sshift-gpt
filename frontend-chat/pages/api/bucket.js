@@ -2,6 +2,7 @@ import { Storage } from '@google-cloud/storage';
 import formidable from 'formidable';
 import fs from 'fs';
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid package
+import path from 'path';
 
 // Disable Next.js's default body parsing to handle file uploads
 export const config = {

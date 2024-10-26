@@ -16,8 +16,8 @@
     "baseUrl": ".",
     "paths": {
       "@aptos": ["lib/aptos/src/index.ts"],
-      "@fn-chat/*": ["./frontend-chat/src/*"],
       "@fn-backend/*": ["./backend-chat/src/*"],
+      "@fn-chat/*": ["./frontend-chat/src/*"],
       "@helpers": ["lib/helpers/src/index.ts"]
     }
   },

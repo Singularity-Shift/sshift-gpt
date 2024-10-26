@@ -2,7 +2,7 @@ services:
   redis:
     image: redis:latest
     container_name: sshift_redis_db
-    command: redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PWD}
+    command: sh init-redis.sh
     env_file:
       - .env
     ports:
