@@ -45,20 +45,34 @@ export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
 
+        // Add near the start of the handler function
+        console.log('Received messages:', JSON.stringify(messages, null, 2));
+
         if (!Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Invalid messages format' });
         }
 
         const formattedMessages = messages.map(msg => {
+            // Handle messages with uploaded images
             if (msg.role === 'user' && msg.image) {
                 return {
                     role: 'user',
                     content: [
-                        { type: 'text', text: msg.content || "I've uploaded an image." },
-                        { type: 'image_url', image_url: { url: msg.image } }
+                        { 
+                            type: 'text', 
+                            text: msg.content || "Here's an image." 
+                        },
+                        { 
+                            type: 'image_url', 
+                            image_url: { 
+                                url: msg.image,
+                                detail: "auto"  // Add detail level for image analysis
+                            } 
+                        }
                     ]
                 };
             }
+            // Handle regular text messages
             return {
                 role: msg.role || 'user',
                 content: msg.content || ''
@@ -124,90 +138,104 @@ export default async function handler(req, res) {
                         content: chunk.choices[0].delta.content 
                     })}\n\n`);
                 } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-                    for (const toolCall of currentToolCalls) {
-                        console.log('Processing tool call:', toolCall);
+                    // Add before processing tool calls
+                    if (chunk.choices[0]?.finish_reason === 'tool_calls') {
+                        console.log('Current tool calls before processing:', JSON.stringify(currentToolCalls, null, 2));
                         
-                        if (toolCall.function.name === 'generateImage') {
-                            try {
-                                const args = JSON.parse(toolCall.function.arguments);
-                                const imageUrl = await generateImage(args.prompt, args.size, args.style);
-                                toolCall.result = { image_url: imageUrl };
-                                assistantMessage.images.push(imageUrl);
-                            } catch (error) {
-                                console.error('Error generating image:', error);
-                            }
-                        } else if (toolCall.function.name === 'searchWeb') {
-                            try {
-                                const args = JSON.parse(toolCall.function.arguments);
-                                console.log('Searching web with query:', args.query);
-                                const searchResult = await searchWeb(args.query);
-                                console.log('Web search result:', searchResult);
-                                toolCall.result = searchResult;
-                            } catch (error) {
-                                console.error('Error searching web:', error);
-                            }
-                        } else if (toolCall.function.name === 'wikiSearch') {
-                            try {
-                                const args = JSON.parse(toolCall.function.arguments);
-                                console.log('Searching Wikipedia with query:', args.searchString);
-                                const wikiResult = await wikiSearch(args.action, args.searchString);
-                                console.log('Wikipedia search result:', wikiResult);
-                                toolCall.result = wikiResult;
-                            } catch (error) {
-                                console.error('Error searching Wikipedia:', error);
-                            }
-                        }
-                    }
-
-                    try {
-                        const continuationMessages = [
-                            ...messagesWithSystemPrompt,
-                            { 
-                                role: 'assistant', 
-                                content: assistantMessage.content,
-                                tool_calls: currentToolCalls.map(call => ({
-                                    id: call.id,
-                                    type: 'function',
-                                    function: {
-                                        name: call.function.name,
-                                        arguments: call.function.arguments
-                                    }
-                                }))
-                            }
-                        ];
-
                         for (const toolCall of currentToolCalls) {
-                            if (toolCall.result) {
-                                continuationMessages.push({
-                                    role: 'tool',
-                                    content: JSON.stringify(toolCall.result),
-                                    tool_call_id: toolCall.id
-                                });
+                            console.log('Processing tool call:', {
+                                name: toolCall.function.name,
+                                arguments: toolCall.function.arguments
+                            });
+                            
+                            if (toolCall.function.name === 'generateImage') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Generating image with args:', args);
+                                    const imageUrl = await generateImage(args.prompt, args.size, args.style);
+                                    console.log('Generated image URL:', imageUrl);
+                                    toolCall.result = { image_url: imageUrl };
+                                    assistantMessage.images.push(imageUrl);
+                                } catch (error) {
+                                    console.error('Error generating image:', error);
+                                    // Add error handling response
+                                    assistantMessage.content += "\nI apologize, but I encountered an error while trying to generate the image. " + error.message;
+                                }
+                            } else if (toolCall.function.name === 'searchWeb') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Searching web with query:', args.query);
+                                    const searchResult = await searchWeb(args.query);
+                                    console.log('Web search result:', searchResult);
+                                    toolCall.result = searchResult;
+                                } catch (error) {
+                                    console.error('Error searching web:', error);
+                                }
+                            } else if (toolCall.function.name === 'wikiSearch') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Searching Wikipedia with query:', args.searchString);
+                                    const wikiResult = await wikiSearch(args.action, args.searchString);
+                                    console.log('Wikipedia search result:', wikiResult);
+                                    toolCall.result = wikiResult;
+                                } catch (error) {
+                                    console.error('Error searching Wikipedia:', error);
+                                }
                             }
                         }
 
-                        const continuationResponse = await openai.chat.completions.create({
-                            model: model || 'gpt-4o-mini',
-                            messages: continuationMessages,
-                            max_tokens: 1000,
-                            temperature: temperature,
-                            stream: true,
-                        });
+                        try {
+                            const continuationMessages = [
+                                ...messagesWithSystemPrompt,
+                                { 
+                                    role: 'assistant', 
+                                    content: assistantMessage.content,
+                                    tool_calls: currentToolCalls.map(call => ({
+                                        id: call.id,
+                                        type: 'function',
+                                        function: {
+                                            name: call.function.name,
+                                            arguments: call.function.arguments
+                                        }
+                                    }))
+                                }
+                            ];
 
-                        for await (const continuationChunk of continuationResponse) {
-                            if (continuationChunk.choices[0]?.delta?.content) {
-                                assistantMessage.content += continuationChunk.choices[0].delta.content;
-                                res.write(`data: ${JSON.stringify({ 
-                                    content: continuationChunk.choices[0].delta.content 
-                                })}\n\n`);
+                            for (const toolCall of currentToolCalls) {
+                                if (toolCall.result) {
+                                    continuationMessages.push({
+                                        role: 'tool',
+                                        content: JSON.stringify(toolCall.result),
+                                        tool_call_id: toolCall.id
+                                    });
+                                }
                             }
-                            res.flush();
+
+                            const continuationResponse = await openai.chat.completions.create({
+                                model: model || 'gpt-4o-mini',
+                                messages: continuationMessages,
+                                max_tokens: 1000,
+                                temperature: temperature,
+                                stream: true,
+                            });
+
+                            for await (const continuationChunk of continuationResponse) {
+                                if (continuationChunk.choices[0]?.delta?.content) {
+                                    assistantMessage.content += continuationChunk.choices[0].delta.content;
+                                    res.write(`data: ${JSON.stringify({ 
+                                        content: continuationChunk.choices[0].delta.content 
+                                    })}\n\n`);
+                                }
+                                res.flush();
+                            }
+                        } catch (error) {
+                            console.error('Error in continuation response:', error);
                         }
-                    } catch (error) {
-                        console.error('Error in continuation response:', error);
+
+                        currentToolCalls = [];
                     }
 
-                    currentToolCalls = [];
+                    res.flush();
                 }
 
                 res.flush();
@@ -247,16 +275,17 @@ async function generateImage(prompt, size, style) {
         });
 
         console.log('Image generation response status:', response.status);
+        const responseText = await response.text();
+        console.log('Image generation response:', responseText);
         
         if (!response.ok) {
-            const responseText = await response.text();
             if (response.status === 400 && responseText.includes('content policy violation')) {
-                throw new Error('content policy violation');
+                throw new Error('Content policy violation');
             }
             throw new Error(`Failed to generate image: ${response.status} ${response.statusText}\nResponse: ${responseText}`);
         }
 
-        const data = await response.json();
+        const data = JSON.parse(responseText);
 
         if (!data.url) {
             throw new Error(`No image URL returned from the API. Response: ${JSON.stringify(data)}`);

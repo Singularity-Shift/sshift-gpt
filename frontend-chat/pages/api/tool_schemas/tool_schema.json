@@ -3,23 +3,23 @@
     "type": "function",
     "function": {
       "name": "generateImage",
-      "description": "Generates exactly one image using DALL-E 3. Do not make multiple calls to this function in the same conversation turn. Only generate one image per user request.",
+      "description": "Generates exactly one image using DALL-E 3. Do not make multiple calls to this function in the same conversation turn. Only generate one image per user request. The prompt used to generate the image must always be included in the response to the user.",
       "parameters": {
         "type": "object",
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "A detailed text description for generating exactly one image. Do not generate multiple images."
+            "description": "A detailed text description for generating exactly one image. The description should be vivid and specific enough to ensure accurate image generation. The prompt used must be provided to the user in the response."
           },
           "size": {
             "type": "string",
             "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "The size of the single generated image."
+            "description": "The size of the single generated image. Select from one of the predefined sizes."
           },
           "style": {
             "type": "string",
             "enum": ["vivid", "natural"],
-            "description": "The style of the single generated image. 'vivid' for hyper-real and dramatic, 'natural' for less hyper-real."
+            "description": "The style of the single generated image. 'vivid' produces a hyper-real, dramatic image, while 'natural' results in a more realistic, less exaggerated depiction."
           }
         },
         "required": ["prompt", "size", "style"],
@@ -32,13 +32,13 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Searches the web using a string search query and returns results for the LLM to use in crafting a thoughtful, informed response to the user's request.",
+      "description": "Searches the web using a string search query and returns results for the LLM to use in crafting a thoughtful, informed response to the user's request. Any URLs present in the response must be provided to the user along with the crafted response.",
       "parameters": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "description": "The search query to be used for web search."
+            "description": "The search query to be used for web search. This should be a well-formed string query to retrieve relevant and up-to-date information."
           }
         },
         "required": ["query"],
@@ -51,7 +51,7 @@
     "type": "function",
     "function": {
       "name": "wikiSearch",
-      "description": "Searches Wikipedia using a string search query and returns results for the LLM to use in crafting a thoughtful, informed response to the user's request.",
+      "description": "Searches Wikipedia using a string search query and returns results for the LLM to use in crafting a thoughtful, informed response to the user's request. Any URLs present in the response must be provided to the user along with the crafted response.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -61,7 +61,7 @@
           },
           "searchString": {
             "type": "string",
-            "description": "The search query to be used for Wikipedia search."
+            "description": "The search query to be used for Wikipedia search. This string should be detailed enough to yield specific results."
           }
         },
         "required": ["action", "searchString"],
