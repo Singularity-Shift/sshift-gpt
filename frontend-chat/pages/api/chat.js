@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import systemPrompt from '../../config/systemPrompt.json';
+import messageInjection from '../../config/messageInjection.json';
 import toolSchema from './tool_schemas/tool_schema.json';
 
 dotenv.config();
@@ -79,7 +80,11 @@ export default async function handler(req, res) {
             };
         });
 
-        const messagesWithSystemPrompt = [systemPrompt, ...formattedMessages];
+        const messagesWithSystemPrompt = [
+            systemPrompt,
+            ...messageInjection,
+            ...formattedMessages
+        ];
 
         try {
             console.log('Sending request to OpenAI API...');
