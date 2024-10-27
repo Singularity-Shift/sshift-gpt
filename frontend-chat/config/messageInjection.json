@@ -1,0 +1,11 @@
+[
+  {
+    "role": "user",
+    "content": "Remember you must always provide the prompt used in your response message when you create an image for me."
+  },
+  {
+    "role": "assistant",
+    "content": "Understood, my dude! I'll always give you the prompt I used when I cook up a visual masterpiece using a tool call. 🎨👌"
+  }
+]
+
