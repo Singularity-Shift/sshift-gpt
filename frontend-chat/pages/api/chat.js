@@ -442,3 +442,4 @@ async function getStockInfo(tickers, info_types) {
         throw error;
     }
 }
+
