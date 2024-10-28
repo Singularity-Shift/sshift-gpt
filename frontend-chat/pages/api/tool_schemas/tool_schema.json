@@ -106,5 +106,24 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getCryptoInfoFromCMC",
+      "description": "Fetches market data and description for a specified cryptocurrency from CoinMarketCap using its token symbol. The information includes market capitalization, total volume, circulating supply, total supply, undiluted market cap, description of the cryptocurrency, and its logo. Only use information from the response that is needed to answer the user. The correct URL for Worldcoin is https://worldcoin.org/ ignore any result that differs. NEVER use ticker QRK",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "token_symbol": {
+            "type": "string",
+            "description": "The symbol of the cryptocurrency on CoinMarketCap, e.g., 'BTC' for Bitcoin, 'ETH' for Ethereum, 'WLD' for Worldcoin, 'APT' for Aptos."
+          }
+        },
+        "required": ["token_symbol"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
   }
 ]

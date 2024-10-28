@@ -42,6 +42,32 @@ async function wikiSearch(action, searchString) {
     }
 }
 
+async function getCryptoInfoFromCMC(token_symbol) {
+    try {
+        console.log('Getting crypto info for:', token_symbol);
+        const response = await fetch('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token_symbol }),
+        });
+
+        console.log('Crypto info response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get crypto info: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Crypto info response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getCryptoInfoFromCMC:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -195,6 +221,17 @@ export default async function handler(req, res) {
                                     toolCall.result = stockInfo;
                                 } catch (error) {
                                     console.error('Error getting stock info:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'getCryptoInfoFromCMC') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting crypto info with args:', args);
+                                    const cryptoInfo = await getCryptoInfoFromCMC(args.token_symbol);
+                                    console.log('Crypto info result:', cryptoInfo);
+                                    toolCall.result = cryptoInfo;
+                                } catch (error) {
+                                    console.error('Error getting crypto info:', error);
                                     toolCall.result = { error: error.message };
                                 }
                             }
