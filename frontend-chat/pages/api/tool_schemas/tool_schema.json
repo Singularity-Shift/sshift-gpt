@@ -125,5 +125,28 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "queryArxiv",
+      "description": "Searches arXiv for academic papers and research articles. Returns detailed paper information including titles, authors, abstracts, and publication dates. Use this when users request scientific papers, research articles, or academic publications. Any URLs or DOIs in the response must be provided to the user.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "search_query": {
+            "type": "string",
+            "description": "The search query for finding academic papers. Should be specific enough to return relevant research papers."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "The maximum number of papers to return in the response. Use this to limit the number of results."
+          }
+        },
+        "required": ["search_query", "max_results"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
   }
 ]

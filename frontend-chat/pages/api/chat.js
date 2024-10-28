@@ -68,6 +68,32 @@ async function getCryptoInfoFromCMC(token_symbol) {
     }
 }
 
+async function queryArxiv(search_query, max_results = 10) {
+    try {
+        console.log('Querying arXiv with:', { search_query, max_results });
+        const response = await fetch('http://localhost:3000/api/tools/searchArxiv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search_query, max_results }),
+        });
+
+        console.log('arXiv query response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to query arXiv: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('arXiv query response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in queryArxiv:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -232,6 +258,17 @@ export default async function handler(req, res) {
                                     toolCall.result = cryptoInfo;
                                 } catch (error) {
                                     console.error('Error getting crypto info:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'queryArxiv') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Querying arXiv with args:', args);
+                                    const arxivResult = await queryArxiv(args.search_query, args.max_results);
+                                    console.log('arXiv query result:', arxivResult);
+                                    toolCall.result = arxivResult;
+                                } catch (error) {
+                                    console.error('Error querying arXiv:', error);
                                     toolCall.result = { error: error.message };
                                 }
                             }
