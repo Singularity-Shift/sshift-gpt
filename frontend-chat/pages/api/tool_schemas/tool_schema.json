@@ -148,5 +148,25 @@
       },
       "strict": true
     }
-  }
+  },
+  {
+    "type": "function",
+    "function": {
+        "name": "getTrendingCryptos",
+        "description": "Fetches a list of trending cryptocurrencies from coingecko. This function provides an option to fetch based on popularity, top gainers, or market cap.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "option": {
+                    "type": "string",
+                    "enum": ["popularity", "top_gainers", "market_cap"],
+                    "description": "The option to determine the type of trending cryptocurrencies to fetch: popularity, top gainers, or market cap."
+                }
+            },
+            "required": ["option"],
+            "additionalProperties": false
+        },
+        "strict": true
+    }
+}
 ]

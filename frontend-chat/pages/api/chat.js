@@ -94,6 +94,33 @@ async function queryArxiv(search_query, max_results = 10) {
     }
 }
 
+// Add this function with the other tool functions
+async function getTrendingCryptos(option) {
+    try {
+        console.log('Getting trending cryptos with option:', option);
+        const response = await fetch('http://localhost:3000/api/tools/getTrendingCryptos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ option }),
+        });
+
+        console.log('Trending cryptos response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get trending cryptos: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Trending cryptos response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getTrendingCryptos:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -271,6 +298,17 @@ export default async function handler(req, res) {
                                     console.error('Error querying arXiv:', error);
                                     toolCall.result = { error: error.message };
                                 }
+                            } else if (toolCall.function.name === 'getTrendingCryptos') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting trending cryptos with args:', args);
+                                    const trendingCryptos = await getTrendingCryptos(args.option);
+                                    console.log('Trending cryptos result:', trendingCryptos);
+                                    toolCall.result = trendingCryptos;
+                                } catch (error) {
+                                    console.error('Error getting trending cryptos:', error);
+                                    toolCall.result = { error: error.message };
+                                }
                             }
                         }
 
@@ -442,4 +480,3 @@ async function getStockInfo(tickers, info_types) {
         throw error;
     }
 }
-
