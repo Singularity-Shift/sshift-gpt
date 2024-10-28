@@ -186,6 +186,17 @@ export default async function handler(req, res) {
                                 } catch (error) {
                                     console.error('Error searching Wikipedia:', error);
                                 }
+                            } else if (toolCall.function.name === 'getStockInfo') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting stock info with args:', args);
+                                    const stockInfo = await getStockInfo(args.tickers, args.info_types);
+                                    console.log('Stock info result:', stockInfo);
+                                    toolCall.result = stockInfo;
+                                } catch (error) {
+                                    console.error('Error getting stock info:', error);
+                                    toolCall.result = { error: error.message };
+                                }
                             }
                         }
 
@@ -328,6 +339,32 @@ async function searchWeb(query) {
         return data.result;
     } catch (error) {
         console.error('Error in searchWeb:', error);
+        throw error;
+    }
+}
+
+async function getStockInfo(tickers, info_types) {
+    try {
+        console.log('Getting stock info:', { tickers, info_types });
+        const response = await fetch('http://localhost:3000/api/tools/getStockInfo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tickers, info_types }),
+        });
+
+        console.log('Stock info response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get stock info: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Stock info response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getStockInfo:', error);
         throw error;
     }
 }

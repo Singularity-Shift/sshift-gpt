@@ -69,5 +69,42 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getStockInfo",
+      "description": "Fetches financial information about stocks using their ticker symbols. Returns various types of data including current price, dividends, splits, company information, financials, and recommendations. Use this function when users ask about stock market information or specific companies' financial data.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tickers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of stock ticker symbols (e.g., 'AAPL' for Apple, 'MSFT' for Microsoft)"
+          },
+          "info_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "current_price",
+                "dividends",
+                "splits",
+                "company_info",
+                "financials",
+                "recommendations"
+              ]
+            },
+            "description": "Types of information to fetch for each ticker. Select one or more from the available options."
+          }
+        },
+        "required": ["tickers", "info_types"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
   }
 ]
