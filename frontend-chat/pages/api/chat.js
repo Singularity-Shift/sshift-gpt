@@ -42,6 +42,58 @@ async function wikiSearch(action, searchString) {
     }
 }
 
+async function getCryptoInfoFromCMC(token_symbol) {
+    try {
+        console.log('Getting crypto info for:', token_symbol);
+        const response = await fetch('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token_symbol }),
+        });
+
+        console.log('Crypto info response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get crypto info: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Crypto info response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getCryptoInfoFromCMC:', error);
+        throw error;
+    }
+}
+
+async function queryArxiv(search_query, max_results = 10) {
+    try {
+        console.log('Querying arXiv with:', { search_query, max_results });
+        const response = await fetch('http://localhost:3000/api/tools/searchArxiv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search_query, max_results }),
+        });
+
+        console.log('arXiv query response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to query arXiv: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('arXiv query response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in queryArxiv:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -185,6 +237,39 @@ export default async function handler(req, res) {
                                     toolCall.result = wikiResult;
                                 } catch (error) {
                                     console.error('Error searching Wikipedia:', error);
+                                }
+                            } else if (toolCall.function.name === 'getStockInfo') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting stock info with args:', args);
+                                    const stockInfo = await getStockInfo(args.tickers, args.info_types);
+                                    console.log('Stock info result:', stockInfo);
+                                    toolCall.result = stockInfo;
+                                } catch (error) {
+                                    console.error('Error getting stock info:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'getCryptoInfoFromCMC') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting crypto info with args:', args);
+                                    const cryptoInfo = await getCryptoInfoFromCMC(args.token_symbol);
+                                    console.log('Crypto info result:', cryptoInfo);
+                                    toolCall.result = cryptoInfo;
+                                } catch (error) {
+                                    console.error('Error getting crypto info:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'queryArxiv') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Querying arXiv with args:', args);
+                                    const arxivResult = await queryArxiv(args.search_query, args.max_results);
+                                    console.log('arXiv query result:', arxivResult);
+                                    toolCall.result = arxivResult;
+                                } catch (error) {
+                                    console.error('Error querying arXiv:', error);
+                                    toolCall.result = { error: error.message };
                                 }
                             }
                         }
@@ -331,3 +416,30 @@ async function searchWeb(query) {
         throw error;
     }
 }
+
+async function getStockInfo(tickers, info_types) {
+    try {
+        console.log('Getting stock info:', { tickers, info_types });
+        const response = await fetch('http://localhost:3000/api/tools/getStockInfo', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ tickers, info_types }),
+        });
+
+        console.log('Stock info response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get stock info: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Stock info response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getStockInfo:', error);
+        throw error;
+    }
+}
+
