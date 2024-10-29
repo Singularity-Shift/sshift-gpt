@@ -168,5 +168,24 @@
         },
         "strict": true
     }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "searchNftCollection",
+    "description": "Searches for NFT collections on the Aptos blockchain. Returns detailed collection information including supply, floor price, volume, and verification status. Use this when users ask about specific NFT collections.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "collection_name": {
+          "type": "string",
+          "description": "The name of the NFT collection to search for. Should be specific enough to find the desired collection."
+        }
+      },
+      "required": ["collection_name"],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
 }
 ]
