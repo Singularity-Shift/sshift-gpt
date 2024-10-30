@@ -50,17 +50,32 @@ async function searchNftCollection(collectionName) {
             throw new Error(`GraphQL Error: ${searchData.errors[0].message}`);
         }
 
-        // Find the first matching verified collection
+        // Normalize the search term by removing 'the' and special characters
         const searchTerm = collectionName.toLowerCase()
             .replace(/^the\s+/i, '')
             .replace(/\s+/g, '-')
             .trim();
             
-        const collection = searchData.data.aptos.collections.find(c => 
-            c.verified && 
-            (c.title.toLowerCase() === collectionName.toLowerCase() || 
-             (c.semantic_slug && c.semantic_slug.toLowerCase() === searchTerm))
-        );
+        // Find the first matching verified collection with more flexible matching
+        const collection = searchData.data.aptos.collections.find(c => {
+            if (!c.verified) return false;
+            
+            // Normalize the collection title for comparison
+            const normalizedTitle = c.title.toLowerCase()
+                .replace(/^the\s+/i, '')
+                .trim();
+            
+            // Normalize the semantic slug for comparison
+            const normalizedSlug = (c.semantic_slug || '').toLowerCase()
+                .replace(/^the-/i, '')
+                .trim();
+            
+            // Check if the search term is contained within the title or slug
+            return normalizedTitle.includes(searchTerm) || 
+                   searchTerm.includes(normalizedTitle) ||
+                   normalizedSlug.includes(searchTerm) ||
+                   searchTerm.includes(normalizedSlug);
+        });
         
         if (!collection) {
             return {
