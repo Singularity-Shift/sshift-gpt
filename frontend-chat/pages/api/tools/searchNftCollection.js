@@ -176,7 +176,7 @@ async function searchNftCollection(collectionName) {
             usd_volume: `$${collection.usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
             supply: `${collection.supply} NFTs`,
             verified: collection.verified,
-            cover_url: collection.cover_url,
+            cover_url: formatImageUrl(collection.cover_url),
 
             // Stats
             total_sales: `${stats.total_sales} sales`,
@@ -223,6 +223,19 @@ async function searchNftCollection(collectionName) {
             error: error.message
         };
     }
+}
+
+function formatImageUrl(url) {
+    if (!url) return null;
+    
+    // Handle IPFS URLs
+    if (url.startsWith('ipfs://')) {
+        // Convert IPFS URL to HTTP URL using a public IPFS gateway
+        const ipfsHash = url.replace('ipfs://', '');
+        return `https://ipfs.io/ipfs/${ipfsHash}`;
+    }
+    
+    return url;
 }
 
 export default async function handler(req, res) {
