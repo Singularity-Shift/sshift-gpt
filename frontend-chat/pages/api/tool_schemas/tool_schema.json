@@ -148,5 +148,44 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+        "name": "getTrendingCryptos",
+        "description": "Fetches a list of trending cryptocurrencies from coingecko. This function provides an option to fetch based on popularity, top gainers, or market cap.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "option": {
+                    "type": "string",
+                    "enum": ["popularity", "top_gainers", "market_cap"],
+                    "description": "The option to determine the type of trending cryptocurrencies to fetch: popularity, top gainers, or market cap."
+                }
+            },
+            "required": ["option"],
+            "additionalProperties": false
+        },
+        "strict": true
+    }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "searchNftCollection",
+    "description": "Searches for NFT collections on the Aptos blockchain. Returns detailed collection information including supply, floor price, volume, and verification status. Use this when users ask about specific NFT collections.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "collection_name": {
+          "type": "string",
+          "description": "The name of the NFT collection to search for. Should be specific enough to find the desired collection."
+        }
+      },
+      "required": ["collection_name"],
+      "additionalProperties": false
+    },
+    "strict": true
   }
+}
 ]

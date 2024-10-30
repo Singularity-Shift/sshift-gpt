@@ -94,6 +94,60 @@ async function queryArxiv(search_query, max_results = 10) {
     }
 }
 
+// Add this function with the other tool functions
+async function getTrendingCryptos(option) {
+    try {
+        console.log('Getting trending cryptos with option:', option);
+        const response = await fetch('http://localhost:3000/api/tools/getTrendingCryptos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ option }),
+        });
+
+        console.log('Trending cryptos response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get trending cryptos: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Trending cryptos response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getTrendingCryptos:', error);
+        throw error;
+    }
+}
+
+// Add this function with the other tool functions at the top
+async function searchNftCollection(collection_name) {
+    try {
+        console.log('Searching NFT collection:', collection_name);
+        const response = await fetch('http://localhost:3000/api/tools/searchNftCollection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ collection_name }),
+        });
+
+        console.log('NFT collection search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search NFT collection: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('NFT collection search response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in searchNftCollection:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -271,6 +325,28 @@ export default async function handler(req, res) {
                                     console.error('Error querying arXiv:', error);
                                     toolCall.result = { error: error.message };
                                 }
+                            } else if (toolCall.function.name === 'getTrendingCryptos') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Getting trending cryptos with args:', args);
+                                    const trendingCryptos = await getTrendingCryptos(args.option);
+                                    console.log('Trending cryptos result:', trendingCryptos);
+                                    toolCall.result = trendingCryptos;
+                                } catch (error) {
+                                    console.error('Error getting trending cryptos:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'searchNftCollection') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Searching NFT collection with args:', args);
+                                    const nftCollection = await searchNftCollection(args.collection_name);
+                                    console.log('NFT collection search result:', nftCollection);
+                                    toolCall.result = nftCollection;
+                                } catch (error) {
+                                    console.error('Error searching NFT collection:', error);
+                                    toolCall.result = { error: error.message };
+                                }
                             }
                         }
 
@@ -442,4 +518,3 @@ async function getStockInfo(tickers, info_types) {
         throw error;
     }
 }
-
