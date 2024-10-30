@@ -141,9 +141,19 @@
           "max_results": {
             "type": "integer",
             "description": "The maximum number of papers to return in the response. Use this to limit the number of results."
+          },
+          "sort_by": {
+            "type": "string",
+            "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
+            "description": "How to sort the results. 'submittedDate' will show the most recent papers first."
+          },
+          "sort_order": {
+            "type": "string",
+            "enum": ["ascending", "descending"],
+            "description": "The order of the sorted results. Use 'descending' to see newest papers first when sorting by date."
           }
         },
-        "required": ["search_query", "max_results"],
+        "required": ["search_query", "max_results", "sort_by", "sort_order"],
         "additionalProperties": false
       },
       "strict": true
