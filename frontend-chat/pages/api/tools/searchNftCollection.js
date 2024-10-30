@@ -62,132 +62,166 @@ async function searchNftCollection(collectionName) {
              (c.semantic_slug && c.semantic_slug.toLowerCase() === searchTerm))
         );
         
-        if (collection) {
-            // Fetch additional stats using the slug
-            const statsQuery = `
-                query fetchCollectionStats($slug: String!) {
-                    aptos {
-                        collection_stats(slug: $slug) {
-                            total_mint_volume
-                            total_mint_usd_volume
-                            total_mints
-                            total_sales
-                            total_usd_volume
-                            total_volume
-                            day_volume
-                            day_sales
-                            day_usd_volume
-                        }
-                    }
-                }
-            `;
-
-            // Fetch collection details
-            const detailsQuery = `
-                query fetchCollectionWithoutNfts($slug: String) {
-                    aptos {
-                        collections(
-                            where: {
-                                _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
-                            }
-                        ) {
-                            description
-                            discord
-                            twitter
-                            website
-                        }
-                    }
-                }
-            `;
-
-            // Make both queries in parallel
-            const [statsResponse, detailsResponse] = await Promise.all([
-                fetch('https://api.indexer.xyz/graphql', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-user': process.env.INDEXER_USER_ID,
-                        'x-api-key': process.env.INDEXER_API_KEY
-                    },
-                    body: JSON.stringify({
-                        query: statsQuery,
-                        variables: {
-                            slug: collection.slug
-                        }
-                    })
-                }),
-                fetch('https://api.indexer.xyz/graphql', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'x-api-user': process.env.INDEXER_USER_ID,
-                        'x-api-key': process.env.INDEXER_API_KEY
-                    },
-                    body: JSON.stringify({
-                        query: detailsQuery,
-                        variables: {
-                            slug: collection.slug
-                        }
-                    })
-                })
-            ]);
-
-            const [statsData, detailsData] = await Promise.all([
-                statsResponse.json(),
-                detailsResponse.json()
-            ]);
-
-            const stats = statsData.data.aptos.collection_stats;
-            const details = detailsData.data.aptos.collections[0];
-
-            // Convert values to match marketplace display
-            collection.floor = collection.floor * Math.pow(10, -8);  // Convert to APT
-            collection.volume = collection.volume * Math.pow(10, -8); // Convert to APT
-            
-            // Add stats to collection object
-            collection.stats = {
-                total_sales: stats.total_sales,
-                day_sales: stats.day_sales,
-                day_volume: stats.day_volume * Math.pow(10, -8),
-                day_usd_volume: stats.day_usd_volume
+        if (!collection) {
+            return {
+                status: 'not_found',
+                message: `No verified collection found matching "${collectionName}". Please check the collection name and try again.`,
+                search_term: collectionName
             };
-
-            // Add details to collection object
-            collection.details = {
-                description: details.description,
-                discord: details.discord,
-                twitter: details.twitter,
-                website: details.website
-            };
-            
-            // Add formatted fields to help the AI display correctly
-            collection.formatted = {
-                floor_price: `${collection.floor} APT`,
-                total_volume: `${collection.volume} APT`,
-                usd_volume: `$${collection.usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
-                supply: `${collection.supply} NFTs`,
-                total_sales: `${stats.total_sales} sales`,
-                day_stats: {
-                    volume: `${collection.stats.day_volume} APT`,
-                    sales: collection.stats.day_sales,
-                    usd_volume: `$${collection.stats.day_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
-                },
-                social_links: {
-                    discord: details.discord || "Not available",
-                    twitter: details.twitter || "Not available",
-                    website: details.website || "Not available"
-                },
-                description: details.description || "No description available"
-            };
-            
-            return collection;
         }
+
+        // Fetch additional stats using the slug
+        const statsQuery = `
+            query fetchCollectionStats($slug: String!) {
+                aptos {
+                    collection_stats(slug: $slug) {
+                        total_mint_volume
+                        total_mint_usd_volume
+                        total_mints
+                        total_sales
+                        total_usd_volume
+                        total_volume
+                        day_volume
+                        day_sales
+                        day_usd_volume
+                    }
+                }
+            }
+        `;
+
+        // Fetch collection details
+        const detailsQuery = `
+            query fetchCollectionWithoutNfts($slug: String) {
+                aptos {
+                    collections(
+                        where: {
+                            _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
+                        }
+                    ) {
+                        description
+                        discord
+                        twitter
+                        website
+                    }
+                }
+            }
+        `;
+
+        // Make both queries in parallel
+        const [statsResponse, detailsResponse] = await Promise.all([
+            fetch('https://api.indexer.xyz/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-user': process.env.INDEXER_USER_ID,
+                    'x-api-key': process.env.INDEXER_API_KEY
+                },
+                body: JSON.stringify({
+                    query: statsQuery,
+                    variables: {
+                        slug: collection.slug
+                    }
+                })
+            }),
+            fetch('https://api.indexer.xyz/graphql', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-user': process.env.INDEXER_USER_ID,
+                    'x-api-key': process.env.INDEXER_API_KEY
+                },
+                body: JSON.stringify({
+                    query: detailsQuery,
+                    variables: {
+                        slug: collection.slug
+                    }
+                })
+            })
+        ]);
+
+        const [statsData, detailsData] = await Promise.all([
+            statsResponse.json(),
+            detailsResponse.json()
+        ]);
+
+        const stats = statsData.data.aptos.collection_stats;
+        const details = detailsData.data.aptos.collections[0];
+
+        // Convert values to match marketplace display
+        collection.floor = collection.floor * Math.pow(10, -8);  // Convert to APT
+        collection.volume = collection.volume * Math.pow(10, -8); // Convert to APT
         
-        return null;
+        // Add stats to collection object
+        collection.stats = {
+            total_sales: stats.total_sales,
+            day_sales: stats.day_sales,
+            day_volume: stats.day_volume * Math.pow(10, -8),
+            day_usd_volume: stats.day_usd_volume
+        };
+
+        // Add details to collection object
+        collection.details = {
+            description: details.description,
+            discord: details.discord,
+            twitter: details.twitter,
+            website: details.website
+        };
+        
+        // Add formatted fields to help the AI display correctly
+        collection.formatted = {
+            // Basic info
+            title: collection.title,
+            floor_price: `${collection.floor} APT`,
+            total_volume: `${collection.volume} APT`,
+            usd_volume: `$${collection.usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            supply: `${collection.supply} NFTs`,
+            verified: collection.verified,
+            cover_url: collection.cover_url,
+
+            // Stats
+            total_sales: `${stats.total_sales} sales`,
+            total_mints: `${stats.total_mints} mints`,
+            total_mint_volume: `${stats.total_mint_volume * Math.pow(10, -8)} APT`,
+            total_mint_usd_volume: `$${stats.total_mint_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            
+            // 24h stats
+            day_stats: {
+                volume: `${collection.stats.day_volume} APT`,
+                sales: collection.stats.day_sales,
+                usd_volume: `$${collection.stats.day_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+            },
+
+            // Social and external links
+            social_links: {
+                discord: details.discord || "Not available",
+                twitter: details.twitter || "Not available",
+                website: details.website || "Not available"
+            },
+
+            // Collection details
+            description: details.description || "No description available",
+            slug: collection.slug,
+            semantic_slug: collection.semantic_slug,
+
+            // Marketplace links
+            marketplaces: {
+                tradeport: `https://www.tradeport.xyz/aptos/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
+                wapal: `https://wapal.io/collection/${collection.title.replace(/\s+/g, '-')}`
+            }
+        };
+        
+        return {
+            status: 'found',
+            data: collection
+        };
 
     } catch (error) {
         console.error('Failed to search NFT collection:', error);
-        throw error;
+        return {
+            status: 'error',
+            message: 'Failed to search NFT collection. Please try again later.',
+            error: error.message
+        };
     }
 }
 
@@ -196,14 +230,21 @@ export default async function handler(req, res) {
         const { collection_name } = req.body;
 
         if (!collection_name) {
-            return res.status(400).json({ error: 'collection_name is required' });
+            return res.status(400).json({ 
+                status: 'error',
+                message: 'Collection name is required'
+            });
         }
 
         try {
             const result = await searchNftCollection(collection_name);
             res.status(200).json(result);
         } catch (error) {
-            res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            res.status(500).json({
+                status: 'error',
+                message: 'Internal Server Error',
+                error: error.message
+            });
         }
     } else {
         res.setHeader('Allow', ['POST']);
