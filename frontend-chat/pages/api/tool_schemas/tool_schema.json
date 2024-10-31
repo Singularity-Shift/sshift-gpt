@@ -69,5 +69,123 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getStockInfo",
+      "description": "Fetches financial information about stocks using their ticker symbols. Returns various types of data including current price, dividends, splits, company information, financials, and recommendations. Use this function when users ask about stock market information or specific companies' financial data.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "tickers": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "List of stock ticker symbols (e.g., 'AAPL' for Apple, 'MSFT' for Microsoft)"
+          },
+          "info_types": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "current_price",
+                "dividends",
+                "splits",
+                "company_info",
+                "financials",
+                "recommendations"
+              ]
+            },
+            "description": "Types of information to fetch for each ticker. Select one or more from the available options."
+          }
+        },
+        "required": ["tickers", "info_types"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getCryptoInfoFromCMC",
+      "description": "Fetches market data and description for a specified cryptocurrency from CoinMarketCap using its token symbol. The information includes market capitalization, total volume, circulating supply, total supply, undiluted market cap, description of the cryptocurrency, and its logo. Only use information from the response that is needed to answer the user. The correct URL for Worldcoin is https://worldcoin.org/ ignore any result that differs. NEVER use ticker QRK",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "token_symbol": {
+            "type": "string",
+            "description": "The symbol of the cryptocurrency on CoinMarketCap, e.g., 'BTC' for Bitcoin, 'ETH' for Ethereum, 'WLD' for Worldcoin, 'APT' for Aptos."
+          }
+        },
+        "required": ["token_symbol"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "queryArxiv",
+      "description": "Searches arXiv for academic papers and research articles. Returns detailed paper information including titles, authors, abstracts, and publication dates. Use this when users request scientific papers, research articles, or academic publications. Any URLs or DOIs in the response must be provided to the user.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "search_query": {
+            "type": "string",
+            "description": "The search query for finding academic papers. Should be specific enough to return relevant research papers."
+          },
+          "max_results": {
+            "type": "integer",
+            "description": "The maximum number of papers to return in the response. Use this to limit the number of results."
+          }
+        },
+        "required": ["search_query", "max_results"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+        "name": "getTrendingCryptos",
+        "description": "Fetches a list of trending cryptocurrencies from coingecko. This function provides an option to fetch based on popularity, top gainers, or market cap.",
+        "parameters": {
+            "type": "object",
+            "properties": {
+                "option": {
+                    "type": "string",
+                    "enum": ["popularity", "top_gainers", "market_cap"],
+                    "description": "The option to determine the type of trending cryptocurrencies to fetch: popularity, top gainers, or market cap."
+                }
+            },
+            "required": ["option"],
+            "additionalProperties": false
+        },
+        "strict": true
+    }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "searchNftCollection",
+    "description": "Searches for NFT collections on the Aptos blockchain. Returns detailed collection information including supply, floor price, volume, and verification status. Use this when users ask about specific NFT collections.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "collection_name": {
+          "type": "string",
+          "description": "The name of the NFT collection to search for. Should be specific enough to find the desired collection."
+        }
+      },
+      "required": ["collection_name"],
+      "additionalProperties": false
+    },
+    "strict": true
   }
+}
 ]
