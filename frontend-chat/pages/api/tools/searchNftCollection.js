@@ -50,17 +50,32 @@ async function searchNftCollection(collectionName) {
             throw new Error(`GraphQL Error: ${searchData.errors[0].message}`);
         }
 
-        // Find the first matching verified collection
+        // Normalize the search term by removing 'the' and special characters
         const searchTerm = collectionName.toLowerCase()
             .replace(/^the\s+/i, '')
             .replace(/\s+/g, '-')
             .trim();
             
-        const collection = searchData.data.aptos.collections.find(c => 
-            c.verified && 
-            (c.title.toLowerCase() === collectionName.toLowerCase() || 
-             (c.semantic_slug && c.semantic_slug.toLowerCase() === searchTerm))
-        );
+        // Find the first matching verified collection with more flexible matching
+        const collection = searchData.data.aptos.collections.find(c => {
+            if (!c.verified) return false;
+            
+            // Normalize the collection title for comparison
+            const normalizedTitle = c.title.toLowerCase()
+                .replace(/^the\s+/i, '')
+                .trim();
+            
+            // Normalize the semantic slug for comparison
+            const normalizedSlug = (c.semantic_slug || '').toLowerCase()
+                .replace(/^the-/i, '')
+                .trim();
+            
+            // Check if the search term is contained within the title or slug
+            return normalizedTitle.includes(searchTerm) || 
+                   searchTerm.includes(normalizedTitle) ||
+                   normalizedSlug.includes(searchTerm) ||
+                   searchTerm.includes(normalizedSlug);
+        });
         
         if (!collection) {
             return {
@@ -176,7 +191,7 @@ async function searchNftCollection(collectionName) {
             usd_volume: `$${collection.usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
             supply: `${collection.supply} NFTs`,
             verified: collection.verified,
-            cover_url: collection.cover_url,
+            cover_url: formatImageUrl(collection.cover_url),
 
             // Stats
             total_sales: `${stats.total_sales} sales`,
@@ -223,6 +238,19 @@ async function searchNftCollection(collectionName) {
             error: error.message
         };
     }
+}
+
+function formatImageUrl(url) {
+    if (!url) return null;
+    
+    // Handle IPFS URLs
+    if (url.startsWith('ipfs://')) {
+        // Convert IPFS URL to HTTP URL using a public IPFS gateway
+        const ipfsHash = url.replace('ipfs://', '');
+        return `https://ipfs.io/ipfs/${ipfsHash}`;
+    }
+    
+    return url;
 }
 
 export default async function handler(req, res) {

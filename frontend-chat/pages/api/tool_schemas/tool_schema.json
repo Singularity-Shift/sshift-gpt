@@ -141,9 +141,19 @@
           "max_results": {
             "type": "integer",
             "description": "The maximum number of papers to return in the response. Use this to limit the number of results."
+          },
+          "sort_by": {
+            "type": "string",
+            "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
+            "description": "How to sort the results. 'submittedDate' will show the most recent papers first."
+          },
+          "sort_order": {
+            "type": "string",
+            "enum": ["ascending", "descending"],
+            "description": "The order of the sorted results. Use 'descending' to see newest papers first when sorting by date."
           }
         },
-        "required": ["search_query", "max_results"],
+        "required": ["search_query", "max_results", "sort_by", "sort_order"],
         "additionalProperties": false
       },
       "strict": true
@@ -183,6 +193,39 @@
         }
       },
       "required": ["collection_name"],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "searchTrendingNFT",
+    "description": "Fetches trending NFT collections from the Aptos blockchain. Returns collection titles and floor prices sorted by different metrics over various time periods. Use this when users ask about trending or popular NFT collections.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "enum": ["days_1", "days_7", "days_14", "days_30", "days_60", "days_90", "all_time"],
+          "description": "The time period to analyze trending collections. Ranges from 1 day to all time.",
+          "default": "days_1"
+        },
+        "trending_by": {
+          "type": "string",
+          "enum": ["crypto_volume", "usd_volume", "trades_count", "average_trade"],
+          "description": "The metric to sort collections by: crypto volume (in APT), USD volume, number of trades, or average trade value.",
+          "default": "crypto_volume"
+        },
+        "limit": {
+          "type": "integer",
+          "enum": [5, 10, 20, 40],
+          "description": "The number of trending collections to return.",
+          "default": 10
+        }
+      },
+      "required": ["period", "trending_by", "limit"],
       "additionalProperties": false
     },
     "strict": true
