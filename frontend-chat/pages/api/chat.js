@@ -148,6 +148,33 @@ async function searchNftCollection(collection_name) {
     }
 }
 
+// Add this function with the other tool functions at the top
+async function searchTrendingNFT({ period, trending_by, limit }) {
+    try {
+        console.log('Searching trending NFTs with params:', { period, trending_by, limit });
+        const response = await fetch('http://localhost:3000/api/tools/searchTrendingNFT', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ period, trending_by, limit }),
+        });
+
+        console.log('Trending NFTs search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search trending NFTs: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Trending NFTs search response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in searchTrendingNFT:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -345,6 +372,21 @@ export default async function handler(req, res) {
                                     toolCall.result = nftCollection;
                                 } catch (error) {
                                     console.error('Error searching NFT collection:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'searchTrendingNFT') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Searching trending NFTs with args:', args);
+                                    const trendingNFTs = await searchTrendingNFT({
+                                        period: args.period,
+                                        trending_by: args.trending_by,
+                                        limit: args.limit
+                                    });
+                                    console.log('Trending NFTs search result:', trendingNFTs);
+                                    toolCall.result = trendingNFTs;
+                                } catch (error) {
+                                    console.error('Error searching trending NFTs:', error);
                                     toolCall.result = { error: error.message };
                                 }
                             }
