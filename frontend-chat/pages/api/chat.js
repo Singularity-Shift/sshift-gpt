@@ -175,6 +175,33 @@ async function searchTrendingNFT({ period, trending_by, limit }) {
     }
 }
 
+// Add this function with the other tool functions at the top
+async function createSoundEffect({ text, duration_seconds, prompt_influence }) {
+    try {
+        console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
+        const response = await fetch('http://localhost:3000/api/tools/createSoundEffect', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text, duration_seconds, prompt_influence }),
+        });
+
+        console.log('Sound effect generation response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to create sound effect: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Sound effect generation response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in createSoundEffect:', error);
+        throw error;
+    }
+}
+
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -387,6 +414,21 @@ export default async function handler(req, res) {
                                     toolCall.result = trendingNFTs;
                                 } catch (error) {
                                     console.error('Error searching trending NFTs:', error);
+                                    toolCall.result = { error: error.message };
+                                }
+                            } else if (toolCall.function.name === 'createSoundEffect') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Creating sound effect with args:', args);
+                                    const soundEffect = await createSoundEffect({
+                                        text: args.text,
+                                        duration_seconds: args.duration_seconds,
+                                        prompt_influence: args.prompt_influence
+                                    });
+                                    console.log('Sound effect creation result:', soundEffect);
+                                    toolCall.result = soundEffect;
+                                } catch (error) {
+                                    console.error('Error creating sound effect:', error);
                                     toolCall.result = { error: error.message };
                                 }
                             }
