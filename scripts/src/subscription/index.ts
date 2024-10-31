@@ -2,7 +2,6 @@ import 'dotenv/config';
 import fs from 'fs';
 import { parseDocument } from 'yaml';
 import * as cli from '@aptos-labs/ts-sdk/dist/common/cli/index.js';
-import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 const getConfig = () => {
   if (!process.env.MODULE_ADDRESS) {
