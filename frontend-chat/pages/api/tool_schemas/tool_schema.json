@@ -230,5 +230,32 @@
     },
     "strict": true
   }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "createSoundEffect",
+    "description": "Generates audio sound effects from text descriptions using AI. Best for creating specific sound effects, foley sounds, musical elements, or ambient sounds. The generated audio will match the provided text description.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "A detailed description of the sound effect to generate. Use specific audio terminology and natural language to describe the desired sound. Examples include 'high-quality footsteps on wooden floor', '90s hip-hop drum loop', 'sound designed whoosh and braaam impact', or 'old-school funky brass section from an old vinyl sample, stem, 88bpm in F# minor'. Incorporate terms like 'foley', 'whoosh', 'impact', 'braaam', 'glitch', 'drone', and onomatopoeias (e.g., 'oink', 'meow') to specify the type of sound effect. For musical prompts, use terms like 'stem', 'BPM', 'key', 'loop', 'sample', and 'one-shot'."
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "Optional. The desired duration of the sound effect in seconds. If not specified, the AI will determine an appropriate length. Consider setting this for complex sounds or loops. For example, setting a longer duration for a 'braaam' impact or a drum loop."
+        },
+        "prompt_influence": {
+          "type": "number",
+          "description": "Optional. Controls how strictly the generation follows the prompt (value between 0.1 and 1.0). 1.0 means strict adherence, lower values allow more creative interpretation. Use higher values for precise sound effects and lower values for creative variations."
+        }
+      },
+      "required": ["text", "duration_seconds", "prompt_influence"],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
 }
 ]
