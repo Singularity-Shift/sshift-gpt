@@ -1,7 +1,6 @@
 import * as React from 'react';
 import { Button } from './button';
 import { Slider } from './slider';
-import { calculatePrice, calculateDates } from '../../../app/utils/subscriptionUtils';
 
 interface SubscriptionContainerProps {
   days: number;
@@ -14,7 +13,13 @@ interface SubscriptionContainerProps {
   discount: number;
 }
 
-export function SubscriptionContainer({ days, setDays, price, dates, discount }: SubscriptionContainerProps) {
+export function SubscriptionContainer({
+  days,
+  setDays,
+  price,
+  dates,
+  discount,
+}: SubscriptionContainerProps) {
   return (
     <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
       <div className="text-center">
@@ -28,12 +33,8 @@ export function SubscriptionContainer({ days, setDays, price, dates, discount }:
       <div className="mt-8 space-y-6">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-gray-700">
-              1 day
-            </span>
-            <span className="text-sm font-medium text-gray-700">
-              30 days
-            </span>
+            <span className="text-sm font-medium text-gray-700">1 day</span>
+            <span className="text-sm font-medium text-gray-700">30 days</span>
           </div>
           <Slider
             min={1}
@@ -47,9 +48,7 @@ export function SubscriptionContainer({ days, setDays, price, dates, discount }:
             <span className="text-lg font-semibold text-gray-900">
               {days} day{days !== 1 ? 's' : ''}
             </span>
-            <p className="text-sm text-gray-600">
-              Starts: {dates.startDate}
-            </p>
+            <p className="text-sm text-gray-600">Starts: {dates.startDate}</p>
             <p className="text-sm text-gray-600">
               Expires: {dates.expirationDate}
             </p>

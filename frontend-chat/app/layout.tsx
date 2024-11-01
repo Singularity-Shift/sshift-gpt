@@ -5,6 +5,8 @@ import { Toaster } from '@fn-chat/components/ui/toaster';
 import { ThemeProvider } from '@fn-chat/context/ThemeProvider';
 import { WalletProvider } from '@fn-chat/context/WalletProvider';
 import { BackendProvider } from '@fn-chat/context/BackendProvider';
+import { AppManagementProvider } from '@fn-chat/context/AppManagment';
+import { AbiProvider } from '@fn-chat/context/AbiProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -28,7 +30,11 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
-            <BackendProvider>{children}</BackendProvider>
+            <BackendProvider>
+              <AbiProvider>
+                <AppManagementProvider>{children}</AppManagementProvider>
+              </AbiProvider>
+            </BackendProvider>
           </WalletProvider>
         </ThemeProvider>
         <Toaster />

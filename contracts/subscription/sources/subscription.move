@@ -25,7 +25,7 @@ module sshift_dao_addr::subscription {
         discount_per_day: u64
     }
 
-    struct SubscriptionPlan has key {
+    struct SubscriptionPlan has key, copy {
         coin: address,
         price_per_day: u64,
         collections_discount: vector<CollectionAddressDiscount>,
@@ -233,6 +233,11 @@ module sshift_dao_addr::subscription {
                 created_at: timestamp::now_seconds(),
             }
         );
+    }
+
+    #[view]
+    public fun get_subscription_config(): SubscriptionPlan acquires SubscriptionPlan {
+        *borrow_global<SubscriptionPlan>(@sshift_dao_addr)
     }
 
     #[view]

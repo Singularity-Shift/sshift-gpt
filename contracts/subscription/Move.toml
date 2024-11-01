@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-sshift_dao_addr = "0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417"
+sshift_dao_addr = "_"
 
 [dev-addresses]
 

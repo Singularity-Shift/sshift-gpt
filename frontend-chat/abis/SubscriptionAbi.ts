@@ -40,6 +40,17 @@ export const SubscriptionABI = {
       return: ['u64'],
     },
     {
+      name: 'get_subscription_config',
+      visibility: 'public',
+      is_entry: false,
+      is_view: true,
+      generic_type_params: [],
+      params: [],
+      return: [
+        '0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417::subscription::SubscriptionPlan',
+      ],
+    },
+    {
       name: 'gift_subscription',
       visibility: 'public',
       is_entry: true,
@@ -109,7 +120,7 @@ export const SubscriptionABI = {
       name: 'SubscriptionPlan',
       is_native: false,
       is_event: false,
-      abilities: ['key'],
+      abilities: ['copy', 'key'],
       generic_type_params: [],
       fields: [
         { name: 'coin', type: 'address' },

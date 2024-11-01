@@ -1,3 +1,4 @@
+'use client';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { FeesABI } from '../../abis/FeesAbi';
 import { useEffect, useState } from 'react';
@@ -197,7 +198,7 @@ export const Fees = () => {
             {collectorsSubscribed.map((e, i) => (
               <div className="mt-5" key={`${i}-${e}`}>
                 <div>
-                  Employee {i + 1}: {e}
+                  Collector {i + 1}: {e}
                 </div>
                 <LabeledInput
                   id="collector-fees"

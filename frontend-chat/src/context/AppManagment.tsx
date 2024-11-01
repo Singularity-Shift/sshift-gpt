@@ -28,6 +28,7 @@ export const AppManagementProvider = ({
   const { connected, account } = useWallet();
 
   useEffect(() => {
+    if (!connected) return;
     (async () => {
       const adminResult = await abi?.useABI(FeesABI).view.get_admin({
         typeArguments: [],

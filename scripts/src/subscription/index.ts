@@ -52,6 +52,7 @@ export const publish = async () => {
       sshift_dao_addr: accountAddress,
     },
     profile,
+    extraArguments: ['--move-2'],
   });
 };
 
