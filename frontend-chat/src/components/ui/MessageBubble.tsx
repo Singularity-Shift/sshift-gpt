@@ -189,7 +189,11 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
             a: ({ href, children }) => {
-              // Regular link handling only
+              // If it's an audio file link, render the audio player directly
+              if (href && href.endsWith('.mp3')) {
+                return <AudioPlayer src={href} />;
+              }
+              // Regular link handling
               return (
                 <a
                   href={href}
