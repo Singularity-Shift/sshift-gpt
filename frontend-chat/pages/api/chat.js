@@ -12,169 +12,6 @@ const openai = new OpenAI({
 
 let shouldStopStream = false; // Move this outside the handler to persist across requests
 
-async function wikiSearch(action, searchString) {
-    try {
-        console.log('Searching Wikipedia with query:', searchString);
-        const response = await fetch('http://localhost:3000/api/tools/wikiSearch', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ action, searchString }),
-        });
-
-        console.log('Wikipedia search response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to search Wikipedia: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Wikipedia search response data:', data);
-
-        if (!data.result) {
-            throw new Error(`No search result returned from the API. Response: ${JSON.stringify(data)}`);
-        }
-        return data.result;
-    } catch (error) {
-        console.error('Error in wikiSearch:', error);
-        throw error;
-    }
-}
-
-async function getCryptoInfoFromCMC(token_symbol) {
-    try {
-        console.log('Getting crypto info for:', token_symbol);
-        const response = await fetch('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ token_symbol }),
-        });
-
-        console.log('Crypto info response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to get crypto info: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Crypto info response data:', data);
-        return data;
-    } catch (error) {
-        console.error('Error in getCryptoInfoFromCMC:', error);
-        throw error;
-    }
-}
-
-async function queryArxiv(search_query, max_results = 10) {
-    try {
-        console.log('Querying arXiv with:', { search_query, max_results });
-        const response = await fetch('http://localhost:3000/api/tools/searchArxiv', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ search_query, max_results }),
-        });
-
-        console.log('arXiv query response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to query arXiv: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('arXiv query response data:', data);
-        return data;
-    } catch (error) {
-        console.error('Error in queryArxiv:', error);
-        throw error;
-    }
-}
-
-// Add this function with the other tool functions
-async function getTrendingCryptos(option) {
-    try {
-        console.log('Getting trending cryptos with option:', option);
-        const response = await fetch('http://localhost:3000/api/tools/getTrendingCryptos', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ option }),
-        });
-
-        console.log('Trending cryptos response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to get trending cryptos: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Trending cryptos response data:', data);
-        return data;
-    } catch (error) {
-        console.error('Error in getTrendingCryptos:', error);
-        throw error;
-    }
-}
-
-// Add this function with the other tool functions at the top
-async function searchNftCollection(collection_name) {
-    try {
-        console.log('Searching NFT collection:', collection_name);
-        const response = await fetch('http://localhost:3000/api/tools/searchNftCollection', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ collection_name }),
-        });
-
-        console.log('NFT collection search response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to search NFT collection: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('NFT collection search response data:', data);
-        return data;
-    } catch (error) {
-        console.error('Error in searchNftCollection:', error);
-        throw error;
-    }
-}
-
-// Add this function with the other tool functions at the top
-async function searchTrendingNFT({ period, trending_by, limit }) {
-    try {
-        console.log('Searching trending NFTs with params:', { period, trending_by, limit });
-        const response = await fetch('http://localhost:3000/api/tools/searchTrendingNFT', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ period, trending_by, limit }),
-        });
-
-        console.log('Trending NFTs search response status:', response.status);
-        
-        if (!response.ok) {
-            throw new Error(`Failed to search trending NFTs: ${response.status} ${response.statusText}`);
-        }
-
-        const data = await response.json();
-        console.log('Trending NFTs search response data:', data);
-        return data;
-    } catch (error) {
-        console.error('Error in searchTrendingNFT:', error);
-        throw error;
-    }
-}
-
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         const { messages, model, temperature = 0.2 } = req.body;
@@ -389,6 +226,25 @@ export default async function handler(req, res) {
                                     console.error('Error searching trending NFTs:', error);
                                     toolCall.result = { error: error.message };
                                 }
+                            } else if (toolCall.function.name === 'createSoundEffect') {
+                                try {
+                                    const args = JSON.parse(toolCall.function.arguments);
+                                    console.log('Creating sound effect with args:', args);
+                                    const soundEffect = await createSoundEffect({
+                                        text: args.text,
+                                        duration_seconds: args.duration_seconds,
+                                        prompt_influence: args.prompt_influence
+                                    });
+                                    console.log('Sound effect creation result:', soundEffect);
+                                    toolCall.result = soundEffect;
+                                    if (soundEffect.url) {
+                                        assistantMessage.content += `\n[Sound Effect: ${soundEffect.url}]`;
+                                    }
+                                } catch (error) {
+                                    console.error('Error creating sound effect:', error);
+                                    toolCall.result = { error: error.message };
+                                    assistantMessage.content += "\nI apologize, but I encountered an error while trying to generate the sound effect. " + error.message;
+                                }
                             }
                         }
 
@@ -557,6 +413,192 @@ async function getStockInfo(tickers, info_types) {
         return data;
     } catch (error) {
         console.error('Error in getStockInfo:', error);
+        throw error;
+    }
+}
+
+async function wikiSearch(action, searchString) {
+    try {
+        console.log('Searching Wikipedia:', { action, searchString });
+        const response = await fetch('http://localhost:3000/api/tools/wikiSearch', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ action, searchString }),
+        });
+
+        console.log('Wikipedia search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search Wikipedia: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Wikipedia search response data:', data);
+
+        if (!data.result) {
+            throw new Error(`No search result returned from the API. Response: ${JSON.stringify(data)}`);
+        }
+        return data.result;
+    } catch (error) {
+        console.error('Error in wikiSearch:', error);
+        throw error;
+    }
+}
+
+async function getCryptoInfoFromCMC(token_symbol) {
+    try {
+        console.log('Getting crypto info:', { token_symbol });
+        const response = await fetch('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ token_symbol }),
+        });
+
+        console.log('Crypto info response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get crypto info: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Crypto info response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getCryptoInfoFromCMC:', error);
+        throw error;
+    }
+}
+
+async function queryArxiv(search_query, max_results = 10) {
+    try {
+        console.log('Querying arXiv:', { search_query, max_results });
+        const response = await fetch('http://localhost:3000/api/tools/searchArxiv', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ search_query, max_results }),
+        });
+
+        console.log('arXiv query response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to query arXiv: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('arXiv query response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in queryArxiv:', error);
+        throw error;
+    }
+}
+
+async function getTrendingCryptos(option) {
+    try {
+        console.log('Getting trending cryptos:', { option });
+        const response = await fetch('http://localhost:3000/api/tools/getTrendingCryptos', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ option }),
+        });
+
+        console.log('Trending cryptos response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to get trending cryptos: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Trending cryptos response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in getTrendingCryptos:', error);
+        throw error;
+    }
+}
+
+async function searchNftCollection(collection_name) {
+    try {
+        console.log('Searching NFT collection:', { collection_name });
+        const response = await fetch('http://localhost:3000/api/tools/searchNftCollection', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ collection_name }),
+        });
+
+        console.log('NFT collection search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search NFT collection: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('NFT collection search response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in searchNftCollection:', error);
+        throw error;
+    }
+}
+
+async function searchTrendingNFT({ period, trending_by, limit }) {
+    try {
+        console.log('Searching trending NFTs:', { period, trending_by, limit });
+        const response = await fetch('http://localhost:3000/api/tools/searchTrendingNFT', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ period, trending_by, limit }),
+        });
+
+        console.log('Trending NFTs search response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to search trending NFTs: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Trending NFTs search response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in searchTrendingNFT:', error);
+        throw error;
+    }
+}
+
+async function createSoundEffect({ text, duration_seconds, prompt_influence }) {
+    try {
+        console.log('Creating sound effect:', { text, duration_seconds, prompt_influence });
+        const response = await fetch('http://localhost:3000/api/tools/createSoundEffect', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ text, duration_seconds, prompt_influence }),
+        });
+
+        console.log('Sound effect creation response status:', response.status);
+        
+        if (!response.ok) {
+            throw new Error(`Failed to create sound effect: ${response.status} ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        console.log('Sound effect creation response data:', data);
+        return data;
+    } catch (error) {
+        console.error('Error in createSoundEffect:', error);
         throw error;
     }
 }

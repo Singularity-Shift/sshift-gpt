@@ -49,6 +49,7 @@
     "clsx": "^2.1.1",
     "commander": "^12.1.0",
     "dotenv": "^16.4.5",
+    "elevenlabs-js": "^1.2.6",
     "formidable": "^3.5.1",
     "graphql": "^16.9.0",
     "graphql-request": "^7.1.0",
