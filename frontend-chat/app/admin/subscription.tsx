@@ -9,8 +9,9 @@ import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { CollectionDiscoount } from './collectionsDiscount';
 import { toast } from '../../src/components/ui/use-toast';
 import { aptosClient } from '../../src/lib/utils';
-import { truncateAddress } from '@aptos-labs/wallet-adapter-react';
+import { truncateAddress, useWallet } from '@aptos-labs/wallet-adapter-react';
 import {
+  AccountAddress,
   convertAmountFromHumanReadableToOnChain,
   convertAmountFromOnChainToHumanReadable,
 } from '@aptos-labs/ts-sdk';
@@ -21,6 +22,7 @@ import { LoadingSpinner } from '../../src/components/LoadingSpinner';
 export const Subscription = () => {
   const { abi } = useAbiClient();
   const { client } = useWalletClient();
+  const { account } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
   const aptos = aptosClient();
 
@@ -109,7 +111,7 @@ export const Subscription = () => {
           ),
           subscription.collections_discount.map((c) => c.collection_addr),
           subscription.collections_discount.map((c) =>
-            convertAmountFromOnChainToHumanReadable(
+            convertAmountFromHumanReadableToOnChain(
               c.discount_per_day,
               COIN_DECIMALS
             )
@@ -142,19 +144,19 @@ export const Subscription = () => {
   };
 
   const getNfts = async () => {
-    const tokens = await aptos.account.getAccountOwnedTokens({
-      accountAddress:
-        '0x9ce14bd263abede19dab6b0781d99459f4a8979cf7490086c69d0aaba44a07ee',
-    });
+    const collections =
+      await aptos.account.getAccountCollectionsWithOwnedTokens({
+        accountAddress: AccountAddress.fromString(account?.address as string),
+      });
 
-    console.log(tokens);
+    console.log(collections);
   };
 
   useEffect(() => {
     (async () => {
       try {
         setIsLoading(true);
-        getNfts();
+        await getNfts();
         const subscriptionResult = await abi
           ?.useABI(SubscriptionABI)
           .view.get_subscription_config({
@@ -172,6 +174,22 @@ export const Subscription = () => {
             },
           ];
         }
+
+        subscriptionCopy.collections_discount = [
+          ...subscriptionCopy.collections_discount.map((c) => ({
+            collection_addr: c.collection_addr,
+            discount_per_day: convertAmountFromOnChainToHumanReadable(
+              c.discount_per_day,
+              COIN_DECIMALS
+            ),
+          })),
+        ];
+
+        subscriptionCopy.price_per_day =
+          convertAmountFromOnChainToHumanReadable(
+            subscriptionCopy.price_per_day,
+            COIN_DECIMALS
+          );
 
         setSubscription(subscriptionCopy);
       } catch (error) {
