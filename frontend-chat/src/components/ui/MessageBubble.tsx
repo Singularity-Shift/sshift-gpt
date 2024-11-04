@@ -160,6 +160,12 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
               // Handle sound effects inline
               const soundEffectMatch = text.match(/\[Sound Effect: (.*?)\]/);
               if (soundEffectMatch) {
+                // Check if the URL is wrapped in a markdown link
+                const isMarkdownLink = text.includes(`[Sound Effect: [`);
+                if (isMarkdownLink) {
+                  // If it's a markdown link, let the anchor component handle it
+                  return <p className="mb-2">{text.replace(/\[Sound Effect: .*?\]/, '')}</p>;
+                }
                 return (
                   <>
                     <p className="mb-2">
@@ -191,7 +197,11 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             a: ({ href, children }) => {
               // If it's an audio file link, render the audio player directly
               if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
+                // Check if this link is part of a Sound Effect block
+                const parentText = String(children);
+                if (parentText.includes('[Sound Effect:')) {
+                  return <AudioPlayer src={href} />;
+                }
               }
               // Regular link handling
               return (

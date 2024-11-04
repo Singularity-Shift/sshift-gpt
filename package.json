@@ -15,6 +15,7 @@
     "start": "nx run-many -t start serve:production"
   },
   "dependencies": {
+    "@apollo/client": "^3.11.8",
     "@aptos-labs/ts-sdk": "^1.27.1",
     "@aptos-labs/wallet-adapter-react": "^3.6.2",
     "@google-cloud/storage": "^7.13.0",
@@ -48,6 +49,7 @@
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.1.1",
     "commander": "^12.1.0",
+    "cross-fetch": "^4.0.0",
     "dotenv": "^16.4.5",
     "elevenlabs-js": "^1.2.6",
     "formidable": "^3.5.1",

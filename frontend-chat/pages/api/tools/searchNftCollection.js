@@ -1,83 +1,102 @@
+import { gql } from '@apollo/client';
+import indexerClient from '../indexerClient';
+
+// Define GraphQL queries
+const COLLECTION_SEARCH_QUERY = gql`
+    query collectionSearch($text: String, $offset: Int, $limit: Int) {
+        aptos {
+            collections: collections_search(
+                args: { text: $text }
+                offset: $offset
+                limit: $limit
+            ) {
+                id
+                supply
+                floor
+                slug
+                semantic_slug
+                title
+                usd_volume
+                volume
+                cover_url
+                verified
+            }
+        }
+    }
+`;
+
+const COLLECTION_STATS_QUERY = gql`
+    query fetchCollectionStats($slug: String!) {
+        aptos {
+            collection_stats(slug: $slug) {
+                total_mint_volume
+                total_mint_usd_volume
+                total_mints
+                total_sales
+                total_usd_volume
+                total_volume
+                day_volume
+                day_sales
+                day_usd_volume
+            }
+        }
+    }
+`;
+
+const COLLECTION_DETAILS_QUERY = gql`
+    query fetchCollectionWithoutNfts($slug: String) {
+        aptos {
+            collections(
+                where: {
+                    _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
+                }
+            ) {
+                description
+                discord
+                twitter
+                website
+            }
+        }
+    }
+`;
+
 async function searchNftCollection(collectionName) {
     try {
-        const searchQuery = `
-            query collectionSearch($text: String, $offset: Int, $limit: Int) {
-                aptos {
-                    collections: collections_search(
-                        args: { text: $text }
-                        offset: $offset
-                        limit: $limit
-                    ) {
-                        id
-                        supply
-                        floor
-                        slug
-                        semantic_slug
-                        title
-                        usd_volume
-                        volume
-                        cover_url
-                        verified
-                    }
-                }
+        // Initial collection search
+        const { data: searchData } = await indexerClient.query({
+            query: COLLECTION_SEARCH_QUERY,
+            variables: {
+                text: collectionName,
+                offset: 0,
+                limit: 5
             }
-        `;
-
-        const searchResponse = await fetch('https://api.indexer.xyz/graphql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-user': process.env.INDEXER_USER_ID,
-                'x-api-key': process.env.INDEXER_API_KEY
-            },
-            body: JSON.stringify({
-                query: searchQuery,
-                variables: {
-                    text: collectionName,
-                    offset: 0,
-                    limit: 5
-                }
-            })
         });
 
-        if (!searchResponse.ok) {
-            throw new Error(`Network response was not ok: ${searchResponse.statusText}`);
-        }
-
-        const searchData = await searchResponse.json();
-
-        if (searchData.errors) {
-            throw new Error(`GraphQL Error: ${searchData.errors[0].message}`);
-        }
-
-        // Normalize the search term by removing 'the' and special characters
+        // Normalize the search term
         const searchTerm = collectionName.toLowerCase()
             .replace(/^the\s+/i, '')
             .replace(/\s+/g, '-')
             .trim();
             
-        // Find the first matching verified collection with more flexible matching
-        const collection = searchData.data.aptos.collections.find(c => {
+        // Find the first matching verified collection
+        const foundCollection = searchData.aptos.collections.find(c => {
             if (!c.verified) return false;
             
-            // Normalize the collection title for comparison
             const normalizedTitle = c.title.toLowerCase()
                 .replace(/^the\s+/i, '')
                 .trim();
             
-            // Normalize the semantic slug for comparison
             const normalizedSlug = (c.semantic_slug || '').toLowerCase()
                 .replace(/^the-/i, '')
                 .trim();
             
-            // Check if the search term is contained within the title or slug
             return normalizedTitle.includes(searchTerm) || 
                    searchTerm.includes(normalizedTitle) ||
                    normalizedSlug.includes(searchTerm) ||
                    searchTerm.includes(normalizedSlug);
         });
         
-        if (!collection) {
+        if (!foundCollection) {
             return {
                 status: 'not_found',
                 message: `No verified collection found matching "${collectionName}". Please check the collection name and try again.`,
@@ -85,87 +104,32 @@ async function searchNftCollection(collectionName) {
             };
         }
 
-        // Fetch additional stats using the slug
-        const statsQuery = `
-            query fetchCollectionStats($slug: String!) {
-                aptos {
-                    collection_stats(slug: $slug) {
-                        total_mint_volume
-                        total_mint_usd_volume
-                        total_mints
-                        total_sales
-                        total_usd_volume
-                        total_volume
-                        day_volume
-                        day_sales
-                        day_usd_volume
-                    }
-                }
-            }
-        `;
+        // Create a mutable copy of the collection with converted values
+        const collection = {
+            ...foundCollection,
+            floor: foundCollection.floor * Math.pow(10, -8),  // Convert to APT
+            volume: foundCollection.volume * Math.pow(10, -8)  // Convert to APT
+        };
 
-        // Fetch collection details
-        const detailsQuery = `
-            query fetchCollectionWithoutNfts($slug: String) {
-                aptos {
-                    collections(
-                        where: {
-                            _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
-                        }
-                    ) {
-                        description
-                        discord
-                        twitter
-                        website
-                    }
+        // Fetch stats and details in parallel
+        const [statsResult, detailsResult] = await Promise.all([
+            indexerClient.query({
+                query: COLLECTION_STATS_QUERY,
+                variables: {
+                    slug: collection.slug
                 }
-            }
-        `;
-
-        // Make both queries in parallel
-        const [statsResponse, detailsResponse] = await Promise.all([
-            fetch('https://api.indexer.xyz/graphql', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-user': process.env.INDEXER_USER_ID,
-                    'x-api-key': process.env.INDEXER_API_KEY
-                },
-                body: JSON.stringify({
-                    query: statsQuery,
-                    variables: {
-                        slug: collection.slug
-                    }
-                })
             }),
-            fetch('https://api.indexer.xyz/graphql', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-api-user': process.env.INDEXER_USER_ID,
-                    'x-api-key': process.env.INDEXER_API_KEY
-                },
-                body: JSON.stringify({
-                    query: detailsQuery,
-                    variables: {
-                        slug: collection.slug
-                    }
-                })
+            indexerClient.query({
+                query: COLLECTION_DETAILS_QUERY,
+                variables: {
+                    slug: collection.slug
+                }
             })
         ]);
 
-        const [statsData, detailsData] = await Promise.all([
-            statsResponse.json(),
-            detailsResponse.json()
-        ]);
+        const stats = statsResult.data.aptos.collection_stats;
+        const details = detailsResult.data.aptos.collections[0];
 
-        const stats = statsData.data.aptos.collection_stats;
-        const details = detailsData.data.aptos.collections[0];
-
-        // Convert values to match marketplace display
-        collection.floor = collection.floor * Math.pow(10, -8);  // Convert to APT
-        collection.volume = collection.volume * Math.pow(10, -8); // Convert to APT
-        
         // Add stats to collection object
         collection.stats = {
             total_sales: stats.total_sales,
@@ -182,9 +146,8 @@ async function searchNftCollection(collectionName) {
             website: details.website
         };
         
-        // Add formatted fields to help the AI display correctly
+        // Add formatted fields
         collection.formatted = {
-            // Basic info
             title: collection.title,
             floor_price: `${collection.floor} APT`,
             total_volume: `${collection.volume} APT`,
@@ -193,32 +156,27 @@ async function searchNftCollection(collectionName) {
             verified: collection.verified,
             cover_url: formatImageUrl(collection.cover_url),
 
-            // Stats
             total_sales: `${stats.total_sales} sales`,
             total_mints: `${stats.total_mints} mints`,
             total_mint_volume: `${stats.total_mint_volume * Math.pow(10, -8)} APT`,
             total_mint_usd_volume: `$${stats.total_mint_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
             
-            // 24h stats
             day_stats: {
                 volume: `${collection.stats.day_volume} APT`,
                 sales: collection.stats.day_sales,
                 usd_volume: `$${collection.stats.day_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
             },
 
-            // Social and external links
             social_links: {
                 discord: details.discord || "Not available",
                 twitter: details.twitter || "Not available",
                 website: details.website || "Not available"
             },
 
-            // Collection details
             description: details.description || "No description available",
             slug: collection.slug,
             semantic_slug: collection.semantic_slug,
 
-            // Marketplace links
             marketplaces: {
                 tradeport: `https://www.tradeport.xyz/aptos/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
                 wapal: `https://wapal.io/collection/${collection.title.replace(/\s+/g, '-')}`
@@ -243,9 +201,7 @@ async function searchNftCollection(collectionName) {
 function formatImageUrl(url) {
     if (!url) return null;
     
-    // Handle IPFS URLs
     if (url.startsWith('ipfs://')) {
-        // Convert IPFS URL to HTTP URL using a public IPFS gateway
         const ipfsHash = url.replace('ipfs://', '');
         return `https://ipfs.io/ipfs/${ipfsHash}`;
     }

@@ -61,8 +61,8 @@ export default async function handler(req, res) {
             const stream = await openai.chat.completions.create({
                 model: model || 'gpt-4o-mini',
                 messages: messagesWithSystemPrompt,
-                max_tokens: 4000,
-                temperature: temperature,
+                max_tokens: 8192,
+                temperature: 0.25,
                 stream: true,
                 tools: toolSchema,
                 tool_choice: "auto",
