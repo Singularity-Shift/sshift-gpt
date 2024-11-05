@@ -130,11 +130,9 @@ export default async function handler(req, res) {
                                     const imageUrl = await generateImage(args.prompt, args.size, args.style);
                                     console.log('Generated image URL:', imageUrl);
                                     toolCall.result = { image_url: imageUrl };
-                                    assistantMessage.images.push(imageUrl);
                                 } catch (error) {
                                     console.error('Error generating image:', error);
-                                    // Add error handling response
-                                    assistantMessage.content += "\nI apologize, but I encountered an error while trying to generate the image. " + error.message;
+                                    toolCall.result = { error: error.message };
                                 }
                             } else if (toolCall.function.name === 'searchWeb') {
                                 try {
@@ -145,6 +143,7 @@ export default async function handler(req, res) {
                                     toolCall.result = searchResult;
                                 } catch (error) {
                                     console.error('Error searching web:', error);
+                                    toolCall.result = { error: error.message };
                                 }
                             } else if (toolCall.function.name === 'wikiSearch') {
                                 try {
@@ -155,6 +154,7 @@ export default async function handler(req, res) {
                                     toolCall.result = wikiResult;
                                 } catch (error) {
                                     console.error('Error searching Wikipedia:', error);
+                                    toolCall.result = { error: error.message };
                                 }
                             } else if (toolCall.function.name === 'getStockInfo') {
                                 try {
@@ -237,13 +237,9 @@ export default async function handler(req, res) {
                                     });
                                     console.log('Sound effect creation result:', soundEffect);
                                     toolCall.result = soundEffect;
-                                    if (soundEffect.url) {
-                                        assistantMessage.content += `\n[Sound Effect: ${soundEffect.url}]`;
-                                    }
                                 } catch (error) {
                                     console.error('Error creating sound effect:', error);
                                     toolCall.result = { error: error.message };
-                                    assistantMessage.content += "\nI apologize, but I encountered an error while trying to generate the sound effect. " + error.message;
                                 }
                             }
                         }
