@@ -1,5 +1,6 @@
 import { gql } from '@apollo/client';
 import indexerClient from '../indexerClient';
+import { jwtDecode } from 'jwt-decode';
 
 const WALLET_COLLECTIONS_QUERY = gql`
   query fetchWalletItemsCollections($where: collections_bool_exp!, $order_by: [collections_order_by!]) {
@@ -11,15 +12,28 @@ const WALLET_COLLECTIONS_QUERY = gql`
         title
         cover_url
         floor
+        verified
       }
     }
   }
 `;
 
-async function fetchWalletItemsCollections(walletAddress) {
+async function fetchWalletItemsCollections(token) {
+  if (!token) {
+    throw new Error('No wallet connected - please connect your wallet first');
+  }
+
+  // Decode the JWT to get the wallet address
+  const decoded = jwtDecode(token);
+  const walletAddress = decoded.address;
+
+  if (!walletAddress) {
+    throw new Error('No wallet address found in session');
+  }
+
   console.log('Auth headers:', {
     userId: process.env.INDEXER_USER_ID,
-    apiKey: process.env.INDEXER_API_KEY?.slice(0, 4) + '****' // Only log first 4 chars of API key for security
+    apiKey: process.env.INDEXER_API_KEY?.slice(0, 4) + '****'
   });
 
   try {
@@ -70,17 +84,18 @@ async function fetchWalletItemsCollections(walletAddress) {
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { wallet_address } = req.body;
-
-    if (!wallet_address) {
-      return res.status(400).json({ 
-        status: 'error',
-        message: 'Wallet address is required'
-      });
-    }
-
     try {
-      const collections = await fetchWalletItemsCollections(wallet_address);
+      // Get JWT from the request cookies or authorization header
+      const token = req.cookies?.jwt || req.headers.authorization?.replace('Bearer ', '');
+      
+      if (!token) {
+        return res.status(401).json({
+          status: 'error',
+          message: 'No authentication token found'
+        });
+      }
+
+      const collections = await fetchWalletItemsCollections(token);
       res.status(200).json({
         status: 'success',
         data: collections
@@ -88,8 +103,7 @@ export default async function handler(req, res) {
     } catch (error) {
       res.status(500).json({
         status: 'error',
-        message: 'Internal Server Error',
-        error: error.message
+        message: error.message || 'Internal Server Error',
       });
     }
   } else {
