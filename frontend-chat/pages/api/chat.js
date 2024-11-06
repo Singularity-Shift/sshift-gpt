@@ -52,7 +52,7 @@ export default async function handler(req, res) {
 
         const messagesWithSystemPrompt = [
             systemPrompt,
-            ...messageInjection,
+            //...messageInjection,
             ...formattedMessages
         ];
 

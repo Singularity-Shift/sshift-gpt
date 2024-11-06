@@ -1,5 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
+import { createElevenLabsClient } from '../elvenlabsClient';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -11,24 +12,14 @@ export default async function handler(req, res) {
 
     console.log('Generating sound effect with prompt:', text);
 
-    const response = await fetch('https://api.elevenlabs.io/v1/sound-generation', {
-      method: 'POST',
-      headers: {
-        'Accept': 'audio/mpeg',
-        'Content-Type': 'application/json',
-        'xi-api-key': process.env.ELVEN_API_KEY
-      },
-      body: JSON.stringify({
-        text,
-        duration_seconds,
-        prompt_influence
-      })
-    });
+    // Create ElevenLabs client instance
+    const elevenLabs = createElevenLabsClient(process.env.ELVEN_API_KEY);
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(`ElevenLabs API error: ${response.status} ${response.statusText} ${JSON.stringify(errorData)}`);
-    }
+    // Generate sound effect
+    const response = await elevenLabs.generateSoundEffect(text, {
+      duration_seconds,
+      prompt_influence
+    });
 
     // Get the audio data as an ArrayBuffer
     const audioBuffer = await response.arrayBuffer();
@@ -37,7 +28,7 @@ export default async function handler(req, res) {
     const sanitizedText = text
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '-')
-      .slice(0, 50); // Limit length
+      .slice(0, 50);
     
     const filename = `${sanitizedText}-${uuidv4()}.mp3`;
     const bucketName = 'sshift-gpt-bucket';
@@ -55,8 +46,7 @@ export default async function handler(req, res) {
       resumable: false,
       metadata: {
         contentType: 'audio/mpeg',
-        cacheControl: 'public, max-age=31536000', // Cache for 1 year
-        // Add the original prompt as metadata
+        cacheControl: 'public, max-age=31536000',
         prompt: text
       }
     });
@@ -70,7 +60,6 @@ export default async function handler(req, res) {
     // Handle upload success
     blobStream.on('finish', async () => {
       try {
-        // Get the public URL
         const publicUrl = `https://storage.googleapis.com/${bucketName}/${filename}`;
         
         console.log('Upload successful:', publicUrl);
@@ -78,8 +67,8 @@ export default async function handler(req, res) {
           url: publicUrl,
           duration_seconds: duration_seconds || 'auto',
           text: text,
-          prompt: text, // Include the original prompt in the response
-          description: `Sound effect generated using the prompt: "${text}"` // Add a human-readable description
+          prompt: text,
+          description: `Sound effect generated using the prompt: "${text}"`
         });
       } catch (error) {
         console.error('Error getting public URL:', error);
