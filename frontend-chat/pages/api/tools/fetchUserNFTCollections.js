@@ -8,11 +8,11 @@ const WALLET_COLLECTIONS_QUERY = gql`
       collections(where: $where, order_by: $order_by) {
         id
         slug
-        semantic_slug
         title
         cover_url
         floor
         verified
+        volume
       }
     }
   }
@@ -44,20 +44,18 @@ async function fetchWalletItemsCollections(token) {
           nfts: {
             _or: [
               {
-                claimable_by: {
-                  _eq: walletAddress
-                }
-              },
-              {
                 owner: {
                   _eq: walletAddress
                 }
               }
             ]
+          },
+          verified: {
+            _eq: true
           }
         },
         order_by: {
-          title: "asc"
+          volume: "desc_nulls_last"
         }
       }
     });
