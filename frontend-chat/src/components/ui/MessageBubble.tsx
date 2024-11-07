@@ -141,70 +141,10 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
       <>
         <ReactMarkdown
           components={{
-            code: ({ node, inline, className, children, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <CodeBlock
-                  language={match[1]}
-                  value={String(children).replace(/\n$/, '')}
-                  onCopy={onCopy}
-                />
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              );
-            },
-            p: ({ children }) => {
-              const text = String(children);
-              
-              // Match both markdown-style links and direct URLs for sound effects
-              const soundEffectRegex = /\[Sound Effect:?\s*(?:\[(.*?)\])?\((.*?\.mp3)\)|\[Sound Effect:?\s*(.*?\.mp3)\]/;
-              const match = text.match(soundEffectRegex);
-              
-              if (match) {
-                // Get the actual MP3 URL - it will be in group 2 for markdown links or group 3 for bracketed URLs
-                const audioUrl = match[2] || match[3];
-                
-                return (
-                  <>
-                    <p className="mb-2">
-                      {text.replace(soundEffectRegex, '')}
-                    </p>
-                    <AudioPlayer src={audioUrl} />
-                  </>
-                );
-              }
-              
-              return <p className="mb-2">{children}</p>;
-            },
-            h1: ({ children }) => (
-              <h1 className="text-2xl font-bold mb-2">{children}</h1>
-            ),
-            h2: ({ children }) => (
-              <h2 className="text-xl font-bold mb-2">{children}</h2>
-            ),
-            h3: ({ children }) => (
-              <h3 className="text-lg font-bold mb-2">{children}</h3>
-            ),
-            ul: ({ children }) => (
-              <ul className="list-disc pl-4 mb-2">{children}</ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="list-decimal pl-4 mb-2">{children}</ol>
-            ),
-            li: ({ children }) => <li className="mb-1">{children}</li>,
-            img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
             a: ({ href, children }) => {
-              // If it's an audio file link, render the audio player directly
               if (href && href.endsWith('.mp3')) {
-                // Check if this link is part of a Sound Effect block
-                const parentText = String(children);
-                if (parentText.includes('[Sound Effect:')) {
-                  return <AudioPlayer src={href} />;
-                }
+                return <AudioPlayer src={href} />;
               }
-              // Regular link handling
               return (
                 <a
                   href={href}
@@ -216,18 +156,35 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
                 </a>
               );
             },
+            p: ({ children }) => {
+              const text = String(children);
+              const soundEffectRegex = /\[Sound Effect:?\s*(?:\[(.*?)\])?\((.*?\.mp3)\)|\[Sound Effect:?\s*(.*?\.mp3)\]/;
+              const match = text.match(soundEffectRegex);
+
+              if (match) {
+                const audioUrl = match[2] || match[3];
+                return (
+                  <>
+                    <p className="mb-2">
+                      {text.replace(soundEffectRegex, '')}
+                    </p>
+                    <AudioPlayer src={audioUrl} />
+                  </>
+                );
+              }
+
+              return <p className="mb-2">{children}</p>;
+            },
           }}
           className="prose max-w-none"
         >
           {parsedContent.text}
         </ReactMarkdown>
-        
-        {/* Render all images in the array */}
+
         {parsedContent.images?.map((imageUrl, index) => (
           <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
         ))}
-        
-        {/* Render user's uploaded image if present */}
+
         {isUser && message.image && (
           <ImageThumbnail src={message.image} />
         )}
