@@ -157,24 +157,25 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             },
             p: ({ children }) => {
               const text = String(children);
-              // Handle sound effects inline
-              const soundEffectMatch = text.match(/\[Sound Effect: (.*?)\]/);
-              if (soundEffectMatch) {
-                // Check if the URL is wrapped in a markdown link
-                const isMarkdownLink = text.includes(`[Sound Effect: [`);
-                if (isMarkdownLink) {
-                  // If it's a markdown link, let the anchor component handle it
-                  return <p className="mb-2">{text.replace(/\[Sound Effect: .*?\]/, '')}</p>;
-                }
+              
+              // Match both markdown-style links and direct URLs for sound effects
+              const soundEffectRegex = /\[Sound Effect:?\s*(?:\[(.*?)\])?\((.*?\.mp3)\)|\[Sound Effect:?\s*(.*?\.mp3)\]/;
+              const match = text.match(soundEffectRegex);
+              
+              if (match) {
+                // Get the actual MP3 URL - it will be in group 2 for markdown links or group 3 for bracketed URLs
+                const audioUrl = match[2] || match[3];
+                
                 return (
                   <>
                     <p className="mb-2">
-                      {text.replace(/\[Sound Effect: .*?\]/, '')}
+                      {text.replace(soundEffectRegex, '')}
                     </p>
-                    <AudioPlayer src={soundEffectMatch[1]} />
+                    <AudioPlayer src={audioUrl} />
                   </>
                 );
               }
+              
               return <p className="mb-2">{children}</p>;
             },
             h1: ({ children }) => (
