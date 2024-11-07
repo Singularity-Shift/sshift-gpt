@@ -141,28 +141,29 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
       <>
         <ReactMarkdown
           components={{
-            a: ({ href, children }) => {
-              if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
-              }
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-800 hover:underline"
-                >
+            code: ({ node, inline, className, children, ...props }: any) => {
+              const match = /language-(\w+)/.exec(className || '');
+              return !inline && match ? (
+                <CodeBlock
+                  language={match[1]}
+                  value={String(children).replace(/\n$/, '')}
+                  onCopy={onCopy}
+                />
+              ) : (
+                <code className={className} {...props}>
                   {children}
-                </a>
+                </code>
               );
             },
             p: ({ children }) => {
               const text = String(children);
-              const soundEffectRegex = /\[Sound Effect:?\s*(?:\[(.*?)\])?\((.*?\.mp3)\)|\[Sound Effect:?\s*(.*?\.mp3)\]/;
+
+              // Match sound effect links
+              const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/;
               const match = text.match(soundEffectRegex);
 
               if (match) {
-                const audioUrl = match[2] || match[3];
+                const audioUrl = match[2];
                 return (
                   <>
                     <p className="mb-2">
@@ -175,16 +176,52 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
 
               return <p className="mb-2">{children}</p>;
             },
+            a: ({ href, children }) => {
+              // If it's an audio file link, render the audio player directly
+              if (href && href.endsWith('.mp3')) {
+                return <AudioPlayer src={href} />;
+              }
+              // Regular link handling
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-800 hover:underline"
+                >
+                  {children}
+                </a>
+              );
+            },
+            h1: ({ children }) => (
+              <h1 className="text-2xl font-bold mb-2">{children}</h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-xl font-bold mb-2">{children}</h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-lg font-bold mb-2">{children}</h3>
+            ),
+            ul: ({ children }) => (
+              <ul className="list-disc pl-4 mb-2">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-4 mb-2">{children}</ol>
+            ),
+            li: ({ children }) => <li className="mb-1">{children}</li>,
+            img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
           }}
           className="prose max-w-none"
         >
           {parsedContent.text}
         </ReactMarkdown>
-
+        
+        {/* Render all images in the array */}
         {parsedContent.images?.map((imageUrl, index) => (
           <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
         ))}
-
+        
+        {/* Render user's uploaded image if present */}
         {isUser && message.image && (
           <ImageThumbnail src={message.image} />
         )}
