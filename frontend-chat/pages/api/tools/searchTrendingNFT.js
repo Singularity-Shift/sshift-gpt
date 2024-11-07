@@ -1,3 +1,44 @@
+import { gql } from '@apollo/client';
+import indexerClient from '../indexerClient';
+
+const TRENDING_COLLECTIONS_QUERY = gql`
+    query fetchTrendingCollections(
+        $period: TrendingPeriod!
+        $trending_by: TrendingBy!
+        $offset: Int = 0
+        $limit: Int!
+    ) {
+        aptos {
+            collections_trending(
+                period: $period
+                trending_by: $trending_by
+                offset: $offset
+                limit: $limit
+            ) {
+                id: collection_id
+                current_trades_count
+                current_usd_volume
+                current_volume
+                previous_trades_count
+                previous_usd_volume
+                previous_volume
+                collection {
+                    id
+                    slug
+                    semantic_slug
+                    title
+                    supply
+                    cover_url
+                    floor
+                    usd_volume
+                    volume
+                    verified
+                }
+            }
+        }
+    }
+`;
+
 async function searchTrendingNFT({ period = 'days_1', trending_by = 'crypto_volume', limit = 10 }) {
     try {
         // Validate limit parameter
@@ -9,73 +50,21 @@ async function searchTrendingNFT({ period = 'days_1', trending_by = 'crypto_volu
             };
         }
 
-        const trendingQuery = `
-            query fetchTrendingCollections(
-                $period: TrendingPeriod!
-                $trending_by: TrendingBy!
-                $offset: Int = 0
-                $limit: Int!
-            ) {
-                aptos {
-                    collections_trending(
-                        period: $period
-                        trending_by: $trending_by
-                        offset: $offset
-                        limit: $limit
-                    ) {
-                        id: collection_id
-                        current_trades_count
-                        current_usd_volume
-                        current_volume
-                        previous_trades_count
-                        previous_usd_volume
-                        previous_volume
-                        collection {
-                            id
-                            slug
-                            semantic_slug
-                            title
-                            supply
-                            cover_url
-                            floor
-                            usd_volume
-                            volume
-                            verified
-                        }
-                    }
-                }
+        const { data, error } = await indexerClient.query({
+            query: TRENDING_COLLECTIONS_QUERY,
+            variables: {
+                period,
+                trending_by,
+                limit,
+                offset: 0
             }
-        `;
-
-        const response = await fetch('https://api.indexer.xyz/graphql', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-api-user': process.env.INDEXER_USER_ID,
-                'x-api-key': process.env.INDEXER_API_KEY
-            },
-            body: JSON.stringify({
-                query: trendingQuery,
-                variables: {
-                    period,
-                    trending_by,
-                    limit,
-                    offset: 0
-                }
-            })
         });
 
-        if (!response.ok) {
-            throw new Error(`Network response was not ok: ${response.statusText}`);
+        if (error) {
+            throw new Error(`GraphQL Error: ${error.message}`);
         }
 
-        const data = await response.json();
-
-        if (data.errors) {
-            throw new Error(`GraphQL Error: ${data.errors[0].message}`);
-        }
-
-        const trendingCollections = data.data.aptos.collections_trending.map(item => {
+        const trendingCollections = data.aptos.collections_trending.map(item => {
             const collection = item.collection;
             const floor = collection.floor * Math.pow(10, -8);  // Convert to APT
             

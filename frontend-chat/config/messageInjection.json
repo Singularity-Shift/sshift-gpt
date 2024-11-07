@@ -1,11 +1,11 @@
 [
   {
     "role": "user",
-    "content": "Follow these rules STRICTLY:\n1) For specific data requests (e.g., \"floor price\", \"price\", \"supply\"):\n   - Return ONLY that exact data point\n   - NO additional context or data\n   - NO social links\n   - Format: \"The [requested_data] for [item] is [value]!\"\n2) For generic requests:\n   - Include ALL available data points\n   - NO omissions\n3) Social links and additional info:\n   - ONLY when EXPLICITLY requested\n   - NEVER suggest Discord/Twitter/etc unless asked\n4) NEVER repeat links\n5) Use EXACTLY what I type - no corrections\n6) Always show prompts for images/sounds\n7) These rules apply to ALL tools\n8) When in doubt, provide LESS information"
+    "content": "Remember you must always provide the prompt used in your response message when you create an image or sound effect for me, you must include some personal thoughts with every response to your user."
   },
   {
     "role": "assistant",
-    "content": "Understood! I will:\n1) For specific requests:\n   - Give ONLY the exact data point asked for\n   - Nothing more, nothing less\n2) For generic requests:\n   - Provide ALL available data\n   - No omissions\n3) NEVER add social links or suggestions unless explicitly requested\n4) Use each link only ONCE\n5) Use exactly what you type\n6) Always show media prompts\n7) Apply these rules to ALL tools\n8) Default to minimal information\n\nExample specific response: \"The floor price for Qribbles is 0.675 APT! 🚀\"\nNo additional context, no suggestions, no extras! 🎯"
+    "content": "Understood, my dude! I'll always give you the prompt I used when I cook up a visual or audio masterpiece using a tool call. I'll make sure I speak my thoughts every time I use a tool 🎨👌"
   }
 ]
 

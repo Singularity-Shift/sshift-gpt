@@ -12,21 +12,13 @@ async function searchWeb(query) {
         "July", "August", "September", "October", "November", "December"
     ];
     
-    // Replace any year references with current year
-    query = query.replace(/\b20\d{2}\b/, currentDate.getFullYear());
-    
-    // If query contains month references without a year, append current year
-    monthNames.forEach(month => {
-        const monthRegex = new RegExp(`\\b${month}\\b`, 'i');
-        if (query.match(monthRegex) && !query.match(/\d{4}/)) {
-            query += ` ${currentDate.getFullYear()}`;
-        }
-    });
-
-    // If query is about "today's" news, add specific date
-    if (query.toLowerCase().includes("today")) {
-        const formattedDate = `${currentDate.getDate()} ${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
-        query = query.replace(/today/i, formattedDate);
+    // Explicitly add the current year to queries about recent events or news
+    if (query.toLowerCase().includes('news') || 
+        query.toLowerCase().includes('today') || 
+        query.toLowerCase().includes('recent') ||
+        query.toLowerCase().includes('latest')) {
+        const formattedDate = `${monthNames[currentDate.getMonth()]} ${currentDate.getFullYear()}`;
+        query = `${query} in ${formattedDate}`;
     }
 
     console.log('Modified search query:', query);
@@ -40,8 +32,14 @@ async function searchWeb(query) {
         body: JSON.stringify({
             model: "llama-3.1-sonar-large-128k-online",
             messages: [
-                { role: "system", content: "Be verbose,precise and and accurate as possible, maximising the amount of information you can provided by giving a detailed and in depth summary of each result or topic." },
-                { role: "user", content: query }
+                { 
+                    role: "system", 
+                    content: "Be verbose, precise and accurate as possible, maximising the amount of information you can provide by giving a detailed and in-depth summary of each result or topic. Always prioritize the most recent information available and explicitly mention the current date/year in your responses." 
+                },
+                { 
+                    role: "user", 
+                    content: query 
+                }
             ],
             max_tokens: 1000,
             temperature: 0.2,
@@ -50,7 +48,7 @@ async function searchWeb(query) {
             search_domain_filter: ["perplexity.ai"],
             return_images: false,
             return_related_questions: false,
-            search_recency_filter: "month",
+            search_recency_filter: "day",
             top_k: 0,
             stream: false,
             presence_penalty: 0,

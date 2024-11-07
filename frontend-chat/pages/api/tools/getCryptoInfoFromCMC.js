@@ -21,7 +21,6 @@ export default async function handler(req, res) {
         res.status(500).json({ error: error.message });
     }
 }
-
 async function getCryptoInfoFromCMC(token_symbol) {
     if (!process.env.CMC_API_KEY) {
         throw new Error('CMC_API_KEY is not configured in environment variables');
@@ -112,3 +111,4 @@ async function getCryptoInfoFromCMC(token_symbol) {
         exchanges: market_pairs ? market_pairs.map(pair => pair.exchange.name) : []
     };
 }
+

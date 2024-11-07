@@ -157,19 +157,41 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             },
             p: ({ children }) => {
               const text = String(children);
-              // Handle sound effects inline
-              const soundEffectMatch = text.match(/\[Sound Effect: (.*?)\]/);
-              if (soundEffectMatch) {
+
+              // Match sound effect links
+              const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/;
+              const match = text.match(soundEffectRegex);
+
+              if (match) {
+                const audioUrl = match[2];
                 return (
                   <>
                     <p className="mb-2">
-                      {text.replace(/\[Sound Effect: .*?\]/, '')}
+                      {text.replace(soundEffectRegex, '')}
                     </p>
-                    <AudioPlayer src={soundEffectMatch[1]} />
+                    <AudioPlayer src={audioUrl} />
                   </>
                 );
               }
+
               return <p className="mb-2">{children}</p>;
+            },
+            a: ({ href, children }) => {
+              // If it's an audio file link, render the audio player directly
+              if (href && href.endsWith('.mp3')) {
+                return <AudioPlayer src={href} />;
+              }
+              // Regular link handling
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-800 hover:underline"
+                >
+                  {children}
+                </a>
+              );
             },
             h1: ({ children }) => (
               <h1 className="text-2xl font-bold mb-2">{children}</h1>
@@ -188,23 +210,6 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
-            a: ({ href, children }) => {
-              // If it's an audio file link, render the audio player directly
-              if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
-              }
-              // Regular link handling
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-800 hover:underline"
-                >
-                  {children}
-                </a>
-              );
-            },
           }}
           className="prose max-w-none"
         >
