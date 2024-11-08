@@ -44,9 +44,11 @@ export async function processToolCalls(currentToolCalls) {
             const toolFunction = toolCalls[toolCall.function.name];
             
             if (typeof toolFunction === 'function') {
+                console.log(`Processing tool call: ${toolCall.function.name}`, args);
                 const result = await toolFunction(...Object.values(args));
                 
                 if (result.error) {
+                    console.error(`Tool call error for ${toolCall.function.name}:`, result.error);
                     results.push({
                         role: 'tool',
                         content: JSON.stringify({
@@ -56,6 +58,7 @@ export async function processToolCalls(currentToolCalls) {
                         tool_call_id: toolCall.id
                     });
                 } else {
+                    console.log(`Tool call success for ${toolCall.function.name}:`, result);
                     results.push({
                         role: 'tool',
                         content: JSON.stringify(result),

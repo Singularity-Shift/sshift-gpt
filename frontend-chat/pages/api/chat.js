@@ -17,39 +17,13 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid messages format' });
         }
 
-        const formattedMessages = messages.map(msg => {
-            if (msg.role === 'user' && msg.image) {
-                return {
-                    role: 'user',
-                    content: [
-                        { type: 'text', text: msg.content || "Here's an image." },
-                        { 
-                            type: 'image_url', 
-                            image_url: { 
-                                url: msg.image,
-                                detail: "auto"
-                            } 
-                        }
-                    ]
-                };
-            }
-            return {
-                role: msg.role || 'user',
-                content: msg.content || ''
-            };
-        });
-
-        const messagesWithSystemPrompt = [
-            systemPrompt,
-            //...messageInjection,
-            ...formattedMessages
-        ];
-
         try {
-            await streamResponse(res, model, messagesWithSystemPrompt, temperature);
+            await streamResponse(res, model, messages, temperature);
         } catch (error) {
             console.error('Error in handler:', error);
-            res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            if (!res.writableEnded) {
+                res.status(500).json({ error: 'Internal Server Error', details: error.message });
+            }
         }
     } else if (req.method === 'DELETE') {
         shouldStopStream = true;
