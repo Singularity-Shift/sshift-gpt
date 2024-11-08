@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
 import { handleToolCall, writeResponseChunk, processToolCalls } from './chunkHandlers.js';
 import toolSchema from '../../tool_schemas/tool_schema.json';
+import systemPrompt from '../../../../config/systemPrompt.json';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
@@ -9,18 +10,61 @@ const openai = new OpenAI({
 export async function streamResponse(res, model, messages, temperature) {
     let currentToolCalls = [];
     let assistantMessage = { content: '', images: [] };
-    let messageHistory = [...messages]; // Keep track of the full message history
+    
+    // Format messages to handle images properly
+    const formattedMessages = messages.map(msg => {
+        // Handle messages with images
+        if (msg.role === 'user' && msg.image) {
+            return {
+                role: 'user',
+                content: [
+                    { 
+                        type: 'text', 
+                        text: msg.content || "Here's an image." 
+                    },
+                    { 
+                        type: 'image_url', 
+                        image_url: { 
+                            url: msg.image,
+                            detail: "auto"
+                        } 
+                    }
+                ]
+            };
+        }
+        // Handle messages that are already properly formatted for images
+        if (msg.role === 'user' && Array.isArray(msg.content)) {
+            return msg;
+        }
+        // Handle regular text messages
+        return {
+            role: msg.role || 'user',
+            content: msg.content || ''
+        };
+    });
+
+    // Add system prompt at the beginning of the messages array
+    const messagesWithSystemPrompt = [
+        systemPrompt,
+        ...formattedMessages
+    ];
 
     try {
         const stream = await openai.chat.completions.create({
             model: model || 'gpt-4o-mini',
-            messages: messageHistory,
+            messages: messagesWithSystemPrompt,
             max_tokens: 8192,
             temperature,
             stream: true,
             tools: toolSchema,
             tool_choice: "auto",
             parallel_tool_calls: true,
+        });
+
+        res.writeHead(200, {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
         });
 
         for await (const chunk of stream) {
@@ -50,16 +94,16 @@ export async function streamResponse(res, model, messages, temperature) {
                         }
                     }))
                 };
-                messageHistory.push(assistantToolMessage);
+                messagesWithSystemPrompt.push(assistantToolMessage);
 
                 // Process tool calls and add their results to the history
                 const toolResults = await processToolCalls(currentToolCalls);
-                messageHistory.push(...toolResults);
+                messagesWithSystemPrompt.push(...toolResults);
 
                 // Create continuation with the updated message history
                 const continuationResponse = await openai.chat.completions.create({
                     model: model || 'gpt-4o-mini',
-                    messages: messageHistory,
+                    messages: messagesWithSystemPrompt,
                     max_tokens: 1000,
                     temperature,
                     stream: true,
@@ -73,17 +117,11 @@ export async function streamResponse(res, model, messages, temperature) {
                     }
                 }
 
-                // Update message history with the final assistant response
-                messageHistory.push({
-                    role: 'assistant',
-                    content: assistantMessage.content
-                });
-
                 currentToolCalls = [];
             }
             else if (chunk.choices[0]?.finish_reason === 'stop') {
                 if (assistantMessage.content) {
-                    messageHistory.push({
+                    messagesWithSystemPrompt.push({
                         role: 'assistant',
                         content: assistantMessage.content
                     });
@@ -104,7 +142,7 @@ export async function streamResponse(res, model, messages, temperature) {
         // Ensure we always send a final message
         if (!res.writableEnded) {
             if (assistantMessage.content) {
-                messageHistory.push({
+                messagesWithSystemPrompt.push({
                     role: 'assistant',
                     content: assistantMessage.content
                 });
@@ -122,7 +160,7 @@ export async function streamResponse(res, model, messages, temperature) {
 
     } catch (error) {
         console.error('Error in stream response:', error);
-        console.error('Current message history:', JSON.stringify(messageHistory, null, 2));
+        console.error('Current message history:', JSON.stringify(messagesWithSystemPrompt, null, 2));
         if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
             res.write('data: [DONE]\n\n');
