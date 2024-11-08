@@ -221,7 +221,7 @@
         "limit": {
           "type": "integer",
           "enum": [5, 10, 20, 40],
-          "description": "The number of trending collections to return.",
+          "description": "The number of trending collections to return. You must use one of the values from the enum closest to the number of result requested by the user.",
           "default": 10
         }
       },
