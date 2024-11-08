@@ -1,4 +1,5 @@
-import { ApolloClient, InMemoryCache, createHttpLink } from '@apollo/client';
+import { ApolloClient, InMemoryCache } from '@apollo/client';
+import { createHttpLink } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { ApolloLink } from '@apollo/client';
 
@@ -35,10 +36,67 @@ const loggingLink = new ApolloLink((operation, forward) => {
     });
 });
 
+// Configure cache with proper IDs and field policies
+const cache = new InMemoryCache({
+    typePolicies: {
+        Query: {
+            fields: {
+                aptos: {
+                    merge(existing, incoming) {
+                        return incoming;
+                    }
+                }
+            }
+        },
+        Collection: {
+            keyFields: ['id'],
+            fields: {
+                floor: {
+                    read(floor) {
+                        return floor ? floor * Math.pow(10, -8) : null;
+                    }
+                },
+                volume: {
+                    read(volume) {
+                        return volume ? volume * Math.pow(10, -8) : null;
+                    }
+                }
+            }
+        },
+        CollectionStats: {
+            keyFields: ['id'],
+            fields: {
+                total_volume: {
+                    read(volume) {
+                        return volume ? volume * Math.pow(10, -8) : null;
+                    }
+                },
+                day_volume: {
+                    read(volume) {
+                        return volume ? volume * Math.pow(10, -8) : null;
+                    }
+                }
+            }
+        }
+    },
+    possibleTypes: {
+        Collection: ['collections'],
+        CollectionStats: ['collection_stats']
+    }
+});
+
 // Create the Apollo Client instance
 const indexerClient = new ApolloClient({
     link: ApolloLink.from([loggingLink, authLink.concat(httpLink)]),
-    cache: new InMemoryCache(),
+    cache,
+    defaultOptions: {
+        watchQuery: {
+            fetchPolicy: 'no-cache' // Disable caching for queries
+        },
+        query: {
+            fetchPolicy: 'no-cache' // Disable caching for queries
+        }
+    }
 });
 
 export default indexerClient;

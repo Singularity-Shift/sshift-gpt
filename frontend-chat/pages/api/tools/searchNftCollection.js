@@ -29,6 +29,7 @@ const COLLECTION_STATS_QUERY = gql`
     query fetchCollectionStats($slug: String!) {
         aptos {
             collection_stats(slug: $slug) {
+                id: slug
                 total_mint_volume
                 total_mint_usd_volume
                 total_mints
@@ -51,6 +52,7 @@ const COLLECTION_DETAILS_QUERY = gql`
                     _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
                 }
             ) {
+                id
                 description
                 discord
                 twitter
