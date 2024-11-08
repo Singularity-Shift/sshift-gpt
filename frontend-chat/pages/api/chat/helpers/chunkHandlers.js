@@ -59,11 +59,27 @@ export async function processToolCalls(currentToolCalls) {
                     });
                 } else {
                     console.log(`Tool call success for ${toolCall.function.name}:`, result);
-                    results.push({
-                        role: 'tool',
-                        content: JSON.stringify(result),
-                        tool_call_id: toolCall.id
-                    });
+                    
+                    // Special handling for image generation results
+                    if (toolCall.function.name === 'generateImage') {
+                        // Format the result to include both URL and prompt
+                        const formattedResult = {
+                            url: result.url,
+                            prompt: result.prompt,
+                            formatted_url: `![Generated Image](${result.url})`
+                        };
+                        results.push({
+                            role: 'tool',
+                            content: JSON.stringify(formattedResult),
+                            tool_call_id: toolCall.id
+                        });
+                    } else {
+                        results.push({
+                            role: 'tool',
+                            content: JSON.stringify(result),
+                            tool_call_id: toolCall.id
+                        });
+                    }
                 }
             }
         } catch (error) {
