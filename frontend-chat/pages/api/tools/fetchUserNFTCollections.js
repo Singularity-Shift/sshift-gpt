@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import indexerClient from '../indexerClient';
+import indexerClient from '../clients/indexerClient';
 import { jwtDecode } from 'jwt-decode';
 
 const WALLET_COLLECTIONS_QUERY = gql`

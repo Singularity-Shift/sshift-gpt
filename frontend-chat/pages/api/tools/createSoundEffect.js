@@ -1,6 +1,6 @@
 import { Storage } from '@google-cloud/storage';
 import { v4 as uuidv4 } from 'uuid';
-import { createElevenLabsClient } from '../elvenlabsClient';
+import { createElevenLabsClient } from '../clients/elvenlabsClient';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {

@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import indexerClient from '../indexerClient';
+import indexerClient from '../clients/indexerClient';
 
 // Define GraphQL queries
 const COLLECTION_SEARCH_QUERY = gql`
