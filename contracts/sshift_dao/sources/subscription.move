@@ -1,17 +1,18 @@
-module sshift_dao_addr::sshift_subscription {
+module sshift_dao_addr::subscription {
     use std::signer;
     use std::vector;
     use std::option::{Self, Option};
+    use std::string::String;
 
     use aptos_framework::event;
     use aptos_framework::timestamp;
     use aptos_framework::primary_fungible_store;
     use aptos_framework::fungible_asset::{Metadata};
     use aptos_token::token as token_v1;
-    use aptos_framework::object::{Self, Object};
+    use aptos_framework::object;
     use aptos_token_objects::token::{Self, Token};
 
-    use sshift_dao_addr::sshift_fees;
+    use sshift_dao_addr::fees;
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
     const ECOIN_ADDRESS_NOT_MATCH: u64 = 2;
@@ -31,6 +32,13 @@ module sshift_dao_addr::sshift_subscription {
         move_bot_id: Option<token_v1::TokenId>,
     }
 
+    struct MoveBotFields {
+        token_creator: address,
+        token_collection: String,
+        token_name: String,
+        token_property_version: u64,
+    }
+
     struct FreeSubscription has store, copy {
         account: address,
         duration: u64,
@@ -43,10 +51,6 @@ module sshift_dao_addr::sshift_subscription {
     struct UserSubscription has key {
         start_time: u64,
         end_time: u64
-    }
-
-    struct MoveBot has key {
-        nft_id: Option<token_v1::TokenId>,
     }
 
     #[event]
@@ -73,12 +77,6 @@ module sshift_dao_addr::sshift_subscription {
                 subscriptions: vector::empty(),
             }
         );
-
-        move_to(
-            sender, MoveBot {
-                nft_id: option::none()
-            }
-        );
     }
 
     public entry fun set_plan(
@@ -86,20 +84,27 @@ module sshift_dao_addr::sshift_subscription {
         price_per_day: u64,
         collection_addresses: vector<address>,
         discounts_per_day: vector<u64>,
-        move_bot_obj: Object<MoveBot>,
-    ) acquires SubscriptionPlan, MoveBot {
+        token_creator: address,
+        token_collection: String,
+        token_name: String,
+        token_property_version: u64
+        
+    ) acquires SubscriptionPlan {
         check_admin(sender);
 
         let subscription_plan = borrow_global_mut<SubscriptionPlan>(@sshift_dao_addr);
 
         subscription_plan.price_per_day = price_per_day;
 
-        let move_bot_addr = object::object_address(&move_bot_obj);
-        let move_bot = borrow_global<MoveBot>(move_bot_addr);
 
-        let move_token_id = move_bot.nft_id;
+        let move_token_id = token_v1::create_token_id_raw(
+            token_creator,
+            token_collection,
+            token_name,
+            token_property_version
+        );
 
-        subscription_plan.move_bot_id = option::some(*option::borrow(&move_token_id));
+        subscription_plan.move_bot_id = option::some(move_token_id);
 
         let collections_discount = vector::map(
             collection_addresses,
@@ -182,7 +187,7 @@ module sshift_dao_addr::sshift_subscription {
 
         assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
 
-        let currency_addr = sshift_fees::get_currency_addr();
+        let currency_addr = fees::get_currency_addr();
 
         let currency_metadata = object::address_to_object<Metadata>(currency_addr);
 
@@ -190,7 +195,7 @@ module sshift_dao_addr::sshift_subscription {
 
         let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
 
-        let resource_account_addr = sshift_fees::get_resource_account_address();
+        let resource_account_addr = fees::get_resource_account_address();
 
         let price = plan.price_per_day * days;
 
@@ -234,6 +239,29 @@ module sshift_dao_addr::sshift_subscription {
     }
 
     #[view]
+    public fun get_move_bot_fields(): MoveBotFields acquires SubscriptionPlan {
+        let config = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
+
+        assert!(option::is_some(&config.move_bot_id), ESUBSCRIPTION_PLAN_NOT_EXISTS);
+
+        let move_bot_id = option::borrow(&config.move_bot_id);
+
+        let token_data_id = token_v1::get_tokendata_id(*move_bot_id);
+
+        let (token_creator, token_collection, token_name) = token_v1::get_token_data_id_fields(&token_data_id);
+
+        let token_property_version = token_v1::get_tokendata_largest_property_version(token_creator, token_data_id);
+
+        MoveBotFields {
+            token_creator,
+            token_collection,
+            token_name,
+            token_property_version,
+        }
+    }
+
+
+    #[view]
     public fun get_plan(account: address): (u64, u64) acquires UserSubscription {
         let user_subsciption = borrow_global<UserSubscription>(account);
 
@@ -264,7 +292,7 @@ module sshift_dao_addr::sshift_subscription {
 
     fun check_admin(sender: &signer) {
         let account_addr = signer::address_of(sender);
-        let admin = sshift_fees::get_admin();
+        let admin = fees::get_admin();
         assert!(
             admin == account_addr, EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION
         );
@@ -331,7 +359,10 @@ module sshift_dao_addr::sshift_subscription {
     use aptos_framework::coin;
 
     #[test_only]
-    use std::string::{Self, String};
+    use std::string;
+
+    #[test_only]
+    use aptos_framework::object::{Object};
 
     #[test_only]
     use aptos_std::string_utils;
@@ -361,11 +392,11 @@ module sshift_dao_addr::sshift_subscription {
     fun create_resource_account(sender: &signer, admin: &signer) {
         let admin_addr = signer::address_of(admin);
 
-        sshift_fees::initialize_for_test(sender);
+        fees::initialize_for_test(sender);
 
-        sshift_fees::create_resource_account(sender, b"test", vector[admin_addr]);
+        fees::create_resource_account(sender, b"test", vector[admin_addr]);
 
-        sshift_fees::create_collector_object(admin);
+        fees::create_collector_object(admin);
     }
 
     #[test_only]
@@ -378,7 +409,7 @@ module sshift_dao_addr::sshift_subscription {
         let maximum_supply = 0;
         let mutate_setting = vector<bool>[ false, false, false ];
 
-        let resource_account_addr = sshift_fees::get_resource_account_address();
+        let resource_account_addr = fees::get_resource_account_address();
 
         // Create the nft collection.
         token_v1::create_collection(sender, collection_name, description, collection_uri, maximum_supply, mutate_setting);
@@ -491,18 +522,16 @@ module sshift_dao_addr::sshift_subscription {
     }
 
     #[test_only]
-    fun create_subscription(sender: &signer, admin: &signer): (token_v1::TokenDataId, address, address) acquires SubscriptionPlan, MoveBot {
+    fun create_subscription(sender: &signer, admin: &signer): (token_v1::TokenDataId, address, address) acquires SubscriptionPlan {
         let admin_addr = signer::address_of(admin);
 
         create_resource_account(sender, admin);
 
-        sshift_fees::set_pending_admin(sender, admin_addr);
+        fees::set_pending_admin(sender, admin_addr);
 
-        sshift_fees::accept_admin(admin);
+        fees::accept_admin(admin);
 
         let token_data_id = create_move_bot(admin);
-
-        let token_id = mint_move_bot(admin, admin, token_data_id);
 
         let collection_addr_1 = create_collection(
             admin,
@@ -528,24 +557,16 @@ module sshift_dao_addr::sshift_subscription {
         vector::push_back(&mut discounts, 3000);
         vector::push_back(&mut discounts, 4000);
 
-        let move_bot = MoveBot {
-            nft_id: option::some(token_id)
-        };
-
-        let construct_ref = object::create_object(signer::address_of(admin));
-        let object_signer = object::generate_signer(&construct_ref);
-
-        move_to(&object_signer, move_bot);
-        
-        let move_bot_obj = object::address_to_object(signer::address_of(&object_signer));
-        
         init_module(sender);
 
         set_plan(admin,
             100000,
             collections_v2,
             discounts,
-            move_bot_obj,
+            admin_addr,
+            string::utf8(b"Move Bot"),
+            string::utf8(b"My Move Bot"),
+            token_v1::get_tokendata_largest_property_version(admin_addr, token_data_id),
         );
 
         (token_data_id, collection_addr_1, collection_addr_2)
@@ -558,7 +579,7 @@ module sshift_dao_addr::sshift_subscription {
             admin = @0x200
         )
     ]
-    fun should_create_subscription(aptos_framework: &signer, owner: &signer, admin: &signer) acquires SubscriptionPlan, MoveBot {
+    fun should_create_subscription(aptos_framework: &signer, owner: &signer, admin: &signer) acquires SubscriptionPlan {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
 
         let admin_addr = signer::address_of(admin);
@@ -582,7 +603,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -607,7 +628,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -627,7 +648,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -658,7 +679,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
@@ -678,7 +699,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -713,7 +734,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
@@ -734,7 +755,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -759,7 +780,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
 
         let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
@@ -791,7 +812,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -818,7 +839,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -839,7 +860,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -864,7 +885,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         let token_holding = vector::empty();
 
@@ -891,7 +912,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -925,7 +946,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription, FAController {
+    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -950,7 +971,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -970,7 +991,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription, FAController {
+    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -995,7 +1016,7 @@ module sshift_dao_addr::sshift_subscription {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1017,7 +1038,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
           let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1053,7 +1074,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, MoveBot, UserSubscription {
+    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1091,7 +1112,7 @@ module sshift_dao_addr::sshift_subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_subscription_without_claiming_or_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, UserSubscription {
+    fun should_not_have_active_subscription_without_claiming_or_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1122,7 +1143,7 @@ module sshift_dao_addr::sshift_subscription {
         )
     ]
     #[expected_failure(abort_code = 1, location = Self)]
-    fun set_plan_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot {
+    fun set_plan_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1135,14 +1156,11 @@ module sshift_dao_addr::sshift_subscription {
 
         create_resource_account(owner, admin);
 
-        sshift_fees::set_pending_admin(owner, admin_addr);
+        fees::set_pending_admin(owner, admin_addr);
 
-        sshift_fees::accept_admin(admin);
+        fees::accept_admin(admin);
 
         let token_data_id = create_move_bot(admin);
-
-        let token_id = mint_move_bot(admin, admin, token_data_id);
-
 
         let collection_addr_1 = create_collection(
             admin,
@@ -1167,25 +1185,18 @@ module sshift_dao_addr::sshift_subscription {
         let discounts = vector::empty();
         vector::push_back(&mut discounts, 3000);
         vector::push_back(&mut discounts, 4000);
-
-        let move_bot = MoveBot {
-            nft_id: option::some(token_id)
-        };
-
-        let construct_ref = object::create_object(signer::address_of(admin));
-        let object_signer = object::generate_signer(&construct_ref);
-
-        move_to(&object_signer, move_bot);
         
-        let move_bot_obj = object::address_to_object(signer::address_of(&object_signer));
-        
+
         init_module(owner);
 
         set_plan(user,
             100000,
             collections_v2,
             discounts,
-            move_bot_obj,
+            admin_addr,
+            string::utf8(b"Move Bot"),
+            string::utf8(b"My Move Bot"),
+            token_v1::get_tokendata_largest_property_version(admin_addr, token_data_id),
         );
 
         coin::destroy_burn_cap(burn_cap);
@@ -1201,7 +1212,7 @@ module sshift_dao_addr::sshift_subscription {
         )
     ]
     #[expected_failure(abort_code = 1, location = Self)]
-    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, MoveBot, SubscriptionsGifted {
+    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionsGifted {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1233,7 +1244,7 @@ module sshift_dao_addr::sshift_subscription {
         )
     ]
     #[expected_failure(abort_code = 4, location = Self)]
-    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, MoveBot, FAController {
+    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1264,7 +1275,7 @@ module sshift_dao_addr::sshift_subscription {
 
         let fa_controller = borrow_global<FAController>(fa_addr);
 
-        sshift_fees::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         mint_fa(user2, &fa_controller.mint_ref, 20000000000000);
 

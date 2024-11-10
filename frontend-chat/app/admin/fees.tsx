@@ -15,6 +15,8 @@ import { RESOURCE_ACCOUNT_SEED } from '../../config/env';
 
 export const Fees = () => {
   const { abi } = useAbiClient();
+  const [currency, setCurrency] = useState('');
+  const [isCurrencySet, setIsCurrencySet] = useState(false);
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
   const [isResourceAccountSet, setIsResourceAccountSet] =
     useState<boolean>(false);
@@ -34,6 +36,9 @@ export const Fees = () => {
   const { connected } = useWallet();
   const { client } = useWalletClient();
 
+  const disabledCreateResourceAccount =
+    !initialCollectors.length || !isCurrencySet;
+
   useEffect(() => {
     if (isResourceAccountSet) {
       void (async () => {
@@ -47,7 +52,7 @@ export const Fees = () => {
         setResourceAccount(response?.[0] as string);
 
         const balance = await abi?.useABI(FeesABI).view.get_resource_balance({
-          typeArguments: ['0x1::aptos_coin::AptosCoin'],
+          typeArguments: [],
           functionArguments: [],
         });
 
@@ -57,6 +62,7 @@ export const Fees = () => {
       })();
     }
     void (async () => {
+      let currency = '';
       const resourceAccountExists = await abi
         ?.useABI(FeesABI)
         .view.resource_account_exists({
@@ -64,7 +70,22 @@ export const Fees = () => {
           functionArguments: [],
         });
 
-      setIsResourceAccountSet(Boolean(resourceAccountExists?.[0]));
+      const isResourceAccountExists = Boolean(resourceAccountExists?.[0]);
+
+      if (isResourceAccountExists) {
+        const currencyResult = await abi
+          ?.useABI(FeesABI)
+          .view.get_currency_addr({
+            typeArguments: [],
+            functionArguments: [],
+          });
+
+        currency = currencyResult?.[0] as string;
+      }
+
+      setIsResourceAccountSet(isResourceAccountExists);
+      setCurrency(currency);
+      setIsCurrencySet(Boolean(currency));
     })();
   }, [isResourceAccountSet, abi]);
 
@@ -100,7 +121,7 @@ export const Fees = () => {
         ) as `0x${string}`[]),
       ]);
     })();
-  }, [abi]);
+  }, [abi, isResourceAccountSet]);
 
   const onAddInitialCollector = async () => {
     setCollectorsNotSubscribed([
@@ -108,7 +129,7 @@ export const Fees = () => {
       newAddress as `0x${string}`,
     ]);
     setInitialCollectors([...initialCollectors, newAddress as `0x${string}`]);
-    setNewAddress(undefined);
+    setNewAddress('' as `0x${string}`);
   };
 
   const onAddFees = (salary: number, employee: number) => {
@@ -135,6 +156,8 @@ export const Fees = () => {
         description: `${tx?.hash}`,
         variant: 'default',
       });
+
+      setIsResourceAccountSet(true);
     } catch (error) {
       toast({
         title: 'Error creating resource account',
@@ -147,7 +170,7 @@ export const Fees = () => {
   const onPayCollectors = async () => {
     try {
       const tx = await client?.useABI(FeesABI).payment({
-        type_arguments: ['0x1::aptos_coin::AptosCoin'],
+        type_arguments: [],
         arguments: [
           [...collectorsSubscribed],
           [...fees.map((s) => convertAmountFromHumanReadableToOnChain(s, 8))],
@@ -170,6 +193,29 @@ export const Fees = () => {
     }
   };
 
+  const onUptateCurrency = async () => {
+    try {
+      const tx = await client?.useABI(FeesABI).set_currency({
+        type_arguments: [],
+        arguments: [currency as `0x${string}`],
+      });
+
+      toast({
+        title: 'Set Currency',
+        description: `${tx?.hash}`,
+        variant: 'default',
+      });
+
+      setIsCurrencySet(true);
+    } catch (error) {
+      toast({
+        title: 'Error setting the currency',
+        description: `${error}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
   return (
     <div className="mt-10">
       {isResourceAccountSet ? (
@@ -177,6 +223,7 @@ export const Fees = () => {
           <div className="w-4/6 m-2">
             <div>Account Address: {resourceAccount}</div>
             <div>Balance: {resourceAccountBalance}</div>
+            <div>Currency: {currency}</div>
           </div>
 
           <div className="w-4/6 m-2">
@@ -211,6 +258,7 @@ export const Fees = () => {
                 />
               </div>
             ))}
+
             <Button
               className="mt-10"
               variant="default"
@@ -219,6 +267,27 @@ export const Fees = () => {
             >
               Pay collectors
             </Button>
+
+            <div className="w-1/6 m-2 self-end">
+              <LabeledInput
+                id="update-currency-address"
+                label="Currency Address"
+                tooltip="The address currency used for all payments"
+                required={false}
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
+                type="text"
+              />
+            </div>
+            <div className="w-1/6 m-2 self-end mb-10">
+              <Button
+                variant="green"
+                onClick={onUptateCurrency}
+                disabled={!currency}
+              >
+                Update Currency
+              </Button>
+            </div>
           </div>
         </>
       ) : (
@@ -235,9 +304,9 @@ export const Fees = () => {
                 type="text"
               />
             </div>
-            <div className="w-1/6 m-2 self-end mb-10">
+            <div className="w-1/6 m-1 self-end mb-10">
               <Button
-                variant="default"
+                variant="outline"
                 onClick={onAddInitialCollector}
                 disabled={!newAddress}
               >
@@ -256,8 +325,33 @@ export const Fees = () => {
               ))}
             </div>
 
-            <Button variant="default" onClick={onCreateResourceAccount}>
-              Create resource account
+            <div className="m-1 self-end">
+              <LabeledInput
+                id="currency-address"
+                label="Currency Address"
+                tooltip="The address currency used for all payments"
+                required={true}
+                value={currency}
+                onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
+                type="text"
+              />
+            </div>
+
+            <Button
+              onClick={onUptateCurrency}
+              className="mb-10 mt-5"
+              variant="green"
+              disabled={!currency}
+            >
+              Set Currency
+            </Button>
+
+            <Button
+              variant="green"
+              disabled={disabledCreateResourceAccount}
+              onClick={onCreateResourceAccount}
+            >
+              Create resource account and set currency
             </Button>
           </div>
         </>

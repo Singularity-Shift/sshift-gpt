@@ -6,7 +6,7 @@ import { useAppManagment } from '../../context/AppManagment';
 import { useRouter } from 'next/navigation';
 
 const DashboardHeader = () => {
-  const { isAdmin } = useAppManagment();
+  const { isAdmin, isPendingAdmin } = useAppManagment();
   const router = useRouter(); // Import the useRouter hook from Next.js
   return (
     <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
@@ -21,19 +21,21 @@ const DashboardHeader = () => {
           <span>Chat</span>
         </Button>
 
-        {isAdmin && location.pathname !== '/admin' && (
-          <Button
-            onClick={() => router.push('/admin')}
-            variant="ghost"
-            size="sm"
-            className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Admin</span>
-          </Button>
-        )}
+        {(isAdmin || isPendingAdmin) &&
+          typeof location === 'object' &&
+          location.pathname !== '/admin' && (
+            <Button
+              onClick={() => router.push('/admin')}
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Admin</span>
+            </Button>
+          )}
 
-        {location.pathname !== '/dashboard' && (
+        {typeof location === 'object' && location.pathname !== '/dashboard' && (
           <Button
             onClick={() => router.push('/dashboard')}
             variant="ghost"

@@ -33,7 +33,7 @@ export const compile = async () => {
   const { accountAddress } = getConfig();
 
   await move.compile({
-    packageDirectoryPath: 'contracts/sshift',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
@@ -47,7 +47,7 @@ export const publish = async () => {
   const { accountAddress, profile } = getConfig();
 
   await move.publish({
-    packageDirectoryPath: 'contracts/sshift',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
@@ -60,7 +60,7 @@ export const test = async () => {
   const move = new cli.Move();
 
   await move.test({
-    packageDirectoryPath: 'contracts/sshift',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: '0x100' as any,
     },

@@ -1,7 +1,9 @@
 'use client';
 import {
   createContext,
+  Dispatch,
   ReactNode,
+  SetStateAction,
   useContext,
   useEffect,
   useState,
@@ -12,6 +14,9 @@ import { FeesABI } from '../../abis/FeesAbi';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
+  setIsAdmin: Dispatch<SetStateAction<boolean>>;
+  isPendingAdmin: boolean;
+  setIsPendingAdmin: Dispatch<SetStateAction<boolean>>;
 };
 
 const AppManagmentContext = createContext<AppManagmenContextProp>(
@@ -24,6 +29,7 @@ export const AppManagementProvider = ({
   children: ReactNode;
 }) => {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isPendingAdmin, setIsPendingAdmin] = useState(false);
   const { abi } = useAbiClient();
   const { connected, account } = useWallet();
 
@@ -35,13 +41,27 @@ export const AppManagementProvider = ({
         functionArguments: [],
       });
 
+      let pendingAdminResult;
+
+      try {
+        pendingAdminResult = await abi?.useABI(FeesABI).view.get_pending_admin({
+          typeArguments: [],
+          functionArguments: [],
+        });
+      } catch (error) {
+        console.error('Error fetching admin or pending admin:', error);
+      }
+
       const admin = adminResult?.[0];
 
-      setIsAdmin(admin === account?.address);
-    })();
-  }, [abi, connected, account?.address]);
+      const pendingAdmin = pendingAdminResult?.[0];
 
-  const values = { isAdmin };
+      setIsAdmin(admin === account?.address);
+      setIsPendingAdmin(pendingAdmin === account?.address);
+    })();
+  }, [abi, connected, account?.address, isAdmin, isPendingAdmin]);
+
+  const values = { isAdmin, setIsAdmin, isPendingAdmin, setIsPendingAdmin };
 
   return (
     <AppManagmentContext.Provider value={values}>

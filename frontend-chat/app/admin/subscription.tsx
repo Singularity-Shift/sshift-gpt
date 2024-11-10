@@ -4,7 +4,7 @@ import { useAbiClient } from '../../src/context/AbiProvider';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { SubscriptionABI } from '../../abis/SubscriptionAbi';
 import { useEffect, useState } from 'react';
-import { ISubscription } from '@helpers';
+import { IMoveBotFields, ISubscription } from '@helpers';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { CollectionDiscoount } from './collectionsDiscount';
 import { toast } from '../../src/components/ui/use-toast';
@@ -27,16 +27,21 @@ export const Subscription = () => {
   const aptos = aptosClient();
 
   const [subscription, setSubscription] = useState<ISubscription>({
-    coin: '' as `0x${string}`,
     collections_discount: [],
-    move_bot_id: '' as `0x${string}`,
     price_per_day: 0,
+    token_creator: '' as `0x${string}`,
+    token_collection: '' as `0x${string}`,
+    token_name: '',
+    token_property_version: 0,
   });
 
   const disableSubmitCoinfigButton =
-    !subscription.coin ||
-    !subscription.move_bot_id ||
-    !subscription.price_per_day ||
+    !subscription.token_creator ||
+    !subscription.token_collection ||
+    !subscription.token_name ||
+    subscription.token_property_version === undefined ||
+    subscription.token_property_version < 0 ||
+    subscription.price_per_day <= 0 ||
     !subscription.collections_discount?.[0]?.collection_addr ||
     subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
 
@@ -104,7 +109,6 @@ export const Subscription = () => {
       const response = await client?.useABI(SubscriptionABI).set_plan({
         type_arguments: [],
         arguments: [
-          subscription.coin,
           convertAmountFromHumanReadableToOnChain(
             subscription.price_per_day,
             COIN_DECIMALS
@@ -116,7 +120,10 @@ export const Subscription = () => {
               COIN_DECIMALS
             )
           ),
-          subscription.move_bot_id,
+          subscription.token_creator as `0x${string}`,
+          subscription.token_collection,
+          subscription.token_name,
+          subscription.token_property_version,
         ],
       });
 
@@ -144,19 +151,28 @@ export const Subscription = () => {
   };
 
   const getNfts = async () => {
-    const collections =
-      await aptos.account.getAccountCollectionsWithOwnedTokens({
-        accountAddress: AccountAddress.fromString(account?.address as string),
-      });
+    const nfts = await aptos.account.getAccountOwnedTokens({
+      accountAddress: AccountAddress.fromString(account?.address as string),
+    });
 
-    console.log(collections);
+    console.log(nfts);
+  };
+
+  const getCoins = async () => {
+    const coins = await aptos.account.getAccountCoinsData({
+      accountAddress: AccountAddress.fromString(account?.address as string),
+    });
+
+    console.log(coins);
   };
 
   useEffect(() => {
     (async () => {
       try {
         setIsLoading(true);
+        let moveBotFields;
         await getNfts();
+        await getCoins();
         const subscriptionResult = await abi
           ?.useABI(SubscriptionABI)
           .view.get_subscription_config({
@@ -165,6 +181,19 @@ export const Subscription = () => {
           });
 
         const subscriptionCopy = subscriptionResult?.[0] as ISubscription;
+
+        try {
+          const moveBotFieldsResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_move_bot_fields({
+              functionArguments: [],
+              typeArguments: [],
+            });
+
+          moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+        } catch (error) {
+          console.error('Move bot fields are not set yet', error);
+        }
 
         if (!subscriptionCopy.collections_discount?.length) {
           subscriptionCopy.collections_discount = [
@@ -191,6 +220,14 @@ export const Subscription = () => {
             COIN_DECIMALS
           );
 
+        if (moveBotFields) {
+          subscriptionCopy.token_creator = moveBotFields.token_creator;
+          subscriptionCopy.token_collection = moveBotFields.token_collection;
+          subscriptionCopy.token_name = moveBotFields.token_name;
+          subscriptionCopy.token_property_version =
+            moveBotFields.token_property_version;
+        }
+
         setSubscription(subscriptionCopy);
       } catch (error) {
         toast({
@@ -207,23 +244,6 @@ export const Subscription = () => {
   return (
     <div>
       <LoadingSpinner on={isLoading} />
-      <div className="mb-10 mt-10">
-        <LabeledInput
-          label="Coin"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              coin: e.target.value as `0x${string}`,
-            })
-          }
-          value={subscription.coin}
-          type="text"
-          id="subscription-coin"
-          required
-          tooltip="Set the coin address of the subscription payment"
-        />
-      </div>
-
       <div className="mb-10">
         <LabeledInput
           label="Price per Day"
@@ -259,18 +279,69 @@ export const Subscription = () => {
 
       <div className="mb-10">
         <LabeledInput
-          label="Move Bot ID"
+          label="Token creator"
           onChange={(e) =>
             setSubscription({
               ...subscription,
-              move_bot_id: e.target.value as `0x${string}`,
+              token_creator: e.target.value as `0x${string}`,
             })
           }
-          value={subscription.move_bot_id}
+          value={subscription.token_creator}
           type="text"
-          id="subscription-move-bot-id"
+          id="subscription-token-creator"
           required
-          tooltip="Set the move bot ID for the subscription discount"
+          tooltip="Set the Move Bot ID creator"
+        />
+      </div>
+
+      <div className="mb-10">
+        <LabeledInput
+          label="Token collection name"
+          onChange={(e) =>
+            setSubscription({
+              ...subscription,
+              token_collection: e.target.value,
+            })
+          }
+          value={subscription.token_collection}
+          type="text"
+          id="subscription-token-collection"
+          required
+          tooltip="Set the Move Bot ID collection name"
+        />
+      </div>
+
+      <div className="mb-10">
+        <LabeledInput
+          label="Token name"
+          onChange={(e) =>
+            setSubscription({
+              ...subscription,
+              token_name: e.target.value,
+            })
+          }
+          value={subscription.token_name}
+          type="text"
+          id="subscription-token-name"
+          required
+          tooltip="Set the Move Bot ID token name"
+        />
+      </div>
+
+      <div className="mb-10">
+        <LabeledInput
+          label="Token property version"
+          onChange={(e) =>
+            setSubscription({
+              ...subscription,
+              token_property_version: parseInt(e.target.value),
+            })
+          }
+          value={subscription.token_property_version}
+          type="number"
+          id="subscription-token-property-version"
+          required
+          tooltip="Set the Move Bot ID property version"
         />
       </div>
 
@@ -284,8 +355,6 @@ export const Subscription = () => {
             <p>
               This are the new settings:
               <br />
-              Coin: {subscription.coin}
-              <br />
               Collections for Discount:
               <br />
               {subscription.collections_discount.map((c) => (
@@ -295,6 +364,15 @@ export const Subscription = () => {
                   Amount: {c.discount_per_day}
                 </p>
               ))}
+              <br />
+              Token creator: {truncateAddress(subscription.token_creator)}
+              <br />
+              Token collection: {subscription.token_collection}
+              <br />
+              Token name: {subscription.token_name}
+              <br />
+              Token property version: {subscription.token_property_version}
+              <br />
               Are you agree?
             </p>
           }

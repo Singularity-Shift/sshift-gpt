@@ -1,4 +1,4 @@
-module sshift_dao_addr::sshift_fees {
+module sshift_dao_addr::fees {
     use std::vector;
     use std::signer;
     use std::option::{Self, Option};

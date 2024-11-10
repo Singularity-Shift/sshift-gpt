@@ -38,10 +38,19 @@ export interface ICollectionAddressDiscount {
 }
 
 export interface ISubscription {
-  coin: `0x${string}`;
   price_per_day: number;
   collections_discount: ICollectionAddressDiscount[];
-  move_bot_id: `0x${string}`;
+  token_creator: string;
+  token_collection: string;
+  token_name: string;
+  token_property_version: number;
+}
+
+export interface IMoveBotFields {
+  token_creator: string;
+  token_collection: string;
+  token_name: string;
+  token_property_version: number;
 }
 
 export interface INft {

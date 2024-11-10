@@ -1,5 +1,5 @@
 export const SubscriptionABI = {
-  address: '0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417',
+  address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
   name: 'subscription',
   friends: [],
   exposed_functions: [
@@ -8,7 +8,7 @@ export const SubscriptionABI = {
       visibility: 'public',
       is_entry: true,
       is_view: false,
-      generic_type_params: [{ constraints: [] }],
+      generic_type_params: [],
       params: ['&signer', 'u64', 'vector<address>'],
       return: [],
     },
@@ -20,6 +20,17 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: ['&signer'],
       return: [],
+    },
+    {
+      name: 'get_move_bot_fields',
+      visibility: 'public',
+      is_entry: false,
+      is_view: true,
+      generic_type_params: [],
+      params: [],
+      return: [
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::MoveBotFields',
+      ],
     },
     {
       name: 'get_plan',
@@ -47,7 +58,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [],
       return: [
-        '0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417::subscription::SubscriptionPlan',
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::SubscriptionPlan',
       ],
     },
     {
@@ -76,11 +87,13 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [
         '&signer',
-        'address',
         'u64',
         'vector<address>',
         'vector<u64>',
-        '0x1::object::Object<0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417::subscription::MoveBot>',
+        'address',
+        '0x1::string::String',
+        '0x1::string::String',
+        'u64',
       ],
       return: [],
     },
@@ -109,12 +122,17 @@ export const SubscriptionABI = {
       ],
     },
     {
-      name: 'MoveBot',
+      name: 'MoveBotFields',
       is_native: false,
       is_event: false,
-      abilities: ['key'],
+      abilities: [],
       generic_type_params: [],
-      fields: [{ name: 'nft_id', type: '0x3::token::TokenId' }],
+      fields: [
+        { name: 'token_creator', type: 'address' },
+        { name: 'token_collection', type: '0x1::string::String' },
+        { name: 'token_name', type: '0x1::string::String' },
+        { name: 'token_property_version', type: 'u64' },
+      ],
     },
     {
       name: 'SubscriptionPlan',
@@ -123,11 +141,10 @@ export const SubscriptionABI = {
       abilities: ['copy', 'key'],
       generic_type_params: [],
       fields: [
-        { name: 'coin', type: 'address' },
         { name: 'price_per_day', type: 'u64' },
         {
           name: 'collections_discount',
-          type: 'vector<0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417::subscription::CollectionAddressDiscount>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::CollectionAddressDiscount>',
         },
         {
           name: 'move_bot_id',
@@ -144,7 +161,7 @@ export const SubscriptionABI = {
       fields: [
         {
           name: 'subscriptions',
-          type: 'vector<0x1cdcbae7369dc8e159bc8bf951cfb7e7e168ef1bd56c169dcacb336b13657417::subscription::FreeSubscription>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::FreeSubscription>',
         },
       ],
     },
