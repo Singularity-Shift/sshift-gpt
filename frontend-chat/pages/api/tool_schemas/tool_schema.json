@@ -141,9 +141,19 @@
           "max_results": {
             "type": "integer",
             "description": "The maximum number of papers to return in the response. Use this to limit the number of results."
+          },
+          "sort_by": {
+            "type": "string",
+            "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
+            "description": "How to sort the results. 'submittedDate' will show the most recent papers first."
+          },
+          "sort_order": {
+            "type": "string",
+            "enum": ["ascending", "descending"],
+            "description": "The order of the sorted results. Use 'descending' to see newest papers first when sorting by date."
           }
         },
-        "required": ["search_query", "max_results"],
+        "required": ["search_query", "max_results", "sort_by", "sort_order"],
         "additionalProperties": false
       },
       "strict": true
@@ -183,6 +193,66 @@
         }
       },
       "required": ["collection_name"],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "searchTrendingNFT",
+    "description": "Fetches trending NFT collections from the Aptos blockchain. Returns collection titles and floor prices sorted by different metrics over various time periods. Use this when users ask about trending or popular NFT collections.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "period": {
+          "type": "string",
+          "enum": ["days_1", "days_7", "days_14", "days_30", "days_60", "days_90", "all_time"],
+          "description": "The time period to analyze trending collections. Ranges from 1 day to all time.",
+          "default": "days_1"
+        },
+        "trending_by": {
+          "type": "string",
+          "enum": ["crypto_volume", "usd_volume", "trades_count", "average_trade"],
+          "description": "The metric to sort collections by: crypto volume (in APT), USD volume, number of trades, or average trade value.",
+          "default": "crypto_volume"
+        },
+        "limit": {
+          "type": "integer",
+          "enum": [5, 10, 20, 40],
+          "description": "The number of trending collections to return.",
+          "default": 10
+        }
+      },
+      "required": ["period", "trending_by", "limit"],
+      "additionalProperties": false
+    },
+    "strict": true
+  }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "createSoundEffect",
+    "description": "Generates audio sound effects from text descriptions using AI. Best for creating specific sound effects, foley sounds, musical elements, or ambient sounds. Returns ONLY the sound effect URL wrapped in [Sound Effect: url] format. No additional text or formatting should be added.",
+    "parameters": {
+      "type": "object",
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "A detailed description of the sound effect to generate. Use specific audio terminology and natural language to describe the desired sound. Examples include 'high-quality footsteps on wooden floor', '90s hip-hop drum loop', 'sound designed whoosh and braaam impact', or 'old-school funky brass section from an old vinyl sample, stem, 88bpm in F# minor'. Incorporate terms like 'foley', 'whoosh', 'impact', 'braaam', 'glitch', 'drone', and onomatopoeias (e.g., 'oink', 'meow') to specify the type of sound effect. For musical prompts, use terms like 'stem', 'BPM', 'key', 'loop', 'sample', and 'one-shot'."
+        },
+        "duration_seconds": {
+          "type": "number",
+          "description": "The desired duration of the sound effect in seconds. Must be between 0.5 and 22 seconds. For complex sounds or loops, consider using longer durations within this range."
+        },
+        "prompt_influence": {
+          "type": "number",
+          "description": "Controls how strictly the generation follows the prompt (value between 0.1 and 1.0). 1.0 means strict adherence, lower values allow more creative interpretation. Use higher values for precise sound effects and lower values for creative variations."
+        }
+      },
+      "required": ["text", "duration_seconds", "prompt_influence"],
       "additionalProperties": false
     },
     "strict": true

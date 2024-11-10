@@ -80,6 +80,18 @@ const ImageThumbnail: React.FC<{ src: string }> = ({ src }) => {
   );
 };
 
+const AudioPlayer: React.FC<{ src: string }> = ({ src }) => {
+  return (
+    <div className="mt-2 flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
+      <Volume2 className="h-4 w-4" />
+      <audio controls className="w-full max-w-md">
+        <source src={src} type="audio/mpeg" />
+        Your browser does not support the audio element.
+      </audio>
+    </div>
+  );
+};
+
 export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: MessageBubbleProps) {
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
@@ -143,7 +155,44 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
                 </code>
               );
             },
-            p: ({ children }) => <p className="mb-2">{children}</p>,
+            p: ({ children }) => {
+              const text = String(children);
+
+              // Match sound effect links
+              const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/;
+              const match = text.match(soundEffectRegex);
+
+              if (match) {
+                const audioUrl = match[2];
+                return (
+                  <>
+                    <p className="mb-2">
+                      {text.replace(soundEffectRegex, '')}
+                    </p>
+                    <AudioPlayer src={audioUrl} />
+                  </>
+                );
+              }
+
+              return <p className="mb-2">{children}</p>;
+            },
+            a: ({ href, children }) => {
+              // If it's an audio file link, render the audio player directly
+              if (href && href.endsWith('.mp3')) {
+                return <AudioPlayer src={href} />;
+              }
+              // Regular link handling
+              return (
+                <a
+                  href={href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-blue-800 hover:underline"
+                >
+                  {children}
+                </a>
+              );
+            },
             h1: ({ children }) => (
               <h1 className="text-2xl font-bold mb-2">{children}</h1>
             ),
@@ -161,25 +210,17 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
-            a: ({ href, children }) => (
-              <a
-                href={href}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-blue-800 hover:underline"
-              >
-                {children}
-              </a>
-            ),
           }}
           className="prose max-w-none"
         >
           {parsedContent.text}
         </ReactMarkdown>
+        
         {/* Render all images in the array */}
         {parsedContent.images?.map((imageUrl, index) => (
           <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
         ))}
+        
         {/* Render user's uploaded image if present */}
         {isUser && message.image && (
           <ImageThumbnail src={message.image} />

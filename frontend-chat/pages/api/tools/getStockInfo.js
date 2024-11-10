@@ -7,33 +7,39 @@ export default async function getStockInfo(req, res) {
 
         for (const ticker of tickers) {
             try {
-                const stockInfo = await yahooFinance.quote(ticker);
                 const tickerResult = {};
 
                 for (const infoType of info_types) {
                     switch (infoType) {
                         case 'current_price':
-                            tickerResult.current_price = stockInfo.regularMarketPrice;
-                            break;
-
-                        case 'dividends':
-                            const dividends = await yahooFinance.historical(ticker, {
-                                events: 'dividends'
-                            });
-                            tickerResult.dividends = dividends.map(d => ({
-                                date: d.date.toISOString().split('T')[0],
-                                dividend: d.dividend
-                            }));
+                            const quote = await yahooFinance.quote(ticker);
+                            tickerResult.current_price = quote.regularMarketPrice;
                             break;
 
                         case 'splits':
-                            const splits = await yahooFinance.historical(ticker, {
+                            const chartOptions = {
+                                period1: '1970-01-01',
+                                interval: '1d',
                                 events: 'splits'
-                            });
-                            tickerResult.splits = splits.map(s => ({
-                                date: s.date.toISOString().split('T')[0],
-                                split: s.split
-                            }));
+                            };
+                            const chartData = await yahooFinance.chart(ticker, chartOptions);
+                            tickerResult.splits = chartData.events?.splits?.map(s => ({
+                                date: new Date(s.date * 1000).toISOString().split('T')[0],
+                                split: `${s.numerator}:${s.denominator}`
+                            })) || [];
+                            break;
+
+                        case 'dividends':
+                            const divChartOptions = {
+                                period1: '1970-01-01',
+                                interval: '1d',
+                                events: 'dividends'
+                            };
+                            const divData = await yahooFinance.chart(ticker, divChartOptions);
+                            tickerResult.dividends = divData.events?.dividends?.map(d => ({
+                                date: new Date(d.date * 1000).toISOString().split('T')[0],
+                                dividend: d.amount
+                            })) || [];
                             break;
 
                         case 'company_info':
@@ -63,12 +69,14 @@ export default async function getStockInfo(req, res) {
                 }
                 result[ticker] = tickerResult;
             } catch (error) {
+                console.error(`Error fetching data for ${ticker}:`, error);
                 result[ticker] = { error: error.message };
             }
         }
 
         res.status(200).json(result);
     } catch (error) {
+        console.error('General error:', error);
         res.status(500).json({ error: error.message });
     }
 }
