@@ -2,7 +2,6 @@ import 'dotenv/config';
 import fs from 'fs';
 import { parseDocument } from 'yaml';
 import * as cli from '@aptos-labs/ts-sdk/dist/common/cli/index.js';
-import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 const getConfig = () => {
   if (!process.env.MODULE_ADDRESS) {
@@ -34,7 +33,7 @@ export const compile = async () => {
   const { accountAddress } = getConfig();
 
   await move.compile({
-    packageDirectoryPath: 'contracts/subscription',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
@@ -48,11 +47,12 @@ export const publish = async () => {
   const { accountAddress, profile } = getConfig();
 
   await move.publish({
-    packageDirectoryPath: 'contracts/subscription',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
     profile,
+    extraArguments: ['--move-2'],
   });
 };
 
@@ -60,7 +60,7 @@ export const test = async () => {
   const move = new cli.Move();
 
   await move.test({
-    packageDirectoryPath: 'contracts/subscription',
+    packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: '0x100' as any,
     },

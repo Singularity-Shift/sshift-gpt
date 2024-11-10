@@ -5,7 +5,11 @@ import { Button } from '../../src/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
-import { calculatePrice, calculateDates, calculateDiscount } from '../utils/subscriptionUtils';
+import {
+  calculatePrice,
+  calculateDates,
+  calculateDiscount,
+} from '../../src/lib/utils';
 import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
@@ -15,9 +19,7 @@ const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
 const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
 
-interface SubscriptionPageProps {}
-
-export default function SubscriptionPage({}: SubscriptionPageProps) {
+export default function SubscriptionPage() {
   const [days, setDays] = React.useState(15);
   const [price, setPrice] = React.useState(0);
   const [dates, setDates] = React.useState({
@@ -33,21 +35,30 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
 
   useEffect(() => {
     const priceWithoutDiscount = calculatePrice(days);
-    const moveBotsDiscount = calculateDiscount(parseInt(moveBotsOwned), MAX_MOVE_BOTS);
-    const qribbleNFTsDiscount = calculateDiscount(parseInt(qribbleNFTsOwned), MAX_QRIBBLE_NFTS);
-    const sshiftRecordsDiscount = calculateDiscount(parseInt(sshiftRecordsOwned), MAX_SSHIFT_RECORDS);
+    const moveBotsDiscount = calculateDiscount(
+      parseInt(moveBotsOwned),
+      MAX_MOVE_BOTS
+    );
+    const qribbleNFTsDiscount = calculateDiscount(
+      parseInt(qribbleNFTsOwned),
+      MAX_QRIBBLE_NFTS
+    );
+    const sshiftRecordsDiscount = calculateDiscount(
+      parseInt(sshiftRecordsOwned),
+      MAX_SSHIFT_RECORDS
+    );
 
-    const maxDiscount = Math.max(moveBotsDiscount, qribbleNFTsDiscount, sshiftRecordsDiscount);
+    const maxDiscount = Math.max(
+      moveBotsDiscount,
+      qribbleNFTsDiscount,
+      sshiftRecordsDiscount
+    );
     setDiscount(maxDiscount);
 
     const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
     setPrice(parseFloat(finalPrice.toFixed(2)));
     setDates(calculateDates(days));
   }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
-
-  const handleNavigateToChat = () => {
-    router.push('/chat');
-  };
 
   const handleEnterSShiftGPT = () => {
     router.push('/chat');
@@ -56,7 +67,7 @@ export default function SubscriptionPage({}: SubscriptionPageProps) {
   return (
     <div className="min-h-screen flex flex-col relative">
       <AGIThoughtBackground />
-      <DashboardHeader onNavigateToChat={handleNavigateToChat} />
+      <DashboardHeader />
 
       {/* Main Content */}
       <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">

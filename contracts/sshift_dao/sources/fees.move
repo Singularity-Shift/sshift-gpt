@@ -5,9 +5,10 @@ module sshift_dao_addr::fees {
     use std::error;
 
     use aptos_framework::event;
-    use aptos_framework::aptos_account;
     use aptos_framework::account::{Self, SignerCapability};
-    use aptos_framework::coin;
+    use aptos_framework::fungible_asset::Metadata;
+    use aptos_framework::primary_fungible_store;
+    use aptos_framework::object;
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
     const ECOLLECTOR_NOT_FOUND: u64 = 2;
@@ -18,18 +19,20 @@ module sshift_dao_addr::fees {
     const EONLY_REVIEWER_CAN_SET_PENDING_REVIEWER: u64 = 8;
     const ENOT_PENDING_ADMIN: u64 = 9;
     const ENOT_PENDING_REVIEWER: u64 = 10;
+    const ENOT_CURRENCY_SET: u64 = 11;
 
-    struct Config has key, copy {
+    struct Config has key {
         admin_addr: address,
         pending_admin_addr: Option<address>,
         reviewer_addr: address,
-        pending_reviewer_addr: Option<address>
+        pending_reviewer_addr: Option<address>,
+        currency: Option<address>,
     }
 
     struct FeesAdmin has key {
         signer_cap: Option<SignerCapability>,
         salary_not_claimed: u64,
-        collectors: vector<address>
+        collectors: vector<address>,
     }
 
     struct FeesToClaim has key {
@@ -49,7 +52,8 @@ module sshift_dao_addr::fees {
                 admin_addr: signer::address_of(sender),
                 pending_admin_addr: option::none(),
                 reviewer_addr: signer::address_of(sender),
-                pending_reviewer_addr: option::none()
+                pending_reviewer_addr: option::none(),
+                currency: option::none(),
             }
         );
 
@@ -58,7 +62,7 @@ module sshift_dao_addr::fees {
             FeesAdmin {
                 collectors: vector::empty(),
                 salary_not_claimed: 0,
-                signer_cap: option::none()
+                signer_cap: option::none(),
             }
         );
     }
@@ -156,7 +160,7 @@ module sshift_dao_addr::fees {
         vector::remove<address>(&mut fees_admin.collectors, index);
     }
 
-    public entry fun claim_salary<AptosCoin>(account: &signer) acquires FeesAdmin, FeesToClaim {
+    public entry fun claim_salary(account: &signer) acquires FeesAdmin, FeesToClaim, Config {
         let account_addr = signer::address_of(account);
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
@@ -164,6 +168,10 @@ module sshift_dao_addr::fees {
         let (is_found, _index) = vector::find<address>(
             &fees_admin.collectors, |c| { c == &account_addr }
         );
+
+        let config = borrow_global<Config>(@sshift_dao_addr);
+
+        assert!(option::is_some(&config.currency), ENOT_CURRENCY_SET);
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
@@ -175,8 +183,12 @@ module sshift_dao_addr::fees {
 
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        aptos_account::transfer_coins<AptosCoin>(
-            &resource_signer, account_addr, salary_to_claim.amount
+        let currency = option::borrow(&config.currency);
+
+        let metadata = object::address_to_object<Metadata>(*currency);
+
+        primary_fungible_store::transfer(
+            &resource_signer, metadata, account_addr, salary_to_claim.amount 
         );
 
         fees_admin.salary_not_claimed = fees_admin.salary_not_claimed
@@ -189,8 +201,8 @@ module sshift_dao_addr::fees {
         salary_to_claim.amount = 0;
     }
 
-    public entry fun payment<AptosCoin>(
-        account: &signer, collectors: vector<address>, amounts: vector<u64>
+    public entry fun payment(
+        account: &signer, collectors: vector<address>, amounts: vector<u64>,
     ) acquires FeesAdmin, Config, FeesToClaim {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_dao_addr);
@@ -213,8 +225,12 @@ module sshift_dao_addr::fees {
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
+        let currency = option::borrow(&config.currency);
+
+        let metadata = object::address_to_object<Metadata>(*currency);
+
         assert!(
-            coin::balance<AptosCoin>(signer::address_of(&resource_signer))
+            primary_fungible_store::balance(signer::address_of(&resource_signer), metadata)
                 > vector::fold(amounts, 0, |curr, acc| acc + curr)
                     + fees_admin.salary_not_claimed,
             error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE)
@@ -275,6 +291,14 @@ module sshift_dao_addr::fees {
         config.pending_reviewer_addr = option::none();
     }
 
+    public entry fun set_currency(sender: &signer, currency: address) acquires Config {
+        let sender_addr = signer::address_of(sender);
+        let config = borrow_global_mut<Config>(@sshift_dao_addr);
+        assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
+
+        config.currency = option::some(currency);
+    }
+
     #[view]
     /// Get contract admin
     public fun get_admin(): address acquires Config {
@@ -311,7 +335,18 @@ module sshift_dao_addr::fees {
     }
 
     #[view]
-    public fun get_resource_balance<AptosCoin>(): u64 acquires FeesAdmin {
+    public fun get_currency_addr(): address acquires Config {
+        let config = borrow_global<Config>(@sshift_dao_addr);
+        *option::borrow(&config.currency)
+    }
+
+
+    #[view]
+    public fun get_resource_balance(): u64 acquires FeesAdmin, Config {
+        let config = borrow_global<Config>(@sshift_dao_addr);
+
+        assert!(option::is_some(&config.currency), ENOT_CURRENCY_SET);
+
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
         let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
@@ -320,7 +355,11 @@ module sshift_dao_addr::fees {
 
         let resource_signer_addr = signer::address_of(&resource_signer);
 
-        coin::balance<AptosCoin>(resource_signer_addr)
+        let currency = option::borrow(&config.currency);
+
+        let metadata = object::address_to_object<Metadata>(*currency);
+
+        primary_fungible_store::balance(resource_signer_addr, metadata)
     }
 
     #[view]
@@ -377,7 +416,19 @@ module sshift_dao_addr::fees {
     use aptos_framework::timestamp;
 
     #[test_only]
+    use aptos_framework::coin;
+
+    #[test_only]
+    use aptos_framework::object::{Object};
+
+    #[test_only]
+    use std::string;
+
+    #[test_only]
     use aptos_std::math64;
+
+    #[test_only]
+    use aptos_framework::fungible_asset::{Self, MintRef, TransferRef};
 
     #[test_only]
     const EBALANCE_NOT_EQUAL: u64 = 18;
@@ -389,6 +440,12 @@ module sshift_dao_addr::fees {
     const ESIGN_CAP_SHOULD_NOT_EXISTS: u64 = 20;
 
     #[test_only]
+    struct FAController has key {
+        mint_ref: MintRef,
+        transfer_ref: TransferRef,
+    }
+
+    #[test_only]
     public fun initialize_for_test(sender: &signer) {
         move_to(
             sender,
@@ -396,7 +453,8 @@ module sshift_dao_addr::fees {
                 admin_addr: signer::address_of(sender),
                 pending_admin_addr: option::none(),
                 reviewer_addr: signer::address_of(sender),
-                pending_reviewer_addr: option::none()
+                pending_reviewer_addr: option::none(),
+                currency: option::none(),
             }
         );
 
@@ -408,6 +466,51 @@ module sshift_dao_addr::fees {
                 signer_cap: option::none()
             }
         );
+    }
+
+    #[test_only]
+    fun create_fa(): Object<Metadata> {
+        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_dao_addr);
+        let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
+
+        let name = string::utf8(b"usdt test");
+
+        let fa_obj_constructor_ref = &object::create_named_object(
+            fa_owner_obj_signer,
+            *string::bytes(&name),
+        );
+
+        let fa_obj_signer = &object::generate_signer(fa_obj_constructor_ref);
+
+
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            fa_obj_constructor_ref,
+            option::none(),
+            name,
+            string::utf8(b"USDT"),
+            8,
+            string::utf8(b"test"),
+            string::utf8(b"usdt_project"),
+        );
+
+        let fa_obj = object::object_from_constructor_ref<Metadata>(fa_obj_constructor_ref);
+
+        let mint_ref = fungible_asset::generate_mint_ref(fa_obj_constructor_ref);
+        let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
+
+        move_to(fa_obj_signer, FAController {
+            mint_ref,
+            transfer_ref,
+        });
+
+        fa_obj
+    }
+
+    #[test_only]
+    fun mint_fa(sender: &signer, mint_ref: &MintRef, amount: u64) {
+        let account_addr = signer::address_of(sender);
+
+        primary_fungible_store::mint(mint_ref, account_addr, amount);
     }
 
     #[test_only]
@@ -438,7 +541,7 @@ module sshift_dao_addr::fees {
         user2: &signer,
         user3: &signer,
         user4: &signer
-    ) acquires Config, FeesAdmin, FeesToClaim {
+    ) acquires Config, FeesAdmin, FeesToClaim, FAController {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
@@ -473,11 +576,17 @@ module sshift_dao_addr::fees {
 
         let resource_signer = account::create_signer_with_capability(resource_sign_cap);
 
-        let resource_signer_addr = signer::address_of(&resource_signer);
+        let fa_obj = create_fa();
+        
+        let fa_addr = object::object_address(&fa_obj);
 
-        aptos_account::transfer_coins<AptosCoin>(user1, resource_signer_addr, 20000000);
+        let fa_controller = borrow_global<FAController>(fa_addr);
 
-        let resource_balance = get_resource_balance<AptosCoin>();
+        mint_fa(&resource_signer, &fa_controller.mint_ref, 20000000);
+
+        set_currency(user1, fa_addr);
+
+        let resource_balance = get_resource_balance();
 
         assert!(resource_balance == 20000000, EBALANCE_NOT_EQUAL);
 
@@ -488,7 +597,7 @@ module sshift_dao_addr::fees {
         add_collector(user1, user4, user4_addr);
         create_collector_object(user4);
 
-        payment<AptosCoin>(
+        payment(
             user1,
             vector[user2_addr, user3_addr, user4_addr],
             vector[2000000, 1000000, 1500000]
@@ -502,9 +611,9 @@ module sshift_dao_addr::fees {
         assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
         assert!(user4_addr_balance == 1500000, EBALANCE_NOT_EQUAL);
 
-        claim_salary<AptosCoin>(user3);
+        claim_salary(user3);
 
-        let resource_balance_after_user3_claimed = get_resource_balance<AptosCoin>();
+        let resource_balance_after_user3_claimed = get_resource_balance();
         let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr);
         let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
         let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
@@ -518,10 +627,10 @@ module sshift_dao_addr::fees {
         assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
         assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
 
-        claim_salary<AptosCoin>(user4);
+        claim_salary(user4);
 
         let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr);
-        let resource_balance_after_user4_claimed = get_resource_balance<AptosCoin>();
+        let resource_balance_after_user4_claimed = get_resource_balance();
 
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
@@ -530,9 +639,9 @@ module sshift_dao_addr::fees {
             EBALANCE_NOT_EQUAL
         );
 
-        assert!(coin::balance<AptosCoin>(user2_addr) == 0, EBALANCE_NOT_EQUAL);
-        assert!(coin::balance<AptosCoin>(user3_addr) == 1000000, EBALANCE_NOT_EQUAL);
-        assert!(coin::balance<AptosCoin>(user4_addr) == 1500000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user2_addr, fa_obj) == 0, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user3_addr, fa_obj) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user4_addr, fa_obj) == 1500000, EBALANCE_NOT_EQUAL);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -920,7 +1029,7 @@ module sshift_dao_addr::fees {
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
 
-        payment<AptosCoin>(
+        payment(
             user4,
             vector[user2_addr, user3_addr],
             vector[2000000, 1000000]
@@ -943,7 +1052,7 @@ module sshift_dao_addr::fees {
         user2: &signer,
         user3: &signer,
         user4: &signer
-    ) acquires FeesAdmin, Config, FeesToClaim {
+    ) acquires FeesAdmin, Config, FeesToClaim, FAController {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -968,7 +1077,17 @@ module sshift_dao_addr::fees {
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
 
-        claim_salary<AptosCoin>(user4);
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user4, &fa_controller.mint_ref, 2000);
+
+        set_currency(user1, fa_addr);
+
+        claim_salary(user4);
     }
 
     #[
