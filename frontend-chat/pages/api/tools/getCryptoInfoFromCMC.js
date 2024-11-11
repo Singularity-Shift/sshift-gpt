@@ -1,6 +1,5 @@
 import dotenv from 'dotenv';
 
-// Force dotenv to load environment variables
 dotenv.config();
 
 export default async function handler(req, res) {
@@ -8,7 +7,6 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method not allowed' });
     }
 
-    // Add debug logging
     console.log('CMC_API_KEY exists:', !!process.env.CMC_API_KEY);
     console.log('CMC_API_KEY length:', process.env.CMC_API_KEY?.length);
 
@@ -18,9 +16,13 @@ export default async function handler(req, res) {
         res.status(200).json(result);
     } catch (error) {
         console.error('Error in getCryptoInfoFromCMC handler:', error);
-        res.status(500).json({ error: error.message });
+        res.status(200).json({ // Return 200 even with partial data
+            error: 'Partial data available',
+            data: error.partialData || null
+        });
     }
 }
+
 async function getCryptoInfoFromCMC(token_symbol) {
     if (!process.env.CMC_API_KEY) {
         throw new Error('CMC_API_KEY is not configured in environment variables');
@@ -68,14 +70,16 @@ async function getCryptoInfoFromCMC(token_symbol) {
     }
 
     async function getMarketPairs(symbol) {
-        const url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/market-pairs/latest";
+        // Skip market pairs if we're not on a plan that supports it
         try {
+            const url = "https://pro-api.coinmarketcap.com/v1/cryptocurrency/market-pairs/latest";
             const response = await fetch(`${url}?symbol=${symbol}`, { 
                 method: 'GET',
                 headers: headers
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.log('Market pairs endpoint not available in current plan');
+                return null;
             }
             const data = await response.json();
             return data?.data?.market_pairs || null;
@@ -85,20 +89,22 @@ async function getCryptoInfoFromCMC(token_symbol) {
         }
     }
 
-    const basic_info = await getBasicInfo(token_symbol);
+    const [basic_info, metadata] = await Promise.all([
+        getBasicInfo(token_symbol),
+        getMetadata(token_symbol)
+    ]);
+
     if (!basic_info) {
         throw new Error("Failed to retrieve basic info");
     }
 
-    const metadata = await getMetadata(token_symbol);
-    const market_pairs = await getMarketPairs(token_symbol);
-
+    // Don't wait for market pairs if basic info is available
     const quote = basic_info.quote?.USD || {};
     const current_price = quote.price;
     const total_supply = basic_info.total_supply;
     const undiluted_market_cap = current_price && total_supply ? current_price * total_supply : null;
 
-    return {
+    const result = {
         market_cap: quote.market_cap,
         current_price: current_price,
         total_volume: quote.volume_24h,
@@ -107,8 +113,20 @@ async function getCryptoInfoFromCMC(token_symbol) {
         undiluted_market_cap: undiluted_market_cap,
         description: metadata?.description,
         logo: metadata?.logo,
-        urls: metadata?.urls || {},
-        exchanges: market_pairs ? market_pairs.map(pair => pair.exchange.name) : []
+        urls: metadata?.urls || {}
     };
+
+    // Try to get market pairs but don't fail if unavailable
+    try {
+        const market_pairs = await getMarketPairs(token_symbol);
+        if (market_pairs) {
+            result.exchanges = market_pairs.map(pair => pair.exchange.name);
+        }
+    } catch (error) {
+        console.error('Error getting market pairs:', error);
+        result.exchanges = []; // Empty array if market pairs unavailable
+    }
+
+    return result;
 }
 

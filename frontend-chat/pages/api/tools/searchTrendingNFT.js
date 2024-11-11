@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import indexerClient from '../indexerClient';
+import indexerClient from '../clients/indexerClient';
 
 const TRENDING_COLLECTIONS_QUERY = gql`
     query fetchTrendingCollections(

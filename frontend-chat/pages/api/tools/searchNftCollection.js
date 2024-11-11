@@ -1,5 +1,5 @@
 import { gql } from '@apollo/client';
-import indexerClient from '../indexerClient';
+import indexerClient from '../clients/indexerClient';
 
 // Define GraphQL queries
 const COLLECTION_SEARCH_QUERY = gql`
@@ -51,6 +51,7 @@ const COLLECTION_DETAILS_QUERY = gql`
                     _or: [{ semantic_slug: { _eq: $slug } }, { slug: { _eq: $slug } }]
                 }
             ) {
+                id
                 description
                 discord
                 twitter
@@ -128,7 +129,7 @@ async function searchNftCollection(collectionName) {
         ]);
 
         const stats = statsResult.data.aptos.collection_stats;
-        const details = detailsResult.data.aptos.collections[0];
+        const details = detailsResult.data.aptos.collections[0] || {};
 
         // Add stats to collection object
         collection.stats = {
@@ -140,10 +141,10 @@ async function searchNftCollection(collectionName) {
 
         // Add details to collection object
         collection.details = {
-            description: details.description,
-            discord: details.discord,
-            twitter: details.twitter,
-            website: details.website
+            description: details.description || '',
+            discord: details.discord || '',
+            twitter: details.twitter || '',
+            website: details.website || ''
         };
         
         // Add formatted fields
@@ -156,10 +157,10 @@ async function searchNftCollection(collectionName) {
             verified: collection.verified,
             cover_url: formatImageUrl(collection.cover_url),
 
-            total_sales: `${stats.total_sales} sales`,
-            total_mints: `${stats.total_mints} mints`,
-            total_mint_volume: `${stats.total_mint_volume * Math.pow(10, -8)} APT`,
-            total_mint_usd_volume: `$${stats.total_mint_usd_volume.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+            total_sales: `${stats.total_sales || 0} sales`,
+            total_mints: `${stats.total_mints || 0} mints`,
+            total_mint_volume: `${(stats.total_mint_volume || 0) * Math.pow(10, -8)} APT`,
+            total_mint_usd_volume: `$${(stats.total_mint_usd_volume || 0).toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
             
             day_stats: {
                 volume: `${collection.stats.day_volume} APT`,
