@@ -139,7 +139,7 @@ export async function searchNftCollection(collection_name) {
     }
 }
 
-export async function searchTrendingNFT({ period, trending_by, limit }) {
+export async function searchTrendingNFT(period, trending_by, limit) {
     try {
         return await fetchWithHandling('http://localhost:3000/api/tools/searchTrendingNFT', {
             method: 'POST',
