@@ -77,16 +77,24 @@ export async function getStockInfo(tickers, info_types) {
 
 export async function getCryptoInfoFromCMC(token_symbol) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
+        const result = await fetchWithHandling('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token_symbol }),
         });
+        
+        if (result.error) {
+            return {
+                error: false,
+                message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
+            };
+        }
+        
+        return result;
     } catch (error) {
-        console.error('Error in getCryptoInfoFromCMC:', error);
         return {
-            error: true,
-            message: `Failed to get crypto info: ${error.message}`
+            error: false,
+            message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
         };
     }
 }

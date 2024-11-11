@@ -59,12 +59,13 @@ async function getCryptoInfoFromCMC(token_symbol) {
                 headers: headers
             });
             if (!response.ok) {
-                throw new Error(`HTTP error! status: ${response.status}`);
+                console.log(`[CMC API] Symbol not found: ${symbol}`);
+                return null;
             }
             const data = await response.json();
             return data?.data?.[symbol.toUpperCase()] || null;
         } catch (error) {
-            console.error('Error fetching metadata:', error);
+            console.log(`[CMC API] Failed to fetch metadata for ${symbol}`);
             return null;
         }
     }
@@ -95,7 +96,11 @@ async function getCryptoInfoFromCMC(token_symbol) {
     ]);
 
     if (!basic_info) {
-        throw new Error("Failed to retrieve basic info");
+        console.log(`[CMC API] No data available for ${token_symbol}`);
+        return {
+            error: true,
+            message: `Could not find valid cryptocurrency data for symbol '${token_symbol}'`
+        };
     }
 
     // Don't wait for market pairs if basic info is available
