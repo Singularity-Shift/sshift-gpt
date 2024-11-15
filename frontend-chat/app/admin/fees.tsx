@@ -18,26 +18,17 @@ export const Fees = () => {
   const [currency, setCurrency] = useState('');
   const [isCurrencySet, setIsCurrencySet] = useState(false);
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
-  const [isResourceAccountSet, setIsResourceAccountSet] =
-    useState<boolean>(false);
+  const [isResourceAccountSet, setIsResourceAccountSet] = useState<boolean>(false);
   const [resourceAccount, setResourceAccount] = useState('');
-  const [collectorsSubscribed, setCollectorsSubscribed] = useState<
-    `0x${string}`[]
-  >([]);
-  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<
-    `0x${string}`[]
-  >([]);
-  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>(
-    []
-  );
+  const [collectorsSubscribed, setCollectorsSubscribed] = useState<`0x${string}`[]>([]);
+  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<`0x${string}`[]>([]);
+  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>([]);
   const [fees, setFees] = useState<number[]>([]);
-  const [resourceAccountBalance, setResourceAccountBalance] =
-    useState<number>(0);
+  const [resourceAccountBalance, setResourceAccountBalance] = useState<number>(0);
   const { connected } = useWallet();
   const { client } = useWalletClient();
 
-  const disabledCreateResourceAccount =
-    !initialCollectors.length || !isCurrencySet;
+  const disabledCreateResourceAccount = !initialCollectors.length || !isCurrencySet;
 
   useEffect(() => {
     if (isResourceAccountSet) {
@@ -217,144 +208,173 @@ export const Fees = () => {
   };
 
   return (
-    <div className="mt-10">
+    <div className="space-y-6">
       {isResourceAccountSet ? (
         <>
-          <div className="w-4/6 m-2">
-            <div>Account Address: {resourceAccount}</div>
-            <div>Balance: {resourceAccountBalance}</div>
-            <div>Currency: {currency}</div>
+          {/* Account Info */}
+          <div className="space-y-4">
+            <LabeledInput
+              label="Account Address"
+              value={resourceAccount}
+              type="text"
+              readOnly
+            />
+            <LabeledInput
+              label="Balance"
+              value={resourceAccountBalance.toString()}
+              type="text"
+              readOnly
+            />
+            <LabeledInput
+              label="Currency"
+              value={currency}
+              type="text"
+              readOnly
+            />
           </div>
 
-          <div className="w-4/6 m-2">
+          {/* Collectors Section */}
+          <div className="space-y-4">
             {Boolean(collectorsNotSubscribed.length) && (
-              <h3>collectors no subscribed yet:</h3>
-            )}
-            {collectorsNotSubscribed.map((e, i) => (
-              <div className="mt-5" key={`${i}-${e}`}>
-                <div>
-                  Collectors {i + 1}: {e}
-                </div>
+              <div className="space-y-2">
+                <h3 className="font-semibold">Collectors not subscribed yet:</h3>
+                {collectorsNotSubscribed.map((e, i) => (
+                  <LabeledInput
+                    key={`${i}-${e}`}
+                    label={`Collector ${i + 1}`}
+                    value={e}
+                    type="text"
+                    readOnly
+                  />
+                ))}
               </div>
-            ))}
+            )}
+
             {Boolean(collectorsSubscribed.length) && (
-              <h3 className="mt-10">
-                collectors subscribed to the resource account:
-              </h3>
-            )}
-            {collectorsSubscribed.map((e, i) => (
-              <div className="mt-5" key={`${i}-${e}`}>
-                <div>
-                  Collector {i + 1}: {e}
-                </div>
-                <LabeledInput
-                  id="collector-fees"
-                  label="Fees"
-                  tooltip="The fees to pay to the collector"
-                  required={true}
-                  value={fees[i]}
-                  onChange={(e) => onAddFees(Number(e.target.value), i)}
-                  type="number"
-                />
+              <div className="space-y-4">
+                <h3 className="font-semibold">Subscribed collectors:</h3>
+                {collectorsSubscribed.map((e, i) => (
+                  <div key={`${i}-${e}`} className="space-y-2">
+                    <LabeledInput
+                      label={`Collector ${i + 1}`}
+                      value={e}
+                      type="text"
+                      readOnly
+                    />
+                    <LabeledInput
+                      id={`collector-fees-${i}`}
+                      label="Fees"
+                      tooltip="The fees to pay to the collector"
+                      required={true}
+                      value={fees[i]}
+                      onChange={(e) => onAddFees(Number(e.target.value), i)}
+                      type="number"
+                      readOnly
+                    />
+                  </div>
+                ))}
               </div>
-            ))}
+            )}
 
             <Button
-              className="mt-10"
+              className="w-full"
               variant="default"
               onClick={onPayCollectors}
               disabled={!collectorsSubscribed.length}
             >
               Pay collectors
             </Button>
+          </div>
 
-            <div className="w-1/6 m-2 self-end">
-              <LabeledInput
-                id="update-currency-address"
-                label="Currency Address"
-                tooltip="The address currency used for all payments"
-                required={false}
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
-                type="text"
-              />
-            </div>
-            <div className="w-1/6 m-2 self-end mb-10">
-              <Button
-                variant="green"
-                onClick={onUptateCurrency}
-                disabled={!currency}
-              >
-                Update Currency
-              </Button>
-            </div>
+          {/* Currency Update Section */}
+          <div className="space-y-4 pt-4 border-t">
+            <LabeledInput
+              id="update-currency-address"
+              label="Currency Address"
+              tooltip="The address currency used for all payments"
+              required={false}
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
+              type="text"
+            />
+            <Button
+              className="w-full"
+              variant="green"
+              onClick={onUptateCurrency}
+              disabled={!currency}
+            >
+              Update Currency
+            </Button>
           </div>
         </>
       ) : (
-        <>
-          <div className="w-1/6 m-2 self-end">
-            <div className="w-4/6 m-2">
-              <LabeledInput
-                id="fees-address"
-                label="Address initial collector"
-                tooltip="The wallet address of the initial collector"
-                required={true}
-                value={newAddress}
-                onChange={(e) => setNewAddress(e.target.value as `0x${string}`)}
-                type="text"
-              />
-            </div>
-            <div className="w-1/6 m-1 self-end mb-10">
-              <Button
-                variant="outline"
-                onClick={onAddInitialCollector}
-                disabled={!newAddress}
-              >
-                Add Initial collector
-              </Button>
-            </div>
-            <div>
-              <h3>Initial Collectors</h3>
+        // Resource Account Creation Section
+        <div className="space-y-6">
+          <div className="space-y-4">
+            <LabeledInput
+              id="fees-address"
+              label="Address initial collector"
+              tooltip="The wallet address of the initial collector"
+              required={true}
+              value={newAddress}
+              onChange={(e) => setNewAddress(e.target.value as `0x${string}`)}
+              type="text"
+              readOnly
+            />
+            <Button
+              className="w-full"
+              variant="outline"
+              onClick={onAddInitialCollector}
+              disabled={!newAddress}
+            >
+              Add Initial collector
+            </Button>
+          </div>
 
+          {initialCollectors.length > 0 && (
+            <div className="space-y-2">
+              <h3 className="font-semibold">Initial Collectors</h3>
               {initialCollectors.map((e, i) => (
-                <div className="mt-5" key={`${i}-${e}`}>
-                  <div>
-                    {i + 1}: {e}
-                  </div>
-                </div>
+                <LabeledInput
+                  key={`${i}-${e}`}
+                  label={`Collector ${i + 1}`}
+                  value={e}
+                  type="text"
+                  readOnly
+                />
               ))}
             </div>
+          )}
 
-            <div className="m-1 self-end">
-              <LabeledInput
-                id="currency-address"
-                label="Currency Address"
-                tooltip="The address currency used for all payments"
-                required={true}
-                value={currency}
-                onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
-                type="text"
-              />
-            </div>
-
+          <div className="space-y-4 pt-4">
+            <LabeledInput
+              id="currency-address"
+              label="Currency Address"
+              tooltip="The address currency used for all payments"
+              required={true}
+              value={currency}
+              onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
+              type="text"
+            />
             <Button
+              className="w-full"
               onClick={onUptateCurrency}
-              className="mb-10 mt-5"
               variant="green"
               disabled={!currency}
             >
               Set Currency
             </Button>
-
-            <Button
-              variant="green"
-              disabled={disabledCreateResourceAccount}
-              onClick={onCreateResourceAccount}
-            >
-              Create resource account and set currency
-            </Button>
           </div>
-        </>
+
+          <Button
+            className="w-full"
+            variant="green"
+            disabled={disabledCreateResourceAccount}
+            onClick={onCreateResourceAccount}
+          >
+            Create resource account and set currency
+          </Button>
+        </div>
       )}
     </div>
   );

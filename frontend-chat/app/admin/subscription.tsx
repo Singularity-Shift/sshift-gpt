@@ -242,9 +242,8 @@ export const Subscription = () => {
   }, [abi]);
 
   return (
-    <div>
-      <LoadingSpinner on={isLoading} />
-      <div className="mb-10">
+    <div className="space-y-6">
+      <div className="space-y-2">
         <LabeledInput
           label="Price per Day"
           onChange={(e) =>
@@ -261,7 +260,7 @@ export const Subscription = () => {
         />
       </div>
 
-      <div className="mb-10">
+      <div className="space-y-4">
         {subscription.collections_discount.map((discount, index) => (
           <CollectionDiscoount
             key={`collection-discount-${index}`}
@@ -277,9 +276,9 @@ export const Subscription = () => {
         ))}
       </div>
 
-      <div className="mb-10">
+      <div className="space-y-4">
         <LabeledInput
-          label="Token creator"
+          label="Token Creator"
           onChange={(e) =>
             setSubscription({
               ...subscription,
@@ -292,11 +291,9 @@ export const Subscription = () => {
           required
           tooltip="Set the Move Bot ID creator"
         />
-      </div>
 
-      <div className="mb-10">
         <LabeledInput
-          label="Token collection name"
+          label="Token Collection Name"
           onChange={(e) =>
             setSubscription({
               ...subscription,
@@ -309,11 +306,9 @@ export const Subscription = () => {
           required
           tooltip="Set the Move Bot ID collection name"
         />
-      </div>
 
-      <div className="mb-10">
         <LabeledInput
-          label="Token name"
+          label="Token Name"
           onChange={(e) =>
             setSubscription({
               ...subscription,
@@ -326,11 +321,9 @@ export const Subscription = () => {
           required
           tooltip="Set the Move Bot ID token name"
         />
-      </div>
 
-      <div className="mb-10">
         <LabeledInput
-          label="Token property version"
+          label="Token Property Version"
           onChange={(e) =>
             setSubscription({
               ...subscription,
@@ -345,7 +338,7 @@ export const Subscription = () => {
         />
       </div>
 
-      <div className="mb-20">
+      <div className="pt-4">
         <ConfirmButton
           variant="green"
           title="Save Config"
@@ -378,6 +371,8 @@ export const Subscription = () => {
           }
         />
       </div>
+      
+      <LoadingSpinner on={isLoading} />
     </div>
   );
 };
