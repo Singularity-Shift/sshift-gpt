@@ -163,7 +163,7 @@
     "type": "function",
     "function": {
         "name": "getTrendingCryptos",
-        "description": "Fetches a list of trending cryptocurrencies from coingecko. This function provides an option to fetch based on popularity, top gainers, or market cap.",
+        "description": "Fetches a list of trending cryptocurrencies from coingecko. This function provides an option to fetch based on popularity, top gainers, or market cap. You can specify how many results to return.",
         "parameters": {
             "type": "object",
             "properties": {
@@ -171,9 +171,15 @@
                     "type": "string",
                     "enum": ["popularity", "top_gainers", "market_cap"],
                     "description": "The option to determine the type of trending cryptocurrencies to fetch: popularity, top gainers, or market cap."
+                },
+                "limit": {
+                    "type": "integer",
+                    "enum": [10, 20, 50, 100, 250],
+                    "description": "The number of results to return. Choose from predefined values: 10, 20, 50, 100, or 250. Defaults to 10 if not specified.",
+                    "default": 10
                 }
             },
-            "required": ["option"],
+            "required": ["option", "limit"],
             "additionalProperties": false
         },
         "strict": true

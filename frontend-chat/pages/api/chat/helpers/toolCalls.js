@@ -77,16 +77,24 @@ export async function getStockInfo(tickers, info_types) {
 
 export async function getCryptoInfoFromCMC(token_symbol) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
+        const result = await fetchWithHandling('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token_symbol }),
         });
+        
+        if (result.error) {
+            return {
+                error: false,
+                message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
+            };
+        }
+        
+        return result;
     } catch (error) {
-        console.error('Error in getCryptoInfoFromCMC:', error);
         return {
-            error: true,
-            message: `Failed to get crypto info: ${error.message}`
+            error: false,
+            message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
         };
     }
 }
@@ -107,12 +115,12 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order)
     }
 }
 
-export async function getTrendingCryptos(option) {
+export async function getTrendingCryptos(option, limit = 10) {
     try {
         return await fetchWithHandling('http://localhost:3000/api/tools/getTrendingCryptos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ option }),
+            body: JSON.stringify({ option, limit }),
         });
     } catch (error) {
         console.error('Error in getTrendingCryptos:', error);
@@ -139,7 +147,7 @@ export async function searchNftCollection(collection_name) {
     }
 }
 
-export async function searchTrendingNFT({ period, trending_by, limit }) {
+export async function searchTrendingNFT(period, trending_by, limit) {
     try {
         return await fetchWithHandling('http://localhost:3000/api/tools/searchTrendingNFT', {
             method: 'POST',

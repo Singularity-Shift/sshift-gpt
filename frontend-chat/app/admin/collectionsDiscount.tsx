@@ -25,12 +25,12 @@ export const CollectionDiscoount = (props: CollectionDiscountProps) => {
   } = props;
 
   return (
-    <div className="flex">
-      <div className="w-4/6 m-2">
+    <div className="flex flex-wrap items-end space-x-4">
+      <div className="flex-1">
         <LabeledInput
           id={`collection-address-discount-${index}`}
           label="Collection address"
-          tooltip="The collection address for dicount"
+          tooltip="The collection address for discount"
           required={index === 0}
           value={address}
           onChange={(e) => onChangeAddress(index, e.target.value)}
@@ -38,10 +38,10 @@ export const CollectionDiscoount = (props: CollectionDiscountProps) => {
           type="text"
         />
       </div>
-      <div className="w-4/6 m-2">
+      <div className="w-1/4">
         <LabeledInput
           id={`discount-per-collection-${index}`}
-          label="discount per collection"
+          label="Discount per collection"
           tooltip="The price discount per day per collection"
           required={index === 0}
           value={amount}
@@ -52,14 +52,14 @@ export const CollectionDiscoount = (props: CollectionDiscountProps) => {
           type="number"
         />
       </div>
-      <div className="w-1/6 m-2 self-end">
+      <div className="w-auto">
         <Button variant="default" onClick={onAdd}>
           Add
         </Button>
       </div>
 
       {index !== 0 && (
-        <div className="w-1/6 m-2 self-end">
+        <div className="w-auto">
           <Button variant="destructive" onClick={onRemove}>
             Remove
           </Button>
