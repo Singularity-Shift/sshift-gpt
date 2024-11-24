@@ -115,12 +115,12 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order)
     }
 }
 
-export async function getTrendingCryptos(option) {
+export async function getTrendingCryptos(option, limit = 10) {
     try {
         return await fetchWithHandling('http://localhost:3000/api/tools/getTrendingCryptos', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ option }),
+            body: JSON.stringify({ option, limit }),
         });
     } catch (error) {
         console.error('Error in getTrendingCryptos:', error);

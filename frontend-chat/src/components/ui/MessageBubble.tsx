@@ -157,29 +157,28 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
             },
             p: ({ children }) => {
               const text = String(children);
-
+              
               // Match sound effect links
               const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/;
               const match = text.match(soundEffectRegex);
 
               if (match) {
-                const audioUrl = match[2];
                 return (
                   <>
-                    <p className="mb-2">
+                    <div className="mb-2">
                       {text.replace(soundEffectRegex, '')}
-                    </p>
-                    <AudioPlayer src={audioUrl} />
+                    </div>
+                    <AudioPlayer src={match[2]} />
                   </>
                 );
               }
 
-              return <p className="mb-2">{children}</p>;
+              return <div className="mb-2">{children}</div>;
             },
             a: ({ href, children }) => {
-              // If it's an audio file link, render the audio player directly
+              // If it's an audio file link, render the audio player in its own div
               if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
+                return <div><AudioPlayer src={href} /></div>;
               }
               // Regular link handling
               return (
