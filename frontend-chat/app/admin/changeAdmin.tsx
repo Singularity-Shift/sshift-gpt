@@ -22,7 +22,11 @@ export const ChangeAdmin = () => {
 
       toast({
         title: 'Set Pending Admin',
-        description: `${tx?.hash}`,
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
         variant: 'default',
       });
 
@@ -42,7 +46,11 @@ export const ChangeAdmin = () => {
 
       toast({
         title: 'Accept Admin',
-        description: `${tx?.hash}`,
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
         variant: 'default',
       });
 

@@ -12,36 +12,37 @@ import { toast } from '../../src/components/ui/use-toast';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { Button } from '../../src/components/ui/button';
 import { RESOURCE_ACCOUNT_SEED } from '../../config/env';
+import { useAppManagment } from '../../src/context/AppManagment';
 
 export const Fees = () => {
   const { abi } = useAbiClient();
-  const [currency, setCurrency] = useState('');
   const [isCurrencySet, setIsCurrencySet] = useState(false);
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
-  const [isResourceAccountSet, setIsResourceAccountSet] = useState<boolean>(false);
-  const [resourceAccount, setResourceAccount] = useState('');
-  const [collectorsSubscribed, setCollectorsSubscribed] = useState<`0x${string}`[]>([]);
-  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<`0x${string}`[]>([]);
-  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>([]);
+  const [isResourceAccountSet, setIsResourceAccountSet] =
+    useState<boolean>(false);
+  const [collectorsSubscribed, setCollectorsSubscribed] = useState<
+    `0x${string}`[]
+  >([]);
+  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<
+    `0x${string}`[]
+  >([]);
+  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>(
+    []
+  );
   const [fees, setFees] = useState<number[]>([]);
-  const [resourceAccountBalance, setResourceAccountBalance] = useState<number>(0);
+  const [resourceAccountBalance, setResourceAccountBalance] =
+    useState<number>(0);
   const { connected } = useWallet();
   const { client } = useWalletClient();
+  const { resourceAccount, setResourceAccount, currency, setCurrency } =
+    useAppManagment();
 
-  const disabledCreateResourceAccount = !initialCollectors.length || !isCurrencySet;
+  const disabledCreateResourceAccount =
+    !initialCollectors.length || !isCurrencySet;
 
   useEffect(() => {
     if (isResourceAccountSet) {
       void (async () => {
-        const response = await abi
-          ?.useABI(FeesABI)
-          .view.get_resource_account_address({
-            typeArguments: [],
-            functionArguments: [],
-          });
-
-        setResourceAccount(response?.[0] as string);
-
         const balance = await abi?.useABI(FeesABI).view.get_resource_balance({
           typeArguments: [],
           functionArguments: [],
@@ -53,7 +54,7 @@ export const Fees = () => {
       })();
     }
     void (async () => {
-      let currency = '';
+      let currencyCopy;
       const resourceAccountExists = await abi
         ?.useABI(FeesABI)
         .view.resource_account_exists({
@@ -71,11 +72,11 @@ export const Fees = () => {
             functionArguments: [],
           });
 
-        currency = currencyResult?.[0] as string;
+        currencyCopy = currencyResult?.[0];
       }
 
       setIsResourceAccountSet(isResourceAccountExists);
-      setCurrency(currency);
+      setCurrency(currencyCopy || null);
       setIsCurrencySet(Boolean(currency));
     })();
   }, [isResourceAccountSet, abi]);
@@ -144,9 +145,22 @@ export const Fees = () => {
 
       toast({
         title: 'Created resource account',
-        description: `${tx?.hash}`,
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
         variant: 'default',
       });
+
+      const resourceAccountAddressResult = await abi
+        ?.useABI(FeesABI)
+        .view.get_resource_account_address({
+          typeArguments: [],
+          functionArguments: [],
+        });
+
+      setResourceAccount(resourceAccountAddressResult?.[0] as `0x${string}`);
 
       setIsResourceAccountSet(true);
     } catch (error) {
@@ -170,7 +184,11 @@ export const Fees = () => {
 
       toast({
         title: 'Paid collectors',
-        description: `${tx?.hash}`,
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
         variant: 'default',
       });
 
@@ -193,7 +211,11 @@ export const Fees = () => {
 
       toast({
         title: 'Set Currency',
-        description: `${tx?.hash}`,
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
         variant: 'default',
       });
 
@@ -215,7 +237,7 @@ export const Fees = () => {
           <div className="space-y-4">
             <LabeledInput
               label="Account Address"
-              value={resourceAccount}
+              value={resourceAccount as `0x${string}`}
               type="text"
               readOnly
             />
@@ -237,7 +259,9 @@ export const Fees = () => {
           <div className="space-y-4">
             {Boolean(collectorsNotSubscribed.length) && (
               <div className="space-y-2">
-                <h3 className="font-semibold">Collectors not subscribed yet:</h3>
+                <h3 className="font-semibold">
+                  Collectors not subscribed yet:
+                </h3>
                 {collectorsNotSubscribed.map((e, i) => (
                   <LabeledInput
                     key={`${i}-${e}`}
@@ -293,7 +317,7 @@ export const Fees = () => {
               label="Currency Address"
               tooltip="The address currency used for all payments"
               required={false}
-              value={currency}
+              value={currency || ''}
               onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
               type="text"
             />
@@ -352,7 +376,7 @@ export const Fees = () => {
               label="Currency Address"
               tooltip="The address currency used for all payments"
               required={true}
-              value={currency}
+              value={currency || ''}
               onChange={(e) => setCurrency(e.target.value as `0x${string}`)}
               type="text"
             />

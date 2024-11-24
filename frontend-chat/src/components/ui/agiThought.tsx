@@ -1,3 +1,4 @@
+'use client';
 import React, { useEffect, useRef, useState } from 'react';
 
 interface Particle {
@@ -30,7 +31,9 @@ const AGIThoughtBackground: React.FC = () => {
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
         // Adjust particle count based on screen resolution
-        const newParticleCount = Math.floor((canvas.width * canvas.height) / 10000);
+        const newParticleCount = Math.floor(
+          (canvas.width * canvas.height) / 10000
+        );
         setParticleCount(Math.max(150, newParticleCount)); // Ensure a minimum of 150 particles
       }
     };
@@ -53,7 +56,7 @@ const AGIThoughtBackground: React.FC = () => {
           angle: Math.random() * Math.PI * 2,
           angleSpeed: (Math.random() - 0.5) * 0.02,
           opacity: Math.random() * 0.5 + 0.5,
-          pulseOffset: Math.random() * Math.PI * 2
+          pulseOffset: Math.random() * Math.PI * 2,
         });
       }
     };
@@ -71,7 +74,8 @@ const AGIThoughtBackground: React.FC = () => {
         particle.y += Math.sin(particle.angle) * particle.speed;
 
         // Pulsate the radius
-        const pulseFactor = Math.sin(time * 0.002 + particle.pulseOffset) * 0.2 + 1;
+        const pulseFactor =
+          Math.sin(time * 0.002 + particle.pulseOffset) * 0.2 + 1;
         particle.radius = particle.baseRadius * pulseFactor;
 
         // Wrap around edges
