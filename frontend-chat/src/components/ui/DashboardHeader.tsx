@@ -1,3 +1,5 @@
+'use client';
+
 import React from 'react';
 import { Button } from './button';
 import { ArrowLeft } from 'lucide-react';
@@ -6,7 +8,7 @@ import { useAppManagment } from '../../context/AppManagment';
 import { useRouter } from 'next/navigation';
 
 const DashboardHeader = () => {
-  const { isAdmin, isPendingAdmin } = useAppManagment();
+  const { isAdmin, isPendingAdmin, isCollector } = useAppManagment();
   const router = useRouter(); // Import the useRouter hook from Next.js
   return (
     <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
@@ -32,6 +34,20 @@ const DashboardHeader = () => {
             >
               <ArrowLeft className="h-4 w-4" />
               <span>Admin</span>
+            </Button>
+          )}
+
+        {isCollector &&
+          typeof location === 'object' &&
+          location.pathname !== '/collector' && (
+            <Button
+              onClick={() => router.push('/collector')}
+              variant="ghost"
+              size="sm"
+              className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              <span>Collector</span>
             </Button>
           )}
 
