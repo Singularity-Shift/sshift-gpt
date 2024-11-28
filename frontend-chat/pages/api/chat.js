@@ -2,8 +2,24 @@ import dotenv from 'dotenv';
 import systemPrompt from '../../config/systemPrompt.json';
 // import messageInjection from '../../config/messageInjection.json';
 import { streamResponse } from './chat/helpers/streamResponse.js';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import { createSurfClient } from '@thalalabs/surf';
+import { APTOS_NETWORK } from '../../config/env';
+import * as jwt from 'jsonwebtoken';
+import { SubscriptionABI } from '../../abis/SubscriptionAbi';
 
 dotenv.config();
+
+const aptos = new Aptos(
+    new AptosConfig({
+        network:
+        APTOS_NETWORK === 'mainnet'
+            ? Network.MAINNET
+            : Network.TESTNET,
+    })
+);
+
+const abi = createSurfClient(aptos)
 
 let shouldStopStream = false;
 
@@ -17,6 +33,24 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid messages format' });
         }
 
+        const auth = messages[messages.length - 1].auth;
+
+        const payload = jwt.verify(
+            auth,
+            process.env.JWT_SECRET_KEY,
+        );
+
+        const isSubscribedResult = await abi.useABI(SubscriptionABI).view.has_subscription_active({
+            typeArguments: [],
+            functionArguments: [payload.address],
+        });
+
+        const isSubscribed = isSubscribedResult?.[0];
+
+        if (!isSubscribed) {
+            return res.status(403).json({ error: 'User is not subscribed' });
+        }
+        
         try {
             await streamResponse(res, model, messages, temperature);
         } catch (error) {

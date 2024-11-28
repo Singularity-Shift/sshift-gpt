@@ -1,8 +1,6 @@
 import React from 'react';
 
-interface SubscriptionUpgradeContainerProps {}
-
-export const SubscriptionUpgradeContainer: React.FC<SubscriptionUpgradeContainerProps> = () => {
+export const SubscriptionUpgradeContainer = () => {
   return (
     <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
       <div className="text-center">

@@ -14,6 +14,7 @@ import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
+import { useAppManagment } from '../../src/context/AppManagment';
 
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
@@ -26,25 +27,21 @@ export default function SubscriptionPage() {
     startDate: '',
     expirationDate: '',
   });
-  const [isSubscriptionActive, setIsSubscriptionActive] = React.useState(false);
+
   const router = useRouter();
-  const [moveBotsOwned, setMoveBotsOwned] = useState('0');
-  const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState('0');
-  const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState('0');
+  const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
+    useAppManagment();
   const [discount, setDiscount] = useState(0);
 
   useEffect(() => {
     const priceWithoutDiscount = calculatePrice(days);
-    const moveBotsDiscount = calculateDiscount(
-      parseInt(moveBotsOwned),
-      MAX_MOVE_BOTS
-    );
+    const moveBotsDiscount = calculateDiscount(moveBotsOwned, MAX_MOVE_BOTS);
     const qribbleNFTsDiscount = calculateDiscount(
-      parseInt(qribbleNFTsOwned),
+      qribbleNFTsOwned,
       MAX_QRIBBLE_NFTS
     );
     const sshiftRecordsDiscount = calculateDiscount(
-      parseInt(sshiftRecordsOwned),
+      sshiftRecordsOwned,
       MAX_SSHIFT_RECORDS
     );
 
@@ -77,7 +74,6 @@ export default function SubscriptionPage() {
           price={price}
           dates={dates}
           discount={discount}
-          isSubscriptionActive={isSubscriptionActive}
           moveBotsOwned={moveBotsOwned}
           qribbleNFTsOwned={qribbleNFTsOwned}
           sshiftRecordsOwned={sshiftRecordsOwned}

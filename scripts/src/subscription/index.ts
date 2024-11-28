@@ -24,7 +24,7 @@ const getConfig = () => {
 
   const accountAddress = config['profiles'][profile]['account'];
 
-  return { accountAddress, profile };
+  return { accountAddress, profile, config };
 };
 
 export const compile = async () => {
@@ -44,15 +44,22 @@ export const compile = async () => {
 export const publish = async () => {
   const move = new cli.Move();
 
-  const { accountAddress, profile } = getConfig();
+  const { accountAddress, profile, config } = getConfig();
 
   await move.publish({
     packageDirectoryPath: 'contracts/sshift_dao',
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
-    profile,
-    extraArguments: ['--move-2'],
+    extraArguments: [
+      '--move-2',
+      '--sender-account',
+      accountAddress,
+      '--private-key',
+      config['profiles'][profile]['private_key'],
+      '--url',
+      config['profiles'][profile]['rest_url'],
+    ],
   });
 };
 

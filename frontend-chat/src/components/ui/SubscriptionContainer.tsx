@@ -1,6 +1,7 @@
 import * as React from 'react';
 import { Button } from './button';
 import { Slider } from './slider';
+import { useAppManagment } from '@fn-chat/context/AppManagment';
 
 interface SubscriptionContainerProps {
   days: number;
@@ -20,6 +21,8 @@ export function SubscriptionContainer({
   dates,
   discount,
 }: SubscriptionContainerProps) {
+  const { onSubscribe, isSubscriptionActive } = useAppManagment();
+
   return (
     <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
       <div className="text-center">
@@ -67,8 +70,14 @@ export function SubscriptionContainer({
             )}
           </div>
         </div>
-        <Button className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-          Subscribe
+        <Button
+          disabled={isSubscriptionActive}
+          onClick={() => onSubscribe(days)}
+          className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
+        >
+          {isSubscriptionActive
+            ? 'Currently with subscription active'
+            : 'Subscribe'}
         </Button>
       </div>
     </div>

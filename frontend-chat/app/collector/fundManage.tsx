@@ -14,6 +14,7 @@ import { Button } from '../../src/components/ui/button';
 export const FundManage = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [balance, setBalance] = useState(0);
+  const [feesToClaim, setFeesToClaim] = useState(0);
   const [symbol, setSymbol] = useState('');
   const { account } = useWallet();
   const { abi } = useAbiClient();
@@ -52,7 +53,7 @@ export const FundManage = () => {
           });
 
           const coinSymbol = coinsHold.find(
-            (coin) => coin.storage_id === currency
+            (coin) => coin.asset_type === currency
           )?.metadata?.symbol;
 
           setSymbol(coinSymbol || '');
@@ -82,6 +83,22 @@ export const FundManage = () => {
               )
             );
           }
+
+          const feesBalanceResult = await abi
+            ?.useABI(FeesABI)
+            .view.get_balance_to_claim({
+              typeArguments: [],
+              functionArguments: [account?.address as `0x${string}`],
+            });
+
+          const feesBalance = feesBalanceResult?.[0];
+
+          setFeesToClaim(
+            convertAmountFromOnChainToHumanReadable(
+              parseInt(feesBalance as string),
+              COIN_DECIMALS
+            )
+          );
         } catch (error) {
           toast({
             title: 'Error fetching balance',
@@ -152,11 +169,17 @@ export const FundManage = () => {
       <h2>Fund Management</h2>
       {isSubscribed ? (
         <div>
-          <h3>Balance</h3>
           <p>
-            Fees to claim: {balance} {symbol}
+            Balance of the resource account: {balance} {symbol}
           </p>
-          <Button variant="green" onClick={onClaim} disabled={balance === 0}>
+          <p>
+            Fees to claim: {feesToClaim} {symbol}
+          </p>
+          <Button
+            variant="green"
+            onClick={onClaim}
+            disabled={feesToClaim === 0}
+          >
             Claim
           </Button>
         </div>
