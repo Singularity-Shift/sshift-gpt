@@ -10,10 +10,9 @@ interface DashboardDisplayAreaProps {
   price: number;
   dates: { startDate: string; expirationDate: string };
   discount: number;
-  isSubscriptionActive: boolean;
-  moveBotsOwned: string;
-  qribbleNFTsOwned: string;
-  sshiftRecordsOwned: string;
+  moveBotsOwned: number;
+  qribbleNFTsOwned: number;
+  sshiftRecordsOwned: number;
 }
 
 const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
@@ -22,7 +21,6 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
   price,
   dates,
   discount,
-  isSubscriptionActive,
   moveBotsOwned,
   qribbleNFTsOwned,
   sshiftRecordsOwned,
@@ -42,7 +40,6 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
 
         {/* User Profile Container */}
         <UserProfileContainer
-          isSubscriptionActive={isSubscriptionActive}
           moveBotsOwned={moveBotsOwned}
           qribbleNFTsOwned={qribbleNFTsOwned}
           sshiftRecordsOwned={sshiftRecordsOwned}

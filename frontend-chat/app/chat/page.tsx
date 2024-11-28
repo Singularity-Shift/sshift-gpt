@@ -13,6 +13,7 @@ export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
   content: string;
+  auth?: string;
   image?: string;
   created?: number;
   model?: string;
@@ -43,7 +44,9 @@ export default function ChatPage() {
   const [isWaiting, setIsWaiting] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
-  const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>('thinking');
+  const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>(
+    'thinking'
+  );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -71,7 +74,7 @@ export default function ChatPage() {
 
   const handleChatSelect = (chatId: string) => {
     setCurrentChatId(chatId);
-    const selectedChat = chats.find(chat => chat.id === chatId);
+    const selectedChat = chats.find((chat) => chat.id === chatId);
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
     }
@@ -118,6 +121,7 @@ export default function ChatPage() {
 
       const formattedMessage = {
         role: 'user',
+        auth: localStorage.getItem('jwt') as string,
         content: [
           ...(selectedImage
             ? [
@@ -210,7 +214,8 @@ export default function ChatPage() {
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
                   if (parsedData.tool_response.name === 'generateImage') {
-                    assistantMessage.image = parsedData.tool_response.result.image_url;
+                    assistantMessage.image =
+                      parsedData.tool_response.result.image_url;
                     updateChat(assistantMessage);
                   } else if (parsedData.tool_response.name === 'searchWeb') {
                     assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
@@ -249,9 +254,7 @@ export default function ChatPage() {
           ? {
               ...chat,
               messages: chat.messages.some((m) => m.id === message.id)
-                ? chat.messages.map((m) =>
-                    m.id === message.id ? message : m
-                  )
+                ? chat.messages.map((m) => (m.id === message.id ? message : m))
                 : [...chat.messages, message],
             }
           : chat
@@ -282,11 +285,13 @@ export default function ChatPage() {
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true); // Add this line
-      const currentChat = chats.find(chat => chat.id === currentChatId);
+      const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
       // Find the index of the assistant message to regenerate
-      const messageIndex = currentChat.messages.findIndex(msg => msg.id === assistantMessage.id);
+      const messageIndex = currentChat.messages.findIndex(
+        (msg) => msg.id === assistantMessage.id
+      );
       if (messageIndex === -1) return;
 
       // Get all messages up to and including the previous user message
@@ -383,13 +388,12 @@ export default function ChatPage() {
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true); // Add this line
-      regenerateConversation(updatedMessages)
-        .finally(() => {
-          setIsWaiting(false);
-          setIsTyping(false);
-          setStatus('thinking');
-          setIsAssistantResponding(false); // Add this line
-        });
+      regenerateConversation(updatedMessages).finally(() => {
+        setIsWaiting(false);
+        setIsTyping(false);
+        setStatus('thinking');
+        setIsAssistantResponding(false); // Add this line
+      });
     }
   };
 
@@ -409,7 +413,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: messagesUpToEdit.map(msg => {
+          messages: messagesUpToEdit.map((msg) => {
             if (msg.role === 'user' && msg.image) {
               return {
                 role: msg.role,
@@ -476,7 +480,8 @@ export default function ChatPage() {
                 newAssistantMessage.content += parsedData.content;
               } else if (parsedData.tool_response) {
                 if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.image = parsedData.tool_response.result.image_url;
+                  newAssistantMessage.image =
+                    parsedData.tool_response.result.image_url;
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response.name === 'searchWeb') {
                   // Incorporate the web search result into the assistant's message

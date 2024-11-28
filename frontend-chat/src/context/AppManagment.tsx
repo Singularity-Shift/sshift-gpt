@@ -12,6 +12,11 @@ import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { FeesABI } from '../../abis/FeesAbi';
 import { useToast } from '../../src/components/ui/use-toast';
+import { IMoveBotFields, ISubscription } from '@helpers';
+import { SubscriptionABI } from '../../abis/SubscriptionAbi';
+import { aptosClient } from '../lib/utils';
+import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
+import { useWalletClient } from '@thalalabs/surf/hooks';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -24,6 +29,14 @@ export type AppManagmenContextProp = {
   setResourceAccount: Dispatch<SetStateAction<`0x${string}` | null>>;
   currency: `0x${string}` | null;
   setCurrency: Dispatch<SetStateAction<`0x${string}` | null>>;
+  moveBotsOwned: number;
+  qribbleNFTsOwned: number;
+  sshiftRecordsOwned: number;
+  nftAddressesRequiredOwned: string[];
+  onSubscribe: (days: number) => Promise<void>;
+  isSubscriptionActive: boolean;
+  setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
+  expirationDate: string | null;
 };
 
 const AppManagmentContext = createContext<AppManagmenContextProp>(
@@ -41,10 +54,20 @@ export const AppManagementProvider = ({
   const [resourceAccount, setResourceAccount] = useState<`0x${string}` | null>(
     null
   );
+  const [moveBotsOwned, setMoveBotsOwned] = useState(0);
+  const [qribbleNFTsOwned, setQribbleNFTsOwned] = useState(0);
+  const [sshiftRecordsOwned, setSShiftRecordsOwned] = useState(0);
+  const [nftAddressesRequiredOwned, setNftAddressesRequiredOwned] = useState<
+    string[]
+  >([]);
+  const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
+  const [expirationDate, setExpirationDate] = useState<string | null>(null);
   const { abi } = useAbiClient();
   const { connected, account } = useWallet();
   const { toast } = useToast();
+  const aptos = aptosClient();
+  const { client } = useWalletClient();
 
   useEffect(() => {
     if (!connected) return;
@@ -146,6 +169,146 @@ export const AppManagementProvider = ({
     })();
   }, [abi]);
 
+  useEffect(() => {
+    if (!connected || !account?.address) return;
+
+    void (async () => {
+      try {
+        const nftsHolding = await aptos.getAccountOwnedTokens({
+          accountAddress: account?.address as string,
+        });
+
+        const moveBotFieldsResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.get_move_bot_fields({
+            typeArguments: [],
+            functionArguments: [],
+          });
+
+        const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+
+        const movebotsHolding = nftsHolding.filter(
+          (nft) =>
+            nft.current_token_data?.token_name === moveBotFields.token_name &&
+            nft.current_token_data.current_collection?.creator_address ===
+              moveBotFields.token_creator &&
+            nft.property_version_v1?.toString() ===
+              moveBotFields.token_property_version &&
+            nft.current_token_data?.current_collection?.collection_name ===
+              moveBotFields.token_collection
+        );
+
+        setMoveBotsOwned(movebotsHolding.length || 0);
+
+        const configResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.get_subscription_config({
+            typeArguments: [],
+            functionArguments: [],
+          });
+
+        const config = configResult?.[0] as ISubscription;
+
+        const qribbleNFTCollection = config.collections_discount.find(
+          (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
+        );
+
+        const qribbleNFTsHolding = nftsHolding.filter(
+          (nft) =>
+            nft.current_token_data?.collection_id ===
+            qribbleNFTCollection?.collection_addr
+        );
+
+        setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
+
+        const sshiftRecordsNFTCollection = config.collections_discount.find(
+          (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
+        );
+
+        const sshiftRecordsHolding = nftsHolding.filter(
+          (nft) =>
+            nft.current_token_data?.collection_id ===
+            sshiftRecordsNFTCollection?.collection_addr
+        );
+
+        setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
+        setNftAddressesRequiredOwned([
+          ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
+          ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
+        ]);
+
+        const hasSubscriptionActiveResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.has_subscription_active({
+            typeArguments: [],
+            functionArguments: [account.address as `0x${string}`],
+          });
+
+        const hasSubscriptionActive =
+          hasSubscriptionActiveResult?.[0] as boolean;
+
+        setIsSubscriptionActive(hasSubscriptionActive);
+
+        if (hasSubscriptionActive) {
+          const subscribtionResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_plan({
+              typeArguments: [],
+              functionArguments: [account.address as `0x${string}`],
+            });
+
+          const subscription = subscribtionResult?.[1];
+
+          if (subscription?.[1]) {
+            const expireDate = parseInt(subscription) * 1000;
+            setExpirationDate(
+              new Date(expireDate).toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            );
+          }
+        }
+      } catch (error) {
+        toast({
+          title: 'Error check nft required',
+          description: `Error checking nft required holding by the account: ${error}`,
+          variant: 'destructive',
+        });
+      }
+    })();
+  }, [connected, account?.address, abi]);
+
+  const onSubscribe = async (days: number) => {
+    try {
+      const duration = days * 24 * 60 * 60;
+
+      const tx = await client?.useABI(SubscriptionABI).buy_plan({
+        type_arguments: [],
+        arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
+      });
+
+      toast({
+        title: 'Subscribe',
+        description: (
+          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+            {tx?.hash}
+          </a>
+        ),
+        variant: 'default',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error subscribing',
+        message: error,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const values = {
     isAdmin,
     setIsAdmin,
@@ -157,6 +320,14 @@ export const AppManagementProvider = ({
     setResourceAccount,
     currency,
     setCurrency,
+    moveBotsOwned,
+    qribbleNFTsOwned,
+    sshiftRecordsOwned,
+    nftAddressesRequiredOwned,
+    onSubscribe,
+    isSubscriptionActive,
+    setIsSubscriptionActive,
+    expirationDate,
   };
 
   return (

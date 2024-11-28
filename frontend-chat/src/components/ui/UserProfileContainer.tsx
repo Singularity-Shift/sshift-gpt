@@ -2,20 +2,21 @@ import React from 'react';
 import { Input } from './input';
 import Link from 'next/link';
 import config from '../../../config/dashboard_config.json';
+import { useAppManagment } from '../../../src/context/AppManagment';
 
 interface UserProfileContainerProps {
-  isSubscriptionActive: boolean;
-  moveBotsOwned: string;
-  qribbleNFTsOwned: string;
-  sshiftRecordsOwned: string;
+  moveBotsOwned: number;
+  qribbleNFTsOwned: number;
+  sshiftRecordsOwned: number;
 }
 
 export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
-  isSubscriptionActive,
   moveBotsOwned,
   qribbleNFTsOwned,
   sshiftRecordsOwned,
 }) => {
+  const { isSubscriptionActive, expirationDate } = useAppManagment();
+
   return (
     <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg flex flex-col border border-gray-300">
       <div>
@@ -46,7 +47,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
             </span>
             <div className="bg-gray-100 border border-gray-300 rounded-md px-3 py-2 w-56 text-right">
               <span className="text-sm text-gray-600">
-                {isSubscriptionActive ? 'YYYY-MM-DD HH:MM:SS UTC' : '-'}
+                {isSubscriptionActive ? expirationDate : '-'}
               </span>
             </div>
           </div>
@@ -59,7 +60,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
             <span className="text-sm font-medium text-gray-700">
               Move Bot owned:
             </span>
-            <Link 
+            <Link
               href={config.MOVEBOT_BUY}
               target="_blank"
               rel="noopener noreferrer"
@@ -80,7 +81,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
             <span className="text-sm font-medium text-gray-700">
               Qribble NFT owned:
             </span>
-            <Link 
+            <Link
               href={config.QRIBBLE_BUY}
               target="_blank"
               rel="noopener noreferrer"
@@ -101,7 +102,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
             <span className="text-sm font-medium text-gray-700">
               SShift Records owned:
             </span>
-            <Link 
+            <Link
               href={config.SSHIFT_RECORDS_BUY}
               target="_blank"
               rel="noopener noreferrer"

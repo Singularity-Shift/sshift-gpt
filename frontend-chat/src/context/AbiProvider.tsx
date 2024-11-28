@@ -9,6 +9,7 @@ import {
 } from 'react';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { Client } from '@thalalabs/surf/build/types/core/Client';
+import { APTOS_NETWORK } from '../../config/env';
 
 export type AbiContextProp = {
   abi: Client<DefaultABITable> | undefined;
@@ -23,9 +24,7 @@ export const AbiProvider = ({ children }: { children: ReactNode }) => {
     const aptos = new Aptos(
       new AptosConfig({
         network:
-          process.env.VITE_APP_NETWORK === 'mainnet'
-            ? Network.MAINNET
-            : Network.TESTNET,
+          APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
       })
     );
 
