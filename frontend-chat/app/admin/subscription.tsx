@@ -29,6 +29,8 @@ export const Subscription = () => {
   const [subscription, setSubscription] = useState<ISubscription>({
     collections_discount: [],
     price_per_day: 0,
+    max_days: 0,
+    max_price: 0,
     token_creator: '' as `0x${string}`,
     token_collection: '' as `0x${string}`,
     token_name: '',
@@ -42,6 +44,8 @@ export const Subscription = () => {
     subscription.token_property_version === undefined ||
     subscription.token_property_version < 0 ||
     subscription.price_per_day <= 0 ||
+    subscription.max_price <= 0 ||
+    subscription.max_days <= 0 ||
     !subscription.collections_discount?.[0]?.collection_addr ||
     subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
 

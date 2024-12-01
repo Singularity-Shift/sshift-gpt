@@ -40,6 +40,8 @@ export interface ICollectionAddressDiscount {
 
 export interface ISubscription {
   price_per_day: number;
+  max_price: number;
+  max_days: number;
   collections_discount: ICollectionAddressDiscount[];
   token_creator: string;
   token_collection: string;
