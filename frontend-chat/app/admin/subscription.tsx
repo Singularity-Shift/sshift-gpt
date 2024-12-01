@@ -117,6 +117,11 @@ export const Subscription = () => {
             subscription.price_per_day,
             COIN_DECIMALS
           ),
+          convertAmountFromHumanReadableToOnChain(
+            subscription.max_price,
+            COIN_DECIMALS
+          ),
+          subscription.max_days,
           subscription.collections_discount.map((c) => c.collection_addr),
           subscription.collections_discount.map((c) =>
             convertAmountFromHumanReadableToOnChain(
@@ -224,6 +229,11 @@ export const Subscription = () => {
             COIN_DECIMALS
           );
 
+        subscriptionCopy.max_price = convertAmountFromOnChainToHumanReadable(
+          subscriptionCopy.max_price,
+          COIN_DECIMALS
+        );
+
         if (moveBotFields) {
           subscriptionCopy.token_creator = moveBotFields.token_creator;
           subscriptionCopy.token_collection = moveBotFields.token_collection;
@@ -261,6 +271,40 @@ export const Subscription = () => {
           id="subscription-price-per-day"
           required
           tooltip="Set the subscription price per day"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <LabeledInput
+          label="Maximum Price"
+          onChange={(e) =>
+            setSubscription({
+              ...subscription,
+              max_price: parseFloat(e.target.value),
+            })
+          }
+          value={subscription.max_price}
+          type="number"
+          id="subscription-max-price"
+          required
+          tooltip="Set the maximum subscription price"
+        />
+      </div>
+
+      <div className="space-y-2">
+        <LabeledInput
+          label="Maximum days"
+          onChange={(e) =>
+            setSubscription({
+              ...subscription,
+              max_days: parseInt(e.target.value),
+            })
+          }
+          value={subscription.max_days}
+          type="number"
+          id="subscription-max-days"
+          required
+          tooltip="Set the maximum subscription duration in days"
         />
       </div>
 

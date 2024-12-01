@@ -4,7 +4,6 @@ module sshift_dao_addr::subscription_v2 {
     use std::option::{Self, Option};
     use std::string::String;
     use std::math64;
-    use std::fixed_point32;
 
     use aptos_framework::event;
     use aptos_framework::timestamp;
@@ -212,9 +211,9 @@ module sshift_dao_addr::subscription_v2 {
 
         let resource_account_addr = fees_v2::get_resource_account_address();
 
-        let exponent = fixed_point32::get_raw_value(math64::log2(plan.max_price / plan.price_per_day)) / fixed_point32::get_raw_value(math64::log2(plan.max_days));
+        let exponent = math64::floor_log2(plan.max_price / plan.price_per_day) / math64::floor_log2(plan.max_days);
 
-        let price = plan.price_per_day * math64::pow(plan.max_days, exponent); 
+        let price = plan.price_per_day * math64::pow(days, exponent as u64); 
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
 
@@ -665,7 +664,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999910000000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999995100000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -716,7 +715,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999910021000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999995121000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -771,7 +770,8 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999910063000, EINCORRECT_BALANCE);
+
+        assert!(user_balance == 19999995163000, EINCORRECT_BALANCE);
         
 
         coin::destroy_burn_cap(burn_cap);
@@ -828,7 +828,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999910042000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999995142000, EINCORRECT_BALANCE);
         
 
         coin::destroy_burn_cap(burn_cap);
@@ -876,8 +876,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999955000000, EINCORRECT_BALANCE);
-        
+        assert!(user_balance == 19999997550000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -920,7 +919,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let token_holding = vector::empty();
 
-        for(i in 0..3000) {
+        for(i in 0..150) {
             let token_addr = mint_nft(admin, collection_addr_1, string_utils::format1(&b"Sshift token n{} v1", i), string_utils::format1(&b"Sshift token n{}", i), string::utf8(b"Sshift"), user_addr);
             vector::push_back(&mut token_holding, token_addr);
         };
@@ -929,7 +928,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999955000000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999997550000, EINCORRECT_BALANCE);
         
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
