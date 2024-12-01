@@ -1,6 +1,6 @@
 export const SubscriptionABI = {
   address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
-  name: 'subscription',
+  name: 'subscription_v2',
   friends: [],
   exposed_functions: [
     {
@@ -29,7 +29,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [],
       return: [
-        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::MoveBotFields',
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::MoveBotFields',
       ],
     },
     {
@@ -58,7 +58,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [],
       return: [
-        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::SubscriptionPlan',
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::SubscriptionPlan',
       ],
     },
     {
@@ -87,6 +87,8 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [
         '&signer',
+        'u64',
+        'u64',
         'u64',
         'vector<address>',
         'vector<u64>',
@@ -142,9 +144,11 @@ export const SubscriptionABI = {
       generic_type_params: [],
       fields: [
         { name: 'price_per_day', type: 'u64' },
+        { name: 'max_price', type: 'u64' },
+        { name: 'max_days', type: 'u64' },
         {
           name: 'collections_discount',
-          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::CollectionAddressDiscount>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::CollectionAddressDiscount>',
         },
         {
           name: 'move_bot_id',
@@ -161,7 +165,7 @@ export const SubscriptionABI = {
       fields: [
         {
           name: 'subscriptions',
-          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription::FreeSubscription>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::FreeSubscription>',
         },
       ],
     },

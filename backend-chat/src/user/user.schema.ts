@@ -1,6 +1,7 @@
 import { Chat } from '../chat/chat.schema';
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { HydratedDocument, now } from 'mongoose';
+import { HydratedDocument, now, Schema as SchemaType } from 'mongoose';
+import { Activity } from './activity/activity.schema';
 
 export type UserDocument = HydratedDocument<User>;
 
@@ -11,6 +12,9 @@ export class User {
 
   @Prop({ type: [Chat] })
   chats: Chat[];
+
+  @Prop({ type: SchemaType.Types.ObjectId, ref: Activity.name })
+  activity: Activity;
 
   @Prop({ type: Date, default: now() })
   createdAt: Date;

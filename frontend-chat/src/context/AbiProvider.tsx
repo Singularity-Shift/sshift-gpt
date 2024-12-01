@@ -1,5 +1,5 @@
 'use client';
-import { createSurfClient, DefaultABITable } from '@thalalabs/surf';
+import { DefaultABITable } from '@thalalabs/surf';
 import {
   createContext,
   ReactNode,
@@ -7,9 +7,8 @@ import {
   useEffect,
   useState,
 } from 'react';
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { Client } from '@thalalabs/surf/build/types/core/Client';
-import { APTOS_NETWORK } from '../../config/env';
+import { abis as surfClient } from '@aptos';
 
 export type AbiContextProp = {
   abi: Client<DefaultABITable> | undefined;
@@ -21,15 +20,6 @@ export const AbiProvider = ({ children }: { children: ReactNode }) => {
   const [abi, setAbi] = useState<Client<DefaultABITable>>();
 
   useEffect(() => {
-    const aptos = new Aptos(
-      new AptosConfig({
-        network:
-          APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
-      })
-    );
-
-    const surfClient = createSurfClient(aptos);
-
     setAbi(surfClient);
   }, []);
 

@@ -30,6 +30,7 @@ export interface IChat {
 
 export interface IUserAuth {
   address: string;
+  config: IUserConfig;
 }
 
 export interface ICollectionAddressDiscount {
@@ -137,4 +138,23 @@ export interface ICollectionRequired {
 export interface IConfigSetting {
   fees: string;
   nfts_required: ICollectionRequired[];
+}
+
+export interface IReqUsed {
+  name: string;
+  reqUsed: number;
+}
+
+export interface ISubscriptionPlan {
+  active: boolean;
+  startDate?: number;
+  endDate?: number;
+  modelsUsed: IReqUsed[];
+  toolsUsed: IReqUsed[];
+}
+
+export interface IUserConfig {
+  subscriptionPlan: ISubscriptionPlan;
+  isAdmin: boolean;
+  isCollector: boolean;
 }

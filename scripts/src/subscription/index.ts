@@ -12,7 +12,7 @@ const getConfig = () => {
     throw new Error('PRIVATE_KEY env variable is required');
   }
 
-  const profile = `subscription_${process.env.APP_NETWORK}`;
+  const profile = `subscription_${process.env.NEXT_PUBLIC_APTOS_NETWORK}`;
 
   const configParsed = parseDocument(
     fs.readFileSync('./.aptos/config.yaml', 'utf8')

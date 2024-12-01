@@ -1,6 +1,6 @@
 import { toast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { FeesABI } from '../../abis/FeesAbi';
+import { FeesABI } from '@aptos';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';

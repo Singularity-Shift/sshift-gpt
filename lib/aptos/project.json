@@ -4,6 +4,7 @@
   "sourceRoot": "lib/aptos/src",
   "projectType": "library",
   "tags": [],
+  "implicitDependencies": ["!aptos"],
   "// targets": "to see all targets run: nx show project aptos --web",
   "targets": {}
 }

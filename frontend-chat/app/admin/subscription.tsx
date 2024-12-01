@@ -2,7 +2,7 @@
 
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { SubscriptionABI } from '../../abis/SubscriptionAbi';
+import { SubscriptionABI } from '@aptos';
 import { useEffect, useState } from 'react';
 import { IMoveBotFields, ISubscription } from '@helpers';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
@@ -371,7 +371,7 @@ export const Subscription = () => {
           }
         />
       </div>
-      
+
       <LoadingSpinner on={isLoading} />
     </div>
   );

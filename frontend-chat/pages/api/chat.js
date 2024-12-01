@@ -6,7 +6,7 @@ import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { createSurfClient } from '@thalalabs/surf';
 import { APTOS_NETWORK } from '../../config/env';
 import * as jwt from 'jsonwebtoken';
-import { SubscriptionABI } from '../../abis/SubscriptionAbi';
+import { SubscriptionABI } from '@aptos';
 
 dotenv.config();
 

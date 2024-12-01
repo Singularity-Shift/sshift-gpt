@@ -1,6 +1,6 @@
 'use client';
 import { useAbiClient } from '../../src/context/AbiProvider';
-import { FeesABI } from '../../abis/FeesAbi';
+import { FeesABI } from '@aptos';
 import { useEffect, useState } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import {

@@ -10,13 +10,12 @@ import {
 } from 'react';
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { FeesABI } from '../../abis/FeesAbi';
 import { useToast } from '../../src/components/ui/use-toast';
 import { IMoveBotFields, ISubscription } from '@helpers';
-import { SubscriptionABI } from '../../abis/SubscriptionAbi';
 import { aptosClient } from '../lib/utils';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
+import { FeesABI, SubscriptionABI } from '@aptos';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
