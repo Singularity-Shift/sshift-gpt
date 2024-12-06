@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { IsString, ValidateNested } from 'class-validator';
 import { IUserConfig } from '@helpers';
-import { ReqUsedDto } from './req-used.dto';
+import { FeatureActivityDto } from './credits-used.dto';
 
 export class GetUserConfigDto {
   @ApiProperty({
@@ -33,25 +33,25 @@ export class GetUserConfigDto {
 
   @ApiProperty({
     description: 'Request made to each model by user',
-    type: [ReqUsedDto],
+    type: [FeatureActivityDto],
   })
-  @Type(() => ReqUsedDto)
+  @Type(() => FeatureActivityDto)
   @ValidateNested({ each: true })
-  modelsActivity: ReqUsedDto[];
+  modelsActivity: FeatureActivityDto[];
 
   @ApiProperty({
     description: 'request made to each model by user',
-    type: [ReqUsedDto],
+    type: [FeatureActivityDto],
   })
-  @Type(() => ReqUsedDto)
+  @Type(() => FeatureActivityDto)
   @ValidateNested({ each: true })
-  toolsActivity: ReqUsedDto[];
+  toolsActivity: FeatureActivityDto[];
 
   static fromJson(
     address: string,
     userConfig: IUserConfig,
-    modelsActivity: ReqUsedDto[],
-    toolsActivity: ReqUsedDto[]
+    modelsActivity: FeatureActivityDto[],
+    toolsActivity: FeatureActivityDto[]
   ): GetUserConfigDto {
     return new GetUserConfigDto(
       address,
@@ -67,8 +67,8 @@ export class GetUserConfigDto {
     active: boolean,
     isAdmin: boolean,
     isCollector: boolean,
-    modelsAtivity: ReqUsedDto[],
-    toolsActivity: ReqUsedDto[]
+    modelsAtivity: FeatureActivityDto[],
+    toolsActivity: FeatureActivityDto[]
   ) {
     this.address = address;
     this.active = active;

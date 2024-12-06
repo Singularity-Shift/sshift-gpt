@@ -39,8 +39,7 @@ export interface ICollectionAddressDiscount {
 }
 
 export interface ISubscription {
-  price_per_day: number;
-  max_price: number;
+  prices: number[];
   max_days: number;
   collections_discount: ICollectionAddressDiscount[];
   token_creator: string;
@@ -142,21 +141,31 @@ export interface IConfigSetting {
   nfts_required: ICollectionRequired[];
 }
 
-export interface IReqUsed {
+export interface IFeatureActivity {
   name: string;
-  reqUsed: number;
+  creditsUsed: number;
 }
 
 export interface ISubscriptionPlan {
   active: boolean;
   startDate?: number;
   endDate?: number;
-  modelsUsed: IReqUsed[];
-  toolsUsed: IReqUsed[];
+  modelsUsed: IFeatureActivity[];
+  toolsUsed: IFeatureActivity[];
 }
 
 export interface IUserConfig {
   subscriptionPlan: ISubscriptionPlan;
   isAdmin: boolean;
   isCollector: boolean;
+}
+
+export interface ICredits {
+  name: string;
+  credits: number;
+}
+
+export interface IAdminConfig {
+  models: ICredits[];
+  tools: ICredits[];
 }

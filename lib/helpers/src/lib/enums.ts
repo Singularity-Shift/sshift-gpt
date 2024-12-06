@@ -1,4 +1,4 @@
-export enum ReqType {
+export enum FeatureType {
   Model = 'Model',
   Tool = 'Tool',
 }

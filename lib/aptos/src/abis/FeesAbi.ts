@@ -1,6 +1,6 @@
 export const FeesABI = {
   address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
-  name: 'fees_v2',
+  name: 'fees_v3',
   friends: [],
   exposed_functions: [
     {

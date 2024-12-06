@@ -9,8 +9,8 @@ import {
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
 import { UserAuth } from '../auth/auth.decorator';
-import { IUserAuth, ReqType } from '@helpers';
-import { ReqUsedDto } from './dto/req-used.dto';
+import { IUserAuth, FeatureType } from '@helpers';
+import { FeatureActivityDto } from './dto/credits-used.dto';
 import { GetUserConfigDto } from './dto/get-user-config.dto';
 
 @Controller('user')
@@ -26,7 +26,7 @@ export class UserController {
   @ApiResponse({
     status: 201,
     description: 'Updated request use',
-    type: ReqUsedDto,
+    type: FeatureActivityDto,
   })
   @ApiResponse({
     status: 404,
@@ -36,8 +36,8 @@ export class UserController {
     status: 401,
     description: 'Unauthorized access',
   })
-  async UpdateReqUsed(
-    @Body() reqUsedDto: ReqUsedDto,
+  async UpdateFeatureActivity(
+    @Body() creditsUsedDto: FeatureActivityDto,
     @UserAuth() userAuth: IUserAuth
   ) {
     const user = await this.userService.findUserByAddress(userAuth.address);
@@ -48,9 +48,9 @@ export class UserController {
       );
     }
 
-    const updateResult = await this.userService.updateReqUsed(
+    const updateResult = await this.userService.updateFeatureActivity(
       userAuth.address.toLocaleLowerCase(),
-      reqUsedDto
+      creditsUsedDto
     );
 
     return updateResult;
@@ -81,10 +81,10 @@ export class UserController {
       userAuth.address,
       userConfig,
       userConfig.subscriptionPlan.modelsUsed.map((m) =>
-        ReqUsedDto.fromJson(m, ReqType.Model)
+        FeatureActivityDto.fromJson(m, FeatureType.Model)
       ),
       userConfig.subscriptionPlan.toolsUsed.map((t) =>
-        ReqUsedDto.fromJson(t, ReqType.Tool)
+        FeatureActivityDto.fromJson(t, FeatureType.Tool)
       )
     );
   }

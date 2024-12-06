@@ -1,6 +1,6 @@
 export const SubscriptionABI = {
   address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
-  name: 'subscription_v2',
+  name: 'subscription_v3',
   friends: [],
   exposed_functions: [
     {
@@ -29,7 +29,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [],
       return: [
-        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::MoveBotFields',
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v3::MoveBotFields',
       ],
     },
     {
@@ -42,13 +42,13 @@ export const SubscriptionABI = {
       return: ['u64', 'u64'],
     },
     {
-      name: 'get_price_per_day',
+      name: 'get_prices',
       visibility: 'public',
       is_entry: false,
       is_view: true,
       generic_type_params: [],
       params: [],
-      return: ['u64'],
+      return: ['vector<u64>'],
     },
     {
       name: 'get_subscription_config',
@@ -58,7 +58,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [],
       return: [
-        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::SubscriptionPlan',
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v3::SubscriptionPlan',
       ],
     },
     {
@@ -87,9 +87,7 @@ export const SubscriptionABI = {
       generic_type_params: [],
       params: [
         '&signer',
-        'u64',
-        'u64',
-        'u64',
+        'vector<u64>',
         'vector<address>',
         'vector<u64>',
         'address',
@@ -143,12 +141,10 @@ export const SubscriptionABI = {
       abilities: ['copy', 'key'],
       generic_type_params: [],
       fields: [
-        { name: 'price_per_day', type: 'u64' },
-        { name: 'max_price', type: 'u64' },
-        { name: 'max_days', type: 'u64' },
+        { name: 'prices', type: 'vector<u64>' },
         {
           name: 'collections_discount',
-          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::CollectionAddressDiscount>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v3::CollectionAddressDiscount>',
         },
         {
           name: 'move_bot_id',
@@ -165,7 +161,7 @@ export const SubscriptionABI = {
       fields: [
         {
           name: 'subscriptions',
-          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v2::FreeSubscription>',
+          type: 'vector<0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v3::FreeSubscription>',
         },
       ],
     },

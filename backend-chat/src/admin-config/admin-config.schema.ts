@@ -1,16 +1,16 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { HydratedDocument } from 'mongoose';
-import { ReqLimit } from './req-limit.schema';
+import { Feature } from './feature.schema';
 
 export type AdminConfigDocument = HydratedDocument<AdminConfig>;
 
 @Schema()
 export class AdminConfig {
-  @Prop({ type: [ReqLimit] })
-  models: ReqLimit[];
+  @Prop({ type: [Feature] })
+  models: Feature[];
 
-  @Prop({ type: [ReqLimit] })
-  tools: ReqLimit[];
+  @Prop({ type: [Feature] })
+  tools: Feature[];
 }
 
 export const AdminConfigSchema = SchemaFactory.createForClass(AdminConfig);

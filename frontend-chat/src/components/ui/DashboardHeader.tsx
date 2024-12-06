@@ -5,12 +5,13 @@ import { Button } from './button';
 import { ArrowLeft } from 'lucide-react';
 import UserLoginStatus from './UserLoginStatus';
 import { useAppManagment } from '../../context/AppManagment';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const DashboardHeader = () => {
   const { isAdmin, isPendingAdmin, isCollector, isSubscriptionActive } =
     useAppManagment();
   const router = useRouter(); // Import the useRouter hook from Next.js
+  const pathname = usePathname();
   return (
     <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
       <div className="flex items-center space-x-4">
@@ -26,35 +27,31 @@ const DashboardHeader = () => {
           </Button>
         )}
 
-        {(isAdmin || isPendingAdmin) &&
-          typeof location === 'object' &&
-          location.pathname !== '/admin' && (
-            <Button
-              onClick={() => router.push('/admin')}
-              variant="ghost"
-              size="sm"
-              className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Admin</span>
-            </Button>
-          )}
+        {(isAdmin || isPendingAdmin) && pathname !== '/admin' && (
+          <Button
+            onClick={() => router.push('/admin')}
+            variant="ghost"
+            size="sm"
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Admin</span>
+          </Button>
+        )}
 
-        {isCollector &&
-          typeof location === 'object' &&
-          location.pathname !== '/collector' && (
-            <Button
-              onClick={() => router.push('/collector')}
-              variant="ghost"
-              size="sm"
-              className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Collector</span>
-            </Button>
-          )}
+        {isCollector && pathname !== '/collector' && (
+          <Button
+            onClick={() => router.push('/collector')}
+            variant="ghost"
+            size="sm"
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Collector</span>
+          </Button>
+        )}
 
-        {typeof location === 'object' && location.pathname !== '/dashboard' && (
+        {pathname !== '/dashboard' && (
           <Button
             onClick={() => router.push('/dashboard')}
             variant="ghost"

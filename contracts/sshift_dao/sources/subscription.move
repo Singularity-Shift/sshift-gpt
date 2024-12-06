@@ -1,9 +1,8 @@
-module sshift_dao_addr::subscription_v2 {
+module sshift_dao_addr::subscription_v3 {
     use std::signer;
     use std::vector;
     use std::option::{Self, Option};
     use std::string::String;
-    use std::math64;
 
     use aptos_framework::event;
     use aptos_framework::timestamp;
@@ -13,7 +12,7 @@ module sshift_dao_addr::subscription_v2 {
     use aptos_framework::object;
     use aptos_token_objects::token::{Self, Token};
 
-    use sshift_dao_addr::fees_v2;
+    use sshift_dao_addr::fees_v3;
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
     const ECOIN_ADDRESS_NOT_MATCH: u64 = 2;
@@ -31,9 +30,7 @@ module sshift_dao_addr::subscription_v2 {
     }
 
     struct SubscriptionPlan has key, copy {
-        price_per_day: u64,
-        max_price: u64,
-        max_days: u64,
+        prices: vector<u64>,
         collections_discount: vector<CollectionAddressDiscount>,
         move_bot_id: Option<token_v1::TokenId>,
     }
@@ -72,11 +69,9 @@ module sshift_dao_addr::subscription_v2 {
         move_to(
             sender,
             SubscriptionPlan {
-                price_per_day: 0,
+                prices: vector::empty(),
                 collections_discount: vector::empty(),
                 move_bot_id: option::none(),
-                max_days: 0,
-                max_price: 0,
             }
         );
 
@@ -89,25 +84,19 @@ module sshift_dao_addr::subscription_v2 {
 
     public entry fun set_plan(
         sender: &signer,
-        price_per_day: u64,
-        max_price: u64,
-        max_days: u64,
+        prices: vector<u64>,
         collection_addresses: vector<address>,
         discounts_per_day: vector<u64>,
         token_creator: address,
         token_collection: String,
         token_name: String,
-        token_property_version: u64
-        
+        token_property_version: u64,
     ) acquires SubscriptionPlan {
         check_admin(sender);
 
         let subscription_plan = borrow_global_mut<SubscriptionPlan>(@sshift_dao_addr);
 
-        subscription_plan.price_per_day = price_per_day;
-        subscription_plan.max_price = max_price;
-        subscription_plan.max_days = max_days;
-
+        subscription_plan.prices = prices;
 
         let move_token_id = token_v1::create_token_id_raw(
             token_creator,
@@ -201,7 +190,7 @@ module sshift_dao_addr::subscription_v2 {
 
         assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
 
-        let currency_addr = fees_v2::get_currency_addr();
+        let currency_addr = fees_v3::get_currency_addr();
 
         let currency_metadata = object::address_to_object<Metadata>(currency_addr);
 
@@ -209,11 +198,9 @@ module sshift_dao_addr::subscription_v2 {
 
         let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
 
-        let resource_account_addr = fees_v2::get_resource_account_address();
+        let resource_account_addr = fees_v3::get_resource_account_address();
 
-        let exponent = math64::floor_log2(plan.max_price / plan.price_per_day) / math64::floor_log2(plan.max_days);
-
-        let price = plan.price_per_day * math64::pow(days, exponent as u64); 
+        let price = *vector::borrow(&plan.prices, days - 1);
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
 
@@ -297,10 +284,10 @@ module sshift_dao_addr::subscription_v2 {
     }
 
     #[view]
-    public fun get_price_per_day(): u64 acquires SubscriptionPlan {
+    public fun get_prices(): vector<u64> acquires SubscriptionPlan {
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
-        plan.price_per_day
+        plan.prices
     }
 
     #[view]
@@ -320,7 +307,7 @@ module sshift_dao_addr::subscription_v2 {
 
     fun check_admin(sender: &signer) {
         let account_addr = signer::address_of(sender);
-        let admin = fees_v2::get_admin();
+        let admin = fees_v3::get_admin();
         assert!(
             admin == account_addr, EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION
         );
@@ -411,6 +398,9 @@ module sshift_dao_addr::subscription_v2 {
     const ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE: u64 = 10;
 
     #[test_only]
+    const EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS: u64 = 11;
+
+    #[test_only]
     struct FAController has key {
         mint_ref: MintRef,
         transfer_ref: TransferRef,
@@ -420,11 +410,11 @@ module sshift_dao_addr::subscription_v2 {
     fun create_resource_account(sender: &signer, admin: &signer) {
         let admin_addr = signer::address_of(admin);
 
-        fees_v2::initialize_for_test(sender);
+        fees_v3::initialize_for_test(sender);
 
-        fees_v2::create_resource_account(sender, b"test", vector[admin_addr]);
+        fees_v3::create_resource_account(sender, b"test", vector[admin_addr]);
 
-        fees_v2::create_collector_object(admin);
+        fees_v3::create_collector_object(admin);
     }
 
     #[test_only]
@@ -437,7 +427,7 @@ module sshift_dao_addr::subscription_v2 {
         let maximum_supply = 0;
         let mutate_setting = vector<bool>[ false, false, false ];
 
-        let resource_account_addr = fees_v2::get_resource_account_address();
+        let resource_account_addr = fees_v3::get_resource_account_address();
 
         // Create the nft collection.
         token_v1::create_collection(sender, collection_name, description, collection_uri, maximum_supply, mutate_setting);
@@ -555,9 +545,9 @@ module sshift_dao_addr::subscription_v2 {
 
         create_resource_account(sender, admin);
 
-        fees_v2::set_pending_admin(sender, admin_addr);
+        fees_v3::set_pending_admin(sender, admin_addr);
 
-        fees_v2::accept_admin(admin);
+        fees_v3::accept_admin(admin);
 
         let token_data_id = create_move_bot(admin);
 
@@ -582,15 +572,15 @@ module sshift_dao_addr::subscription_v2 {
         vector::push_back(&mut collections_v2, collection_addr_2);
 
         let discounts = vector::empty();
-        vector::push_back(&mut discounts, 3000);
-        vector::push_back(&mut discounts, 4000);
+        vector::push_back(&mut discounts, 1000000);
+        vector::push_back(&mut discounts, 2000000);
 
         init_module(sender);
 
+        let prices: vector<u64> = vector[200000000,326000000,434000000,531000000,622000000,707000000,789000000,866000000,941000000,1014000000,1084000000,1153000000,1220000000,1285000000,1350000000,1412000000,1474000000,1535000000,1594000000,1653000000,1711000000,1768000000,1824000000,1880000000,1935000000,1989000000,2043000000,2096000000,2148000000,2200000000];
+
         set_plan(admin,
-            100000,
-            2200000000,
-            30,
+            prices,
             collections_v2,
             discounts,
             admin_addr,
@@ -658,13 +648,17 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999995100000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999211000000, EINCORRECT_BALANCE);
+
+        let prices_list = get_prices();
+
+        assert!(vector::length(&prices_list) == 30, EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -709,13 +703,13 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999995121000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999218000000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -764,15 +758,13 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-
-        assert!(user_balance == 19999995163000, EINCORRECT_BALANCE);
-        
+        assert!(user_balance == 19999232000000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -811,7 +803,7 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
 
         let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
@@ -828,7 +820,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999995142000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999225000000, EINCORRECT_BALANCE);
         
 
         coin::destroy_burn_cap(burn_cap);
@@ -870,13 +862,13 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999997550000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999605500000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -915,11 +907,11 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         let token_holding = vector::empty();
 
-        for(i in 0..150) {
+        for(i in 0..100) {
             let token_addr = mint_nft(admin, collection_addr_1, string_utils::format1(&b"Sshift token n{} v1", i), string_utils::format1(&b"Sshift token n{}", i), string::utf8(b"Sshift"), user_addr);
             vector::push_back(&mut token_holding, token_addr);
         };
@@ -928,7 +920,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
-        assert!(user_balance == 19999997550000, EINCORRECT_BALANCE);
+        assert!(user_balance == 19999605500000, EINCORRECT_BALANCE);
         
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1001,7 +993,7 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1046,7 +1038,7 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1198,7 +1190,7 @@ module sshift_dao_addr::subscription_v2 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         buy_plan(user, 100, vector::empty());
 
@@ -1232,9 +1224,9 @@ module sshift_dao_addr::subscription_v2 {
 
         create_resource_account(owner, admin);
 
-        fees_v2::set_pending_admin(owner, admin_addr);
+        fees_v3::set_pending_admin(owner, admin_addr);
 
-        fees_v2::accept_admin(admin);
+        fees_v3::accept_admin(admin);
 
         let token_data_id = create_move_bot(admin);
 
@@ -1265,10 +1257,10 @@ module sshift_dao_addr::subscription_v2 {
 
         init_module(owner);
 
+        let prices: vector<u64> = vector[200000000,326000000,434000000,531000000,622000000,707000000,789000000,866000000,941000000,1014000000,1084000000,1153000000,1220000000,1285000000,1350000000,1412000000,1474000000,1535000000,1594000000,1653000000,1711000000,1768000000,1824000000,1880000000,1935000000,1989000000,2043000000,2096000000,2148000000,2200000000];
+
         set_plan(user,
-            100000,
-            2200000000,
-            30,
+            prices,
             collections_v2,
             discounts,
             admin_addr,
@@ -1353,7 +1345,7 @@ module sshift_dao_addr::subscription_v2 {
 
         let fa_controller = borrow_global<FAController>(fa_addr);
 
-        fees_v2::set_currency(admin, fa_addr);
+        fees_v3::set_currency(admin, fa_addr);
 
         mint_fa(user2, &fa_controller.mint_ref, 20000000000000);
 

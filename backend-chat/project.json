@@ -6,20 +6,43 @@
   "implicitDependencies": ["!aptos"],
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/backend-chat",
+        "main": "backend-chat/src/main.ts",
+        "tsConfig": "backend-chat/tsconfig.app.json",
+        "assets": ["backend-chat/src/assets"],
+        "webpackConfig": "backend-chat/webpack.config.js"
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true,
+          "inspect": false
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "inspect": false
+        }
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": ["build"],
       "options": {
-        "buildTarget": "backend-chat:build",
-        "runBuildTargetDependencies": false
+        "buildTarget": "backend-chat:build"
       },
       "configurations": {
         "development": {
-          "buildTarget": "backend-chat:build:development"
+          "buildTarget": "backend-chat:build:development",
         },
         "production": {
-          "buildTarget": "backend-chat:build:production"
+          "buildTarget": "backend-chat:build:production",
         }
       }
     },

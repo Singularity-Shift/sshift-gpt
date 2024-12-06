@@ -5,12 +5,13 @@ import { FC } from 'react';
 export const LabeledInput: FC<{
   label: string;
   required?: boolean;
-  tooltip: string;
+  tooltip?: string;
   disabled?: boolean;
   value?: number | string;
   type?: 'number' | 'text';
   id: string;
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  readOnly?: boolean;
+  onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void;
 }> = ({
   label,
   required,
@@ -20,6 +21,7 @@ export const LabeledInput: FC<{
   onChange,
   id,
   type = 'number',
+  readOnly,
 }) => {
   return (
     <div className="flex flex-col item-center space-y-4">
@@ -32,6 +34,7 @@ export const LabeledInput: FC<{
         id={id}
         value={value}
         onChange={onChange}
+        readOnly={readOnly}
       />
     </div>
   );

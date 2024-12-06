@@ -6,7 +6,6 @@ import {
   Get,
   Put,
   UnauthorizedException,
-  Param,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -28,7 +27,7 @@ export class AdminConfigController {
     private readonly userService: UserService
   ) {}
 
-  @Put(':id')
+  @Put()
   @ApiParam({
     name: 'id',
     type: 'string',
@@ -49,7 +48,6 @@ export class AdminConfigController {
   })
   async updateAdminConfig(
     @Body() adminConfigDto: AdminConfigDto,
-    @Param('id') id: string,
     @UserAuth() userAuth: IUserAuth
   ) {
     if (!userAuth.config.isAdmin) {
@@ -64,7 +62,7 @@ export class AdminConfigController {
       );
     }
 
-    await this.adminConfigService.updateAdmin(id, adminConfigDto);
+    await this.adminConfigService.updateAdmin(adminConfigDto);
 
     return adminConfigDto;
   }

@@ -80,9 +80,7 @@ export class AuthGuard implements CanActivate {
 
     const currentAdmin = currentAdminResult?.[0];
 
-    const isAdmin =
-      AccountAddress.fromString(currentAdmin) ===
-      AccountAddress.fromString(address);
+    const isAdmin = currentAdmin.toLowerCase() === address.toLowerCase();
 
     const currentCollectorsResult = await abis
       .useABI(FeesABI)

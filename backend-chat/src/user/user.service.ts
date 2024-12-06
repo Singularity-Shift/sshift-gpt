@@ -4,8 +4,8 @@ import { User } from './user.schema';
 import { Model, UpdateWriteOpResult } from 'mongoose';
 import { ChatHistoryDto } from '../chat/dto/chat-history.dto';
 import { Activity } from './activity/activity.schema';
-import { ReqUsedDto } from './dto/req-used.dto';
-import { ReqUsed } from './activity/req-used.schema';
+import { FeatureActivityDto } from './dto/credits-used.dto';
+import { FeatureActivity } from './activity/feature-used.schema';
 
 @Injectable()
 export class UserService {
@@ -39,32 +39,32 @@ export class UserService {
     return user.save();
   }
 
-  async updateReqUsed(
+  async updateFeatureActivity(
     address: string,
-    reqUsed: ReqUsedDto
-  ): Promise<ReqUsedDto> {
+    creditsUsed: FeatureActivityDto
+  ): Promise<FeatureActivityDto> {
     const user = await this.userModel.findOne({ address });
 
     const userActivity = await this.activityModel.findOne({
       _id: user.activity,
     });
 
-    let reqType: ReqUsed = userActivity[
-      reqUsed.reqType.toLocaleLowerCase()
-    ].find((r) => r.name === reqUsed.name);
+    let creditType: FeatureActivity = userActivity[
+      creditsUsed.creditType.toLocaleLowerCase()
+    ].find((r) => r.name === creditsUsed.name);
 
-    if (reqType) {
-      reqType.reqUsed += 1;
+    if (creditType) {
+      creditType.creditsUsed += 1;
     } else {
-      reqType = {
-        name: reqUsed.name,
-        reqUsed: 1,
+      creditType = {
+        name: creditsUsed.name,
+        creditsUsed: 1,
       };
     }
 
-    userActivity[reqUsed.reqType.toLocaleLowerCase()] = [
-      ...userActivity[reqUsed.reqType.toLocaleLowerCase()],
-      reqType,
+    userActivity[creditsUsed.creditType.toLocaleLowerCase()] = [
+      ...userActivity[creditsUsed.creditType.toLocaleLowerCase()],
+      creditType,
     ];
 
     await this.activityModel.updateOne(
@@ -74,9 +74,9 @@ export class UserService {
       userActivity
     );
 
-    reqUsed.reqUsed = reqType.reqUsed;
+    creditsUsed.creditsUsed = creditType.creditsUsed;
 
-    return reqUsed;
+    return creditsUsed;
   }
 
   async updateUser(

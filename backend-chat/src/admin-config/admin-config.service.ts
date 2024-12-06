@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { AdminConfig } from './admin-config.schema';
-import { Model, UpdateWriteOpResult } from 'mongoose';
+import { Model } from 'mongoose';
 import { AdminConfigDto } from './dto/adming-config.dto';
 
 @Injectable()
@@ -14,18 +14,24 @@ export class AdminConfigService {
     return this.adminConfigModel.findOne();
   }
 
-  async updateAdmin(
-    id: string,
-    adminConfigDto: AdminConfigDto
-  ): Promise<UpdateWriteOpResult> {
-    const adminConfig = await this.adminConfigModel.updateOne(
-      {
-        _id: id,
-      },
-      {
+  async updateAdmin(adminConfigDto: AdminConfigDto): Promise<AdminConfig> {
+    let adminConfig: AdminConfig;
+    const response = await this.adminConfigModel.findOne();
+
+    if (response) {
+      adminConfig = await this.adminConfigModel.findOneAndUpdate(
+        {
+          _id: response._id,
+        },
+        {
+          ...adminConfigDto,
+        }
+      );
+    } else {
+      adminConfig = await this.adminConfigModel.create({
         ...adminConfigDto,
-      }
-    );
+      });
+    }
 
     return adminConfig;
   }
