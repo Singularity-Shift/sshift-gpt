@@ -2,13 +2,13 @@
 
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { SubscriptionABI } from '../../abis/SubscriptionAbi';
+import { SubscriptionABI } from '@aptos';
 import { useEffect, useState } from 'react';
 import { IMoveBotFields, ISubscription } from '@helpers';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { CollectionDiscoount } from './collectionsDiscount';
 import { toast } from '../../src/components/ui/use-toast';
-import { aptosClient } from '../../src/lib/utils';
+import { aptosClient, calculatePrice } from '../../src/lib/utils';
 import { truncateAddress, useWallet } from '@aptos-labs/wallet-adapter-react';
 import {
   AccountAddress,
@@ -28,7 +28,8 @@ export const Subscription = () => {
 
   const [subscription, setSubscription] = useState<ISubscription>({
     collections_discount: [],
-    price_per_day: 0,
+    prices: [],
+    max_days: 0,
     token_creator: '' as `0x${string}`,
     token_collection: '' as `0x${string}`,
     token_name: '',
@@ -41,7 +42,7 @@ export const Subscription = () => {
     !subscription.token_name ||
     subscription.token_property_version === undefined ||
     subscription.token_property_version < 0 ||
-    subscription.price_per_day <= 0 ||
+    subscription.max_days <= 0 ||
     !subscription.collections_discount?.[0]?.collection_addr ||
     subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
 
@@ -73,7 +74,7 @@ export const Subscription = () => {
       collections_discount: [
         ...subscription.collections_discount.map((c, i) => {
           const value = { ...c };
-          if (i == index) {
+          if (i === index) {
             value.collection_addr = address as `0x${string}`;
           }
 
@@ -106,13 +107,21 @@ export const Subscription = () => {
     try {
       setIsLoading(true);
 
+      const prices = [];
+
+      for (let i = 0; i < subscription.max_days; i++) {
+        const price = calculatePrice(i + 1);
+        prices.push(
+          Math.ceil(
+            convertAmountFromHumanReadableToOnChain(price, COIN_DECIMALS)
+          )
+        );
+      }
+
       const response = await client?.useABI(SubscriptionABI).set_plan({
         type_arguments: [],
         arguments: [
-          convertAmountFromHumanReadableToOnChain(
-            subscription.price_per_day,
-            COIN_DECIMALS
-          ),
+          prices,
           subscription.collections_discount.map((c) => c.collection_addr),
           subscription.collections_discount.map((c) =>
             convertAmountFromHumanReadableToOnChain(
@@ -214,11 +223,11 @@ export const Subscription = () => {
           })),
         ];
 
-        subscriptionCopy.price_per_day =
-          convertAmountFromOnChainToHumanReadable(
-            subscriptionCopy.price_per_day,
-            COIN_DECIMALS
-          );
+        subscriptionCopy.prices = subscriptionCopy.prices.map((p) =>
+          convertAmountFromOnChainToHumanReadable(p, COIN_DECIMALS)
+        );
+
+        subscriptionCopy.max_days = subscriptionCopy.prices.length || 0;
 
         if (moveBotFields) {
           subscriptionCopy.token_creator = moveBotFields.token_creator;
@@ -244,19 +253,26 @@ export const Subscription = () => {
   return (
     <div className="space-y-6">
       <div className="space-y-2">
+        {subscription.prices.map((price, index) => (
+          <div key={`${index}-${price}`}>
+            {index + 1}: {price.toFixed(2)}
+          </div>
+        ))}
+      </div>
+      <div className="space-y-2">
         <LabeledInput
-          label="Price per Day"
+          label="Maximum days"
           onChange={(e) =>
             setSubscription({
               ...subscription,
-              price_per_day: parseFloat(e.target.value),
+              max_days: parseInt(e.target.value),
             })
           }
-          value={subscription.price_per_day}
+          value={subscription.max_days || subscription.prices.length || 0}
           type="number"
-          id="subscription-price-per-day"
+          id="subscription-max-days"
           required
-          tooltip="Set the subscription price per day"
+          tooltip="Set the maximum subscription duration in days"
         />
       </div>
 
@@ -371,7 +387,7 @@ export const Subscription = () => {
           }
         />
       </div>
-      
+
       <LoadingSpinner on={isLoading} />
     </div>
   );

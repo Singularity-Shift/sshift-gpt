@@ -1,8 +1,17 @@
 export const FeesABI = {
   address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
-  name: 'fees',
+  name: 'fees_v3',
   friends: [],
   exposed_functions: [
+    {
+      name: 'create_resource_account',
+      visibility: 'public',
+      is_entry: true,
+      is_view: false,
+      generic_type_params: [],
+      params: ['&signer', 'vector<u8>', 'vector<address>'],
+      return: [],
+    },
     {
       name: 'accept_admin',
       visibility: 'public',
@@ -55,15 +64,6 @@ export const FeesABI = {
       is_view: false,
       generic_type_params: [],
       params: ['&signer'],
-      return: [],
-    },
-    {
-      name: 'create_resource_account',
-      visibility: 'public',
-      is_entry: true,
-      is_view: false,
-      generic_type_params: [],
-      params: ['&signer', 'vector<u8>', 'vector<address>'],
       return: [],
     },
     {

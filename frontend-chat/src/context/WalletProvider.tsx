@@ -5,7 +5,7 @@ import { PontemWallet } from '@pontem/wallet-adapter-plugin';
 import { PropsWithChildren } from 'react';
 import { Network } from '@aptos-labs/ts-sdk';
 import { useToast } from '../components/ui/use-toast';
-import { APTOS_NETWORK } from 'frontend-chat/config/env';
+import { APTOS_NETWORK } from '../../config/env';
 
 export const WalletProvider = ({ children }: PropsWithChildren) => {
   const { toast } = useToast();

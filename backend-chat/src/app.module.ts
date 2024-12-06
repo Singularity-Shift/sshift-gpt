@@ -9,6 +9,8 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { AuthModule } from './auth/auth.module';
 import { AuthGuard } from './auth/auth.guard';
 import { ChatModule } from './chat/chat.module';
+import { UserModule } from './user/user.module';
+import { AdminConfigModule } from './admin-config/admin-config.module';
 
 @Module({
   imports: [
@@ -36,6 +38,8 @@ import { ChatModule } from './chat/chat.module';
       },
     }),
     AuthModule,
+    UserModule,
+    AdminConfigModule,
   ],
   controllers: [],
   providers: [

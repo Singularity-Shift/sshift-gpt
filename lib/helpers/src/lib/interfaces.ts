@@ -30,6 +30,7 @@ export interface IChat {
 
 export interface IUserAuth {
   address: string;
+  config: IUserConfig;
 }
 
 export interface ICollectionAddressDiscount {
@@ -38,7 +39,8 @@ export interface ICollectionAddressDiscount {
 }
 
 export interface ISubscription {
-  price_per_day: number;
+  prices: number[];
+  max_days: number;
   collections_discount: ICollectionAddressDiscount[];
   token_creator: string;
   token_collection: string;
@@ -137,4 +139,33 @@ export interface ICollectionRequired {
 export interface IConfigSetting {
   fees: string;
   nfts_required: ICollectionRequired[];
+}
+
+export interface IFeatureActivity {
+  name: string;
+  creditsUsed: number;
+}
+
+export interface ISubscriptionPlan {
+  active: boolean;
+  startDate?: number;
+  endDate?: number;
+  modelsUsed: IFeatureActivity[];
+  toolsUsed: IFeatureActivity[];
+}
+
+export interface IUserConfig {
+  subscriptionPlan: ISubscriptionPlan;
+  isAdmin: boolean;
+  isCollector: boolean;
+}
+
+export interface ICredits {
+  name: string;
+  credits: number;
+}
+
+export interface IAdminConfig {
+  models: ICredits[];
+  tools: ICredits[];
 }

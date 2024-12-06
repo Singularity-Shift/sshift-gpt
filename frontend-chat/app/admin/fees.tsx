@@ -1,6 +1,6 @@
 'use client';
 import { useAbiClient } from '../../src/context/AbiProvider';
-import { FeesABI } from '../../abis/FeesAbi';
+import { FeesABI } from '@aptos';
 import { useEffect, useState } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import {
@@ -236,20 +236,23 @@ export const Fees = () => {
           {/* Account Info */}
           <div className="space-y-4">
             <LabeledInput
+              id="resource-account-address-input"
               label="Account Address"
               value={resourceAccount as `0x${string}`}
               type="text"
               readOnly
             />
             <LabeledInput
+              id={'resource-account-balance-input'}
               label="Balance"
               value={resourceAccountBalance.toString()}
               type="text"
               readOnly
             />
             <LabeledInput
+              id={'resource-account-currency-input'}
               label="Currency"
-              value={currency}
+              value={currency || ''}
               type="text"
               readOnly
             />
@@ -264,6 +267,7 @@ export const Fees = () => {
                 </h3>
                 {collectorsNotSubscribed.map((e, i) => (
                   <LabeledInput
+                    id={`collector-${i}-address`}
                     key={`${i}-${e}`}
                     label={`Collector ${i + 1}`}
                     value={e}
@@ -280,6 +284,7 @@ export const Fees = () => {
                 {collectorsSubscribed.map((e, i) => (
                   <div key={`${i}-${e}`} className="space-y-2">
                     <LabeledInput
+                      id={`collector-${i}-address`}
                       label={`Collector ${i + 1}`}
                       value={e}
                       type="text"
@@ -293,7 +298,6 @@ export const Fees = () => {
                       value={fees[i]}
                       onChange={(e) => onAddFees(Number(e.target.value), i)}
                       type="number"
-                      readOnly
                     />
                   </div>
                 ))}
@@ -302,7 +306,7 @@ export const Fees = () => {
 
             <Button
               className="w-full"
-              variant="default"
+              variant="green"
               onClick={onPayCollectors}
               disabled={!collectorsSubscribed.length}
             >
@@ -360,6 +364,7 @@ export const Fees = () => {
               <h3 className="font-semibold">Initial Collectors</h3>
               {initialCollectors.map((e, i) => (
                 <LabeledInput
+                  id={`initial-collector-${i}-address`}
                   key={`${i}-${e}`}
                   label={`Collector ${i + 1}`}
                   value={e}

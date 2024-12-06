@@ -1,4 +1,13 @@
-import { Ed25519PublicKey, Ed25519Signature } from '@aptos-labs/ts-sdk';
+import {
+  Aptos,
+  AptosConfig,
+  Ed25519PublicKey,
+  Ed25519Signature,
+  Network,
+} from '@aptos-labs/ts-sdk';
+import { createSurfClient } from '@thalalabs/surf';
+
+const APTOS_NETWORK = process.env.NEXT_PUBLIC_APTOS_NETWORK as string;
 
 export const validateSignature = ({
   publicKey,
@@ -14,3 +23,11 @@ export const validateSignature = ({
     signature: new Ed25519Signature(signature),
   });
 };
+
+export const aptos = new Aptos(
+  new AptosConfig({
+    network: APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
+  })
+);
+
+export const abis = createSurfClient(aptos);

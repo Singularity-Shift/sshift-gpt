@@ -2,7 +2,7 @@
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { useEffect, useState } from 'react';
-import { FeesABI } from '../../abis/FeesAbi';
+import { FeesABI } from '@aptos';
 import { useToast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { aptosClient } from '../../src/lib/utils';
