@@ -1,31 +1,30 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
-import { Feature } from '../feature.schema';
-import { AdminConfig } from '../admin-config.schema';
+import { FeatureDto } from './feature.dto';
 
 export class AdminConfigDto {
-  static fromJson(json: AdminConfig): AdminConfigDto {
-    return new AdminConfigDto(json?.models || [], json?.tools || []);
+  static fromJson(models: FeatureDto[], tools: FeatureDto[]): AdminConfigDto {
+    return new AdminConfigDto(models, tools);
   }
 
   @ApiProperty({
     description: 'Set request limit models for subscription',
-    type: [Feature],
+    type: [FeatureDto],
   })
-  @Type(() => Feature)
+  @Type(() => FeatureDto)
   @ValidateNested({ each: true })
-  models: Feature[];
+  models: FeatureDto[];
 
   @ApiProperty({
     description: 'Set request limit tools for subscription',
-    type: [Feature],
+    type: [FeatureDto],
   })
-  @Type(() => Feature)
+  @Type(() => FeatureDto)
   @ValidateNested({ each: true })
-  tools: Feature[];
+  tools: FeatureDto[];
 
-  constructor(models: Feature[], tools: Feature[]) {
+  constructor(models: FeatureDto[], tools: FeatureDto[]) {
     this.models = models;
     this.tools = tools;
   }

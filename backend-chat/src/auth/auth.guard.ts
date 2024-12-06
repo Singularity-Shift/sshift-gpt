@@ -90,7 +90,7 @@ export class AuthGuard implements CanActivate {
       });
 
     const isCollector = currentCollectorsResult?.[0].some(
-      (c) => AccountAddress.fromString(c) === AccountAddress.fromString(address)
+      (c) => c.toLowerCase() === address.toLowerCase()
     );
 
     const hasSubscriptionResult = await abis
@@ -125,7 +125,10 @@ export class AuthGuard implements CanActivate {
               modelsUsed: user.activity.models,
               toolsUsed: user.activity.tools,
             }
-          : undefined),
+          : {
+              modelsUsed: user.activity.models,
+              toolsUsed: user.activity.tools,
+            }),
       },
       isAdmin,
       isCollector,

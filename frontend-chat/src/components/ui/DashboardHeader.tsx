@@ -15,7 +15,7 @@ const DashboardHeader = () => {
   return (
     <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
       <div className="flex items-center space-x-4">
-        {isSubscriptionActive && (
+        {(isSubscriptionActive || isCollector) && (
           <Button
             onClick={() => router.push('/chat')}
             variant="ghost"

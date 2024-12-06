@@ -18,14 +18,14 @@ export class FeatureActivityDto {
   name: string;
 
   @ApiProperty({
-    description: 'Type of req',
-    example: FeatureType.Model,
+    description: 'Type of credit',
+    example: FeatureType.Models,
   })
   @IsEnum(FeatureType)
   creditType: FeatureType;
 
   @ApiProperty({
-    description: 'req used',
+    description: 'credit used',
     example: 5,
   })
   @IsNumber()

@@ -18,6 +18,7 @@ import { Public, UserAuth } from '../auth/auth.decorator';
 import { IUserAuth } from '@helpers';
 import { AdminConfigDto } from './dto/adming-config.dto';
 import { AdminConfigService } from './admin-config.service';
+import { FeatureDto } from './dto/feature.dto';
 
 @Controller('admin-config')
 export class AdminConfigController {
@@ -84,6 +85,9 @@ export class AdminConfigController {
   async getConfigAdmin() {
     const adminConfig = await this.adminConfigService.findAdminConfig();
 
-    return AdminConfigDto.fromJson(adminConfig);
+    return AdminConfigDto.fromJson(
+      adminConfig.models.map((m) => FeatureDto.fromJson(m)),
+      adminConfig.tools.map((t) => FeatureDto.fromJson(t))
+    );
   }
 }

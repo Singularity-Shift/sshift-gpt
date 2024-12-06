@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { User, UserSchema } from './user.schema';
 import { UserService } from './user.service';
 import { Activity, ActivitySchema } from './activity/activity.schema';
+import { UserController } from './user.controller';
 
 @Module({
   imports: [
@@ -13,7 +14,7 @@ import { Activity, ActivitySchema } from './activity/activity.schema';
     ]),
   ],
   providers: [UserService],
-  controllers: [],
+  controllers: [UserController],
   exports: [UserService],
 })
 export class UserModule {}

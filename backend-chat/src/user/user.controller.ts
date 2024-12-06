@@ -76,16 +76,29 @@ export class UserController {
   })
   async GetUserConfig(@UserAuth() userAuth: IUserAuth) {
     const userConfig = userAuth.config;
+    let duration = 0;
+
+    if (
+      userConfig.subscriptionPlan?.startDate &&
+      userConfig.subscriptionPlan?.endDate
+    ) {
+      const startDate = new Date(
+        userConfig.subscriptionPlan.startDate
+      ).getTime();
+      const endDate = userConfig.subscriptionPlan.endDate;
+      duration = Math.floor((endDate - startDate) / (60 * 60 * 24));
+    }
 
     return GetUserConfigDto.fromJson(
       userAuth.address,
       userConfig,
       userConfig.subscriptionPlan.modelsUsed.map((m) =>
-        FeatureActivityDto.fromJson(m, FeatureType.Model)
+        FeatureActivityDto.fromJson(m, FeatureType.Models)
       ),
       userConfig.subscriptionPlan.toolsUsed.map((t) =>
-        FeatureActivityDto.fromJson(t, FeatureType.Tool)
-      )
+        FeatureActivityDto.fromJson(t, FeatureType.Tools)
+      ),
+      duration
     );
   }
 }

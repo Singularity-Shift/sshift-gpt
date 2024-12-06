@@ -121,7 +121,6 @@ export default function ChatPage() {
 
       const formattedMessage = {
         role: 'user',
-        auth: localStorage.getItem('jwt') as string,
         content: [
           ...(selectedImage
             ? [
@@ -164,6 +163,7 @@ export default function ChatPage() {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
+            auth: localStorage.getItem('jwt') as string,
             messages: [
               ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
                 []),
@@ -413,6 +413,7 @@ export default function ChatPage() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
+          auth: localStorage.getItem('jwt') as string,
           messages: messagesUpToEdit.map((msg) => {
             if (msg.role === 'user' && msg.image) {
               return {

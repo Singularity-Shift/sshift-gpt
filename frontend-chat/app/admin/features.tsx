@@ -148,7 +148,7 @@ export const Features = () => {
       <h2>Models</h2>
       {adminConfig.models.map((model, index) => (
         <AddFeature
-          featureType={FeatureType.Model}
+          featureType={FeatureType.Models}
           index={index}
           name={model.name}
           credits={model.credits}
@@ -163,7 +163,7 @@ export const Features = () => {
       <h2>Tools</h2>
       {adminConfig.tools.map((tool, index) => (
         <AddFeature
-          featureType={FeatureType.Tool}
+          featureType={FeatureType.Tools}
           index={index}
           name={tool.name}
           credits={tool.credits}

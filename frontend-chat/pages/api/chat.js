@@ -1,31 +1,14 @@
 import dotenv from 'dotenv';
-import systemPrompt from '../../config/systemPrompt.json';
 // import messageInjection from '../../config/messageInjection.json';
 import { streamResponse } from './chat/helpers/streamResponse.js';
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
-import { createSurfClient } from '@thalalabs/surf';
-import { APTOS_NETWORK } from '../../config/env';
-import * as jwt from 'jsonwebtoken';
-import { SubscriptionABI } from '@aptos';
-
+import backend from '../../src/services/backend';
 dotenv.config();
-
-const aptos = new Aptos(
-    new AptosConfig({
-        network:
-        APTOS_NETWORK === 'mainnet'
-            ? Network.MAINNET
-            : Network.TESTNET,
-    })
-);
-
-const abi = createSurfClient(aptos)
 
 let shouldStopStream = false;
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
-        const { messages, model, temperature = 0.2 } = req.body;
+        const { messages, auth, model, temperature = 0.2 } = req.body;
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
@@ -33,30 +16,33 @@ export default async function handler(req, res) {
             return res.status(400).json({ error: 'Invalid messages format' });
         }
 
-        const auth = messages[messages.length - 1].auth;
-
-        const payload = jwt.verify(
-            auth,
-            process.env.JWT_SECRET_KEY,
-        );
-
-        const isSubscribedResult = await abi.useABI(SubscriptionABI).view.has_subscription_active({
-            typeArguments: [],
-            functionArguments: [payload.address],
-        });
-
-        const isSubscribed = isSubscribedResult?.[0];
-
-        if (!isSubscribed) {
-            return res.status(403).json({ error: 'User is not subscribed' });
-        }
-        
         try {
+            const responseUserConfig = await backend.get('/user', { headers: { Authorization: `Bearer ${auth}` } });
+
+            if (!responseUserConfig?.data) {
+                console.error('Error fetching user config:', responseUserConfig.error);
+                return res.status(responseUserConfig.status).json({ error: responseUserConfig.statusText});
+            }
+
+            const userConfig = responseUserConfig.data;
+
+            console.log('User config:', userConfig);
+
+            if (!userConfig.active && !userConfig.isCollector) {
+                console.log('User is not active or collector');
+                return res.status(403).json({ error: 'User is not subscribed' });
+            }
+
+            if(!userConfig.isCollector) {
+                await checkCredits(userConfig, model, auth);
+            }
+            
+            // Start streaming the response
             await streamResponse(res, model, messages, temperature);
         } catch (error) {
-            console.error('Error in handler:', error);
+            console.error('Error in handler:', JSON.stringify(error.response.data.message));
             if (!res.writableEnded) {
-                res.status(500).json({ error: 'Internal Server Error', details: error.message });
+                res.status(error.status || 500).json({ error: error.message || 'Internal Server Error' });
             }
         }
     } else if (req.method === 'DELETE') {
@@ -66,4 +52,26 @@ export default async function handler(req, res) {
         res.setHeader('Allow', ['POST', 'DELETE']);
         res.status(405).end(`Method ${req.method} Not Allowed`);
     }
+}
+
+const checkCredits = async (userConfig, model, auth) => {
+    const adminConfig = await backend.get('/admin-config');
+
+    const modelCredits = userConfig.modelsActivity.find(u => u.name === model);
+    
+    const modelConfig = adminConfig.data.models.find(m => m.name === model);
+
+    if(!modelConfig) {
+        return;
+    }
+
+    if(modelCredits?.creditsUsed && modelCredits.creditsUsed >= modelConfig.credits * userConfig.duration) {
+        throw new Error('Not enough credits');
+    }
+
+    await backend.put('/user', {
+        name: model,
+        creditType: 'Models',
+        creditsUsed: modelCredits?.creditsUsed || 0,
+    }, { headers: { Authorization: `Bearer ${auth}` } });
 }
