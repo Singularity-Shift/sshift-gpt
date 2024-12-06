@@ -47,17 +47,26 @@ export class GetUserConfigDto {
   @ValidateNested({ each: true })
   toolsActivity: FeatureActivityDto[];
 
+  @ApiProperty({
+    description: 'Duration of the subscription plan in days',
+    example: 30,
+  })
+  duration: number;
+
   static fromJson(
     address: string,
     userConfig: IUserConfig,
     modelsActivity: FeatureActivityDto[],
-    toolsActivity: FeatureActivityDto[]
+    toolsActivity: FeatureActivityDto[],
+    duration: number
+    // more properties...
   ): GetUserConfigDto {
     return new GetUserConfigDto(
       address,
       userConfig.subscriptionPlan.active,
       userConfig.isAdmin,
       userConfig.isCollector,
+      duration,
       modelsActivity,
       toolsActivity
     );
@@ -67,12 +76,14 @@ export class GetUserConfigDto {
     active: boolean,
     isAdmin: boolean,
     isCollector: boolean,
+    duration: number,
     modelsAtivity: FeatureActivityDto[],
     toolsActivity: FeatureActivityDto[]
   ) {
     this.address = address;
     this.active = active;
     this.isAdmin = isAdmin;
+    this.duration = duration;
     this.isCollector = isCollector;
     this.modelsActivity = modelsAtivity;
     this.toolsActivity = toolsActivity;

@@ -17,7 +17,9 @@ export class UserService {
   async findUserByAddress(address: string): Promise<User> {
     const user = await this.userModel.findOne({ address });
 
-    user.activity = await this.activityModel.findOne({ _id: user.activity });
+    if (user?.activity) {
+      user.activity = await this.activityModel.findOne({ _id: user.activity });
+    }
 
     return user;
   }
@@ -51,21 +53,28 @@ export class UserService {
 
     let creditType: FeatureActivity = userActivity[
       creditsUsed.creditType.toLocaleLowerCase()
-    ].find((r) => r.name === creditsUsed.name);
+    ]?.find((r) => r.name === creditsUsed.name);
 
     if (creditType) {
-      creditType.creditsUsed += 1;
+      userActivity[creditsUsed.creditType.toLocaleLowerCase()] = [
+        ...userActivity[creditsUsed.creditType.toLocaleLowerCase()].map((a) => {
+          if (a.name === creditsUsed.name) {
+            return { ...a, creditsUsed: a.creditsUsed + 1 };
+          }
+          return a;
+        }),
+      ];
     } else {
       creditType = {
         name: creditsUsed.name,
         creditsUsed: 1,
       };
-    }
 
-    userActivity[creditsUsed.creditType.toLocaleLowerCase()] = [
-      ...userActivity[creditsUsed.creditType.toLocaleLowerCase()],
-      creditType,
-    ];
+      userActivity[creditsUsed.creditType.toLocaleLowerCase()] = [
+        ...userActivity[creditsUsed.creditType.toLocaleLowerCase()],
+        creditType,
+      ];
+    }
 
     await this.activityModel.updateOne(
       {

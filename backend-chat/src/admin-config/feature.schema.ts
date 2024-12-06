@@ -9,7 +9,7 @@ export class Feature {
   name: string;
 
   @Prop({ type: Number, required: true, name: 'credits' })
-  credits: string;
+  credits: number;
 }
 
 export const FeatureSchema = SchemaFactory.createForClass(Feature);
