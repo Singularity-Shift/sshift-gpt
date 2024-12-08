@@ -66,7 +66,7 @@ const checkModelCredits = async (userConfig, model, auth) => {
     }
 
     if(modelCredits?.creditsUsed && modelCredits.creditsUsed >= modelConfig.credits * userConfig.duration) {
-        throw new Error('Not enough credits');
+        throw new Error(`Not enough credits for model: ${model}`);
     }
 
     await backend.put('/user', {
