@@ -86,8 +86,8 @@ export class AdminConfigController {
     const adminConfig = await this.adminConfigService.findAdminConfig();
 
     return AdminConfigDto.fromJson(
-      adminConfig.models.map((m) => FeatureDto.fromJson(m)),
-      adminConfig.tools.map((t) => FeatureDto.fromJson(t))
+      adminConfig?.models?.map((m) => FeatureDto.fromJson(m)) || [],
+      adminConfig?.tools?.map((t) => FeatureDto.fromJson(t)) || []
     );
   }
 }
