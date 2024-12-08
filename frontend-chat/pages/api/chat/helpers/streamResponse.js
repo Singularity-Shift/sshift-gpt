@@ -7,7 +7,7 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function streamResponse(res, model, messages, temperature) {
+export async function streamResponse(res, model, messages, temperature, userConfig, auth) {
     let currentToolCalls = [];
     let assistantMessage = { content: '', images: [] };
     
@@ -97,7 +97,7 @@ export async function streamResponse(res, model, messages, temperature) {
                 messagesWithSystemPrompt.push(assistantToolMessage);
 
                 // Process tool calls and add their results to the history
-                const toolResults = await processToolCalls(currentToolCalls);
+                const toolResults = await processToolCalls(currentToolCalls, userConfig, auth);
                 messagesWithSystemPrompt.push(...toolResults);
 
                 // Create continuation with the updated message history
