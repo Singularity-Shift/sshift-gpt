@@ -1,3 +1,4 @@
+import backend from '../../../../src/services/backend';
 import * as toolCalls from './toolCalls.js';
 
 export async function handleToolCall(chunk, currentToolCalls) {
@@ -13,6 +14,7 @@ export async function handleToolCall(chunk, currentToolCalls) {
         }
         
         const currentCall = currentToolCalls.find(call => call.index === toolCall.index);
+
         if (toolCall.function) {
             if (toolCall.function.name) {
                 currentCall.function.name = toolCall.function.name;
@@ -35,7 +37,7 @@ export function writeResponseChunk(chunk, res) {
     }
 }
 
-export async function processToolCalls(currentToolCalls) {
+export async function processToolCalls(currentToolCalls, userConfig, auth) {
     const results = [];
     
     for (const toolCall of currentToolCalls) {
@@ -45,6 +47,7 @@ export async function processToolCalls(currentToolCalls) {
             
             if (typeof toolFunction === 'function') {
                 console.log(`Processing tool call: ${toolCall.function.name}`, args);
+                await checkToolsCredits(userConfig, toolCall.function.name, auth)
                 const result = await toolFunction(...Object.values(args));
                 
                 if (result.error) {
@@ -96,4 +99,26 @@ export async function processToolCalls(currentToolCalls) {
     }
     
     return results;
-} 
+}
+
+const checkToolsCredits = async (userConfig, tool, auth) => {
+    const adminConfig = await backend.get('/admin-config');
+
+    const toolsCredits = userConfig.toolsActivity.find(u => u.name === tool);
+    
+    const toolsConfig = adminConfig.data.tools.find(m => m.name === tool);
+
+    if(!toolsConfig) {
+        return;
+    }
+
+    if(toolsCredits?.creditsUsed && toolsCredits.creditsUsed >= toolsConfig.credits * userConfig.duration) {
+        throw new Error(`Not enough credits for tool: ${tool}`);
+    }
+
+    await backend.put('/user', {
+        name: tool,
+        creditType: 'Tools',
+        creditsUsed: toolsCredits?.creditsUsed || 0,
+    }, { headers: { Authorization: `Bearer ${auth}` } });
+}

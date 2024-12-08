@@ -34,11 +34,11 @@ export default async function handler(req, res) {
             }
 
             if(!userConfig.isCollector) {
-                await checkCredits(userConfig, model, auth);
+                await checkModelCredits(userConfig, model, auth);
             }
             
             // Start streaming the response
-            await streamResponse(res, model, messages, temperature);
+            await streamResponse(res, model, messages, temperature, userConfig, auth);
         } catch (error) {
             console.error('Error in handler:', JSON.stringify(error.response.data.message));
             if (!res.writableEnded) {
@@ -54,7 +54,7 @@ export default async function handler(req, res) {
     }
 }
 
-const checkCredits = async (userConfig, model, auth) => {
+const checkModelCredits = async (userConfig, model, auth) => {
     const adminConfig = await backend.get('/admin-config');
 
     const modelCredits = userConfig.modelsActivity.find(u => u.name === model);
@@ -66,7 +66,7 @@ const checkCredits = async (userConfig, model, auth) => {
     }
 
     if(modelCredits?.creditsUsed && modelCredits.creditsUsed >= modelConfig.credits * userConfig.duration) {
-        throw new Error('Not enough credits');
+        throw new Error(`Not enough credits for model: ${model}`);
     }
 
     await backend.put('/user', {
