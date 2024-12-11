@@ -9,6 +9,7 @@ import {
   calculatePrice,
   calculateDates,
   calculateDiscount,
+  calculateMaxDiscount,
 } from '../../src/lib/utils';
 import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
@@ -35,20 +36,11 @@ export default function SubscriptionPage() {
 
   useEffect(() => {
     const priceWithoutDiscount = calculatePrice(days);
-    const moveBotsDiscount = calculateDiscount(moveBotsOwned, MAX_MOVE_BOTS);
-    const qribbleNFTsDiscount = calculateDiscount(
+    const maxDiscount = calculateMaxDiscount(
+      moveBotsOwned,
       qribbleNFTsOwned,
-      MAX_QRIBBLE_NFTS
-    );
-    const sshiftRecordsDiscount = calculateDiscount(
       sshiftRecordsOwned,
-      MAX_SSHIFT_RECORDS
-    );
-
-    const maxDiscount = Math.max(
-      moveBotsDiscount,
-      qribbleNFTsDiscount,
-      sshiftRecordsDiscount
+      days
     );
     setDiscount(maxDiscount);
 

@@ -45,8 +45,33 @@ export function calculateDates(days: number): {
   };
 }
 
-export function calculateDiscount(owned: number, supply: number): number {
-  return Math.min((owned / supply) * 100 * 100, config.MAX_DISCOUNT);
+export function calculateDiscount(owned: number, days: number, collectionType: 'Qribbles' | 'ShiftRecords' | 'MoveBots'): number {
+  const discountRate = config.DISCOUNTS[collectionType];
+  const discountPerDay = discountRate * owned;
+  const totalDiscountAmount = discountPerDay * days;
+  return totalDiscountAmount;
+}
+
+export function calculateMaxDiscount(moveBotsOwned: number, qribbleNFTsOwned: number, sshiftRecordsOwned: number, days: number): number {
+  // If user owns any MoveBots, they get 50% discount
+  if (moveBotsOwned > 0) {
+    return config.MAX_DISCOUNT;
+  }
+
+  const basePrice = calculatePrice(days);
+  const maxDiscountAmount = basePrice / 2; // 50% of base price in USDT
+
+  const moveBotDiscount = calculateDiscount(moveBotsOwned, days, 'MoveBots');
+  const qribbleDiscount = calculateDiscount(qribbleNFTsOwned, days, 'Qribbles');
+  const sshiftRecordDiscount = calculateDiscount(sshiftRecordsOwned, days, 'ShiftRecords');
+
+  // Get highest discount amount
+  const highestDiscountAmount = Math.max(moveBotDiscount, qribbleDiscount, sshiftRecordDiscount);
+  
+  // Convert discount amount to percentage
+  const discountPercentage = (Math.min(highestDiscountAmount, maxDiscountAmount) / basePrice) * 100;
+  
+  return Math.min(discountPercentage, config.MAX_DISCOUNT);
 }
 
 export function aptosClient() {
