@@ -1,12 +1,12 @@
 import 'tailwindcss/tailwind.css';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
-import { Toaster } from '@fn-chat/components/ui/toaster';
-import { ThemeProvider } from '@fn-chat/context/ThemeProvider';
-import { WalletProvider } from '@fn-chat/context/WalletProvider';
-import { BackendProvider } from '@fn-chat/context/BackendProvider';
-import { AppManagementProvider } from '@fn-chat/context/AppManagment';
-import { AbiProvider } from '@fn-chat/context/AbiProvider';
+import { Toaster } from '../src/components/ui/toaster';
+import { ThemeProvider } from '../src/context/ThemeProvider';
+import { WalletProvider } from '../src/context/WalletProvider';
+import { BackendProvider } from '../src/context/BackendProvider';
+import { AppManagementProvider } from '../src/context/AppManagment';
+import { AbiProvider } from '../src/context/AbiProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 

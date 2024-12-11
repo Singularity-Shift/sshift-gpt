@@ -14,7 +14,6 @@ import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IUserConfig } from '@helpers';
 import { abis, FeesABI, SubscriptionABI } from '@aptos';
 import { UserService } from '../user/user.service';
-import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -31,6 +30,7 @@ export class AuthGuard implements CanActivate {
       'isPublic',
       context.getHandler()
     );
+
     if (isPublic) {
       return true;
     }

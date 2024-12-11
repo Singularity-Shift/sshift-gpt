@@ -20,7 +20,7 @@ import {
   LogOut,
   User,
 } from 'lucide-react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Collapsible,
   CollapsibleContent,
@@ -43,45 +43,13 @@ import {
 import { useToast } from '../ui/use-toast';
 import { FaWallet } from 'react-icons/fa';
 import { Button } from '../ui/button';
+import { useAppManagment } from '../../context/AppManagment';
 import { useRouter } from 'next/navigation';
-import { useBackend } from '@fn-chat/context/BackendProvider';
 
 export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
-  const router = useRouter();
-  const { connected } = useWallet();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const { sigIn } = useBackend();
-
-  useEffect(() => {
-    if (connected) {
-      handleConnectWallet();
-    }
-  }, [connected]);
 
   const closeDialog = useCallback(() => setIsDialogOpen(false), []);
-
-  const handleConnectWallet = async () => {
-    const jwt = localStorage.getItem('jwt');
-
-    if (!jwt) {
-      const authObj = await sigIn();
-
-      if (!authObj) {
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Error getting jwt token',
-        });
-
-        return;
-      }
-
-      localStorage.setItem('jwt', authObj.authToken);
-    }
-
-    router.push('/dashboard'); // Changed from '/chat' to '/dashboard'
-  };
 
   return (
     <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -99,24 +67,13 @@ export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
 export const SshiftWalletDisconnect = () => {
   const { account, disconnect, wallet, connected } = useWallet();
   const { toast } = useToast();
+  const { walletAddress } = useAppManagment();
   const router = useRouter();
 
-  const handleDisconnect = async () => {
-    console.log('User disconnected');
-    localStorage.removeItem('jwt');
-    router.push('/');
-  };
-
-  useEffect(() => {
-    if (!connected) {
-      handleDisconnect();
-    }
-  }, [connected]);
-
   const copyAddress = useCallback(async () => {
-    if (!account?.address) return;
+    if (!walletAddress) return;
     try {
-      await navigator.clipboard.writeText(account.address);
+      await navigator.clipboard.writeText(walletAddress);
       toast({
         title: 'Success',
         description: 'Copied wallet address to clipboard.',
@@ -128,13 +85,19 @@ export const SshiftWalletDisconnect = () => {
         description: 'Failed to copy wallet address.',
       });
     }
-  }, [account?.address, toast]);
+  }, [walletAddress, toast]);
+
+  const onDisconnect = async () => {
+    localStorage.removeItem('jwt');
+    if (connected) await disconnect();
+    router.push('/');
+  };
 
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button>
-          {account?.ansName || truncateAddress(account?.address) || 'Unknown'}
+          {account?.ansName || truncateAddress(walletAddress) || 'Unknown'}
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
@@ -153,7 +116,7 @@ export const SshiftWalletDisconnect = () => {
             </a>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onSelect={disconnect} className="gap-2">
+        <DropdownMenuItem onSelect={onDisconnect} className="gap-2">
           <LogOut className="h-4 w-4" /> Disconnect
         </DropdownMenuItem>
       </DropdownMenuContent>

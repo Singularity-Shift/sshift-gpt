@@ -16,6 +16,9 @@ import { aptosClient } from '../lib/utils';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { FeesABI, SubscriptionABI } from '@aptos';
+import { useBackend } from './BackendProvider';
+import * as jwtoken from 'jsonwebtoken';
+import { useRouter } from 'next/navigation';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -36,6 +39,7 @@ export type AppManagmenContextProp = {
   isSubscriptionActive: boolean;
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
   expirationDate: string | null;
+  walletAddress: string;
 };
 
 const AppManagmentContext = createContext<AppManagmenContextProp>(
@@ -62,11 +66,75 @@ export const AppManagementProvider = ({
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
+  const [walletAddress, setWalletAddress] = useState('');
+  const router = useRouter();
+
   const { abi } = useAbiClient();
-  const { connected, account } = useWallet();
+  const { connected, account, disconnect } = useWallet();
   const { toast } = useToast();
   const aptos = aptosClient();
   const { client } = useWalletClient();
+  const { sigIn } = useBackend();
+
+  const handleConnectWallet = async (address?: string) => {
+    let jwt = localStorage.getItem('jwt');
+
+    if (!jwt) {
+      const authObj = await sigIn();
+
+      jwt = authObj?.authToken || null;
+
+      if (!jwt) {
+        console.error('Error signing in user');
+
+        return;
+      }
+
+      localStorage.setItem('jwt', jwt);
+    }
+
+    if (address) {
+      const payload = jwtoken.decode(jwt as string) as { address: string };
+
+      if (payload && payload.address === address) {
+        setWalletAddress(address);
+        router.push('/dashboard'); // Changed from '/chat' to '/dashboard'
+      }
+    }
+  };
+
+  const handleDisconnect = async () => {
+    console.log('User disconnected');
+    localStorage.removeItem('jwt');
+    if (connected) await disconnect();
+    router.push('/');
+  };
+
+  useEffect(() => {
+    handleConnectWallet(account?.address);
+  }, [connected, account]);
+
+  useEffect(() => {
+    const jwt = localStorage.getItem('jwt');
+    let payload;
+
+    if (jwt) {
+      payload = jwtoken.decode(jwt as string) as { address: string };
+    }
+
+    if (payload) {
+      setWalletAddress(payload.address);
+    }
+
+    if (
+      (!connected && !payload) ||
+      (account?.address &&
+        payload?.address &&
+        payload?.address !== account?.address)
+    ) {
+      handleDisconnect();
+    }
+  }, [connected, account]);
 
   useEffect(() => {
     if (!connected) return;
@@ -98,8 +166,8 @@ export const AppManagementProvider = ({
 
       const pendingAdmin = pendingAdminResult?.[0];
 
-      setIsAdmin(admin === account?.address);
-      setIsPendingAdmin(pendingAdmin === account?.address);
+      setIsAdmin(admin === walletAddress);
+      setIsPendingAdmin(pendingAdmin === walletAddress);
     })();
   }, [abi, connected, account?.address, isAdmin, isPendingAdmin]);
 
@@ -122,7 +190,7 @@ export const AppManagementProvider = ({
 
       const collectors = collectorResult?.[0];
 
-      setIsCollector(collectors?.some((c) => c === account?.address) || false);
+      setIsCollector(collectors?.some((c) => c === walletAddress) || false);
     })();
   }, [abi, connected, account?.address, isCollector]);
 
@@ -169,12 +237,12 @@ export const AppManagementProvider = ({
   }, [abi]);
 
   useEffect(() => {
-    if (!connected || !account?.address) return;
+    if (!walletAddress) return;
 
     void (async () => {
       try {
         const nftsHolding = await aptos.getAccountOwnedTokens({
-          accountAddress: account?.address as string,
+          accountAddress: walletAddress as string,
         });
 
         const moveBotFieldsResult = await abi
@@ -240,7 +308,7 @@ export const AppManagementProvider = ({
           ?.useABI(SubscriptionABI)
           .view.has_subscription_active({
             typeArguments: [],
-            functionArguments: [account.address as `0x${string}`],
+            functionArguments: [walletAddress as `0x${string}`],
           });
 
         const hasSubscriptionActive =
@@ -253,7 +321,7 @@ export const AppManagementProvider = ({
             ?.useABI(SubscriptionABI)
             .view.get_plan({
               typeArguments: [],
-              functionArguments: [account.address as `0x${string}`],
+              functionArguments: [walletAddress as `0x${string}`],
             });
 
           const subscription = subscribtionResult?.[1];
@@ -273,13 +341,13 @@ export const AppManagementProvider = ({
         }
       } catch (error) {
         toast({
-          title: 'Error check nft required',
+          title: 'Error checking nft required',
           description: `Error checking nft required holding by the account: ${error}`,
           variant: 'destructive',
         });
       }
     })();
-  }, [connected, account?.address, abi]);
+  }, [connected, walletAddress, abi]);
 
   const onSubscribe = async (days: number) => {
     try {
@@ -327,6 +395,7 @@ export const AppManagementProvider = ({
     isSubscriptionActive,
     setIsSubscriptionActive,
     expirationDate,
+    walletAddress,
   };
 
   return (
