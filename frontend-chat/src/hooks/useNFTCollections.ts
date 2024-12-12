@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppManagement } from '../context/AppManagment';
-import { NFTCollection } from '../lib/interfaces';
+import { NFTCollection } from '@helpers';
 
 /**
  * React hook for UI components to fetch and display NFT collections
