@@ -263,5 +263,18 @@
     },
     "strict": true
   }
+},
+{
+  "type": "function",
+  "function": {
+    "name": "fetchUserNFTCollections",
+    "description": "Fetches NFT collections owned by the user's connected Aptos wallet. Use this function when users ask about their NFT holdings or collections on the Aptos blockchain. The wallet address will be automatically retrieved from the user's connected wallet.",
+    "parameters": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    },
+    "strict": true
+  }
 }
 ]

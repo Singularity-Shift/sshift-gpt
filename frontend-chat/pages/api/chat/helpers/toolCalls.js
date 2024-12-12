@@ -191,14 +191,13 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     }
 }
 
-export async function fetchUserNFTCollections(token) {
+export async function fetchUserNFTCollections() {
     try {
         return await fetchWithHandling('http://localhost:3000/api/tools/fetchUserNFTCollections', {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
+                'Content-Type': 'application/json'
+            }
         });
     } catch (error) {
         console.error('Error in fetchUserNFTCollections:', error);

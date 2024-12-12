@@ -40,6 +40,9 @@ export function writeResponseChunk(chunk, res) {
 export async function processToolCalls(currentToolCalls, userConfig, auth) {
     const results = [];
     
+    // Set global userConfig for tool calls
+    global.userConfig = userConfig;
+    
     for (const toolCall of currentToolCalls) {
         try {
             const args = JSON.parse(toolCall.function.arguments);
@@ -97,6 +100,9 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
             });
         }
     }
+    
+    // Clear global userConfig after tool calls are done
+    global.userConfig = undefined;
     
     return results;
 }
