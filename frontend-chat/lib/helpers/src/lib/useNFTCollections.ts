@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { useAppManagement } from '../context/AppManagment';
-import { NFTCollection } from '../lib/interfaces';
+import { useAppManagement } from '../../../../src/context/AppManagment';
+import { INFTCollection } from './interfaces';
 
 /**
  * React hook for UI components to fetch and display NFT collections
@@ -8,7 +8,7 @@ import { NFTCollection } from '../lib/interfaces';
  */
 export const useNFTCollections = () => {
   const { walletAddress } = useAppManagement();
-  const [collections, setCollections] = useState<NFTCollection[]>([]);
+  const [collections, setCollections] = useState<INFTCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 

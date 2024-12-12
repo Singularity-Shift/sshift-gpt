@@ -56,6 +56,7 @@ async function fetchWalletItemsCollections(address) {
     return collections.map(collection => ({
       ...collection,
       floor: collection.floor * Math.pow(10, -8), // Convert to APT
+      volume: collection.volume * Math.pow(10, -8), // Convert to APT
       cover_url: transformCoverUrl(collection.cover_url)
     }));
   } catch (error) {
