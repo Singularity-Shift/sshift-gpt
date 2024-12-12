@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useWallet } from '@aptos-labs/wallet-adapter-react';
+import { useAppManagement } from '../context/AppManagment';
 
 interface NFTCollection {
   id: string;
@@ -9,6 +9,29 @@ interface NFTCollection {
   floor: number;
   verified: boolean;
   volume: number;
+  description?: string;
+  creator?: string;
+  supply?: number;
+  minted?: number;
+  traits?: NFTTrait[];
+  items?: NFTItem[];
+}
+
+interface NFTTrait {
+  name: string;
+  value: string;
+  rarity?: number;
+}
+
+interface NFTItem {
+  id: string;
+  name: string;
+  description?: string;
+  image_url: string;
+  traits?: NFTTrait[];
+  owner?: string;
+  last_price?: number;
+  last_sale_date?: string;
 }
 
 /**
@@ -16,14 +39,14 @@ interface NFTCollection {
  * This is separate from the API route that the AI uses
  */
 export const useNFTCollections = () => {
-  const { account, connected } = useWallet();
+  const { walletAddress } = useAppManagement();
   const [collections, setCollections] = useState<NFTCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCollections = async () => {
-      if (!connected || !account?.address) {
+      if (!walletAddress) {
         setCollections([]);
         return;
       }
@@ -55,7 +78,7 @@ export const useNFTCollections = () => {
     };
 
     fetchCollections();
-  }, [connected, account?.address]);
+  }, [walletAddress]);
 
   return { collections, loading, error };
 }; 
