@@ -1,38 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useAppManagement } from '../context/AppManagment';
-
-interface NFTCollection {
-  id: string;
-  slug: string;
-  title: string;
-  cover_url: string;
-  floor: number;
-  verified: boolean;
-  volume: number;
-  description?: string;
-  creator?: string;
-  supply?: number;
-  minted?: number;
-  traits?: NFTTrait[];
-  items?: NFTItem[];
-}
-
-interface NFTTrait {
-  name: string;
-  value: string;
-  rarity?: number;
-}
-
-interface NFTItem {
-  id: string;
-  name: string;
-  description?: string;
-  image_url: string;
-  traits?: NFTTrait[];
-  owner?: string;
-  last_price?: number;
-  last_sale_date?: string;
-}
+import { NFTCollection } from '../lib/interfaces';
 
 /**
  * React hook for UI components to fetch and display NFT collections
