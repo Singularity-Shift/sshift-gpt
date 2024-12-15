@@ -146,7 +146,10 @@ export const Fees = () => {
       toast({
         title: 'Created resource account',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),
@@ -185,7 +188,10 @@ export const Fees = () => {
       toast({
         title: 'Paid collectors',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),
@@ -212,7 +218,10 @@ export const Fees = () => {
       toast({
         title: 'Set Currency',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),

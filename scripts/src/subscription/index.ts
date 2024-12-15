@@ -4,8 +4,8 @@ import { parseDocument } from 'yaml';
 import * as cli from '@aptos-labs/ts-sdk/dist/common/cli/index.js';
 
 const getConfig = () => {
-  if (!process.env.MODULE_ADDRESS) {
-    throw new Error('MODULE_ADDRESS env variable is required');
+  if (!process.env.NEXT_PUBLIC_MODULE_ADDRESS) {
+    throw new Error('NEXT_PUBLIC_MODULE_ADDRESS env variable is required');
   }
 
   if (!process.env.PRIVATE_KEY) {
@@ -81,7 +81,7 @@ export const upgrade = async () => {
 
   move.upgradeObjectPackage({
     packageDirectoryPath: 'salary_payment',
-    objectAddress: process.env.VITE_MODULE_ADDRESS,
+    objectAddress: process.env.NEXT_PUBLIC_MODULE_ADDRESS,
     namedAddresses: {
       // Upgrade module from an object
       sshift_dao_addr: accountAddress,
