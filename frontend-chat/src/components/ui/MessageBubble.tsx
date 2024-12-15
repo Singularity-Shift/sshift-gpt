@@ -16,7 +16,7 @@ interface Message {
   model?: string;
   finish_reason?: string;
   system_fingerprint?: string;
-  image?: string;
+  images?: string[];
 }
 
 interface CodeBlockProps {
@@ -103,17 +103,17 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
 
   useEffect(() => {
     try {
-        const contentObj = JSON.parse(message.content);
-        if (contentObj.final_message) {
-            setParsedContent({
-                text: contentObj.final_message.content,
-                images: contentObj.final_message.images || [] // Handle array of images
-            });
-        } else {
-            setParsedContent({ text: message.content });
-        }
-    } catch (e) {
+      const contentObj = JSON.parse(message.content);
+      if (contentObj.final_message) {
+        setParsedContent({
+          text: contentObj.final_message.content,
+          images: contentObj.final_message.images || []
+        });
+      } else {
         setParsedContent({ text: message.content });
+      }
+    } catch (e) {
+      setParsedContent({ text: message.content });
     }
   }, [message.content]);
 
@@ -215,35 +215,31 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
           {parsedContent.text}
         </ReactMarkdown>
         
-        {/* Render all images in the array */}
-        {parsedContent.images?.map((imageUrl, index) => (
-          <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
-        ))}
-        
-        {/* Render user's uploaded image if present */}
-        {isUser && message.image && (
-          <ImageThumbnail src={message.image} />
+        {/* Display images if present */}
+        {message.images && message.images.length > 0 && (
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            {message.images.map((imageUrl, index) => (
+              <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
+            ))}
+          </div>
         )}
       </>
     );
   };
 
   return (
-    <div
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
-    >
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       {!isUser && (
         <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
           <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
           <AvatarFallback>AI</AvatarFallback>
         </Avatar>
       )}
-      <div
-        className={`max-w-[75%] w-auto p-3 rounded-lg ${
-          isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        }`}
-      >
+      <div className={`max-w-[75%] w-auto p-3 rounded-lg ${
+        isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
+      }`}>
         {renderContent()}
+
         {!isUser && (
           <AssistantButtonArray
             onCopy={onCopy}

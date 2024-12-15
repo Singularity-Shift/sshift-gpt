@@ -4,68 +4,22 @@ import { Textarea } from './textarea';
 import { Image, Send, Upload, X } from 'lucide-react';
 import { StopButton } from './StopButton';
 import { SendButton } from './SendButton';
+import { ImageUploadButton } from './ImageUploadButton';
 
 interface ChatInputProps {
-  onSendMessage: (message: string, imageUrl: string | null) => void;
+  onSendMessage: (message: string, imageUrls: string[]) => void;
 }
 
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const handleImageButtonClick = () => {
-    if (fileInputRef.current) {
-      fileInputRef.current.click();
-    }
-  };
-
-  const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) {
-      console.error('No file selected');
-      return;
-    }
-
-    const validTypes = ['image/png', 'image/jpeg', 'image/jpg', 'image/webp', 'image/gif'];
-    if (!validTypes.includes(file.type)) {
-      alert('Please select a valid image file (PNG, JPEG, WebP, or GIF).');
-      return;
-    }
-
-    const formData = new FormData();
-    formData.append('file', file);
-
-    try {
-      setUploading(true);
-      const response = await fetch('/api/bucket', {
-        method: 'POST',
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to upload image');
-      }
-
-      const data = await response.json();
-      setUploadedFile(data.url);
-      setSelectedImage(data.url);
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Failed to upload image.');
-    } finally {
-      setUploading(false);
-    }
-  };
 
   const handleSendMessage = () => {
-    if (inputMessage.trim() || selectedImage) {
-      onSendMessage(inputMessage, selectedImage);
+    if (inputMessage.trim() || uploadedImages.length > 0) {
+      onSendMessage(inputMessage, uploadedImages);
       setInputMessage('');
-      setSelectedImage(null);
-      setUploadedFile(null);
+      setUploadedImages([]);
     }
   };
 
@@ -76,68 +30,55 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
     }
   };
 
-  const handleRemoveUploadedFile = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    setUploadedFile(null);
-    setSelectedImage(null);
+  const handleRemoveImage = (indexToRemove: number) => {
+    setUploadedImages(uploadedImages.filter((_, index) => index !== indexToRemove));
   };
 
   const handleStop = () => {
     console.log('Stop button clicked');
-    // Implement any additional client-side logic if needed
   };
 
   return (
     <div className="border-t border-border p-4 w-full relative">
-      <div className="flex items-end space-x-2 max-w-6xl mx-auto">
-        <div className="relative flex-1">
-          <Textarea
-            value={inputMessage}
-            onChange={(e) => setInputMessage(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder="Type your message here... (Ctrl+Enter to send)"
-            className="flex-1"
-          />
+      <div className="max-w-6xl mx-auto relative">
+        {uploadedImages.length > 0 && (
+          <div className="absolute right-14 top-0 transform -translate-y-full flex gap-1 items-center">
+            {uploadedImages.map((url, index) => (
+              <div key={url} className="relative flex-shrink-0">
+                <img
+                  src={url}
+                  alt={`Uploaded ${index + 1}`}
+                  className="h-8 w-8 object-cover rounded-full border border-gray-300"
+                />
+                <button
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                  onClick={() => handleRemoveImage(index)}
+                >
+                  <X className="h-2 w-2" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="flex gap-2 items-end">
+          <div className="flex-1">
+            <Textarea
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Type your message here... (Ctrl+Enter to send)"
+              className="resize-none"
+            />
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <ImageUploadButton
+              onImageSelect={setUploadedImages}
+              uploadedImages={uploadedImages}
+            />
+            <StopButton onStop={handleStop} />
+            <SendButton onClick={handleSendMessage} />
+          </div>
         </div>
-        <input
-          type="file"
-          accept="image/*"
-          ref={fileInputRef}
-          className="hidden"
-          onChange={handleImageChange}
-        />
-        <div className="flex flex-col items-center">
-          {uploadedFile && (
-            <div className="mb-2 relative">
-              <img
-                src={uploadedFile}
-                alt="Uploaded Preview"
-                className="h-12 w-12 rounded border border-gray-300"
-              />
-              <button
-                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1"
-                onClick={handleRemoveUploadedFile}
-              >
-                <X className="h-3 w-3" />
-              </button>
-            </div>
-          )}
-          <Button
-            variant="outline"
-            size="icon"
-            className="shrink-0 hover:bg-gray-200"
-            onClick={handleImageButtonClick}
-            disabled={uploading}
-          >
-            {uploading ? (
-              <Upload className="animate-spin h-4 w-4" />
-            ) : (
-              <Image className="h-4 w-4" />
-            )}
-          </Button>
-        </div>
-        <StopButton onStop={handleStop} />
-        <SendButton onClick={handleSendMessage} />
       </div>
     </div>
   );
