@@ -60,13 +60,23 @@ interface MessageBubbleProps {
   onEdit: (message: Message, newContent: string) => void;
 }
 
-const ImageThumbnail: React.FC<{ src: string; onClick: () => void }> = ({ src, onClick }) => {
+const ImageThumbnail: React.FC<{ 
+  src: string; 
+  onClick: () => void;
+  isExpanded?: boolean;
+  isAssistantMessage?: boolean;
+}> = ({ src, onClick, isExpanded, isAssistantMessage }) => {
   return (
     <div className="cursor-pointer" onClick={onClick}>
       <img
         src={src}
         alt="Generated or Uploaded"
-        className="rounded max-w-[100px] max-h-[100px] object-cover"
+        className={`rounded ${isAssistantMessage 
+          ? isExpanded 
+            ? "max-w-full w-full h-auto" 
+            : "max-w-[100px] max-h-[100px]"
+          : "max-w-[100px] max-h-[100px]"} 
+          object-cover transition-all duration-200`}
       />
     </div>
   );
@@ -93,6 +103,7 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
     images?: string[] 
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<number | null>(null);
 
   useEffect(() => {
     try {
@@ -201,7 +212,16 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
               <ol className="list-decimal pl-4 mb-2">{children}</ol>
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
-            img: ({ src, alt }) => <ImageThumbnail src={src || ''} onClick={() => setExpandedImage(src || '')} />,
+            img: ({ src, alt }) => (
+              <ImageThumbnail 
+                src={src || ''} 
+                onClick={() => isUser 
+                  ? setExpandedImage(src || '') 
+                  : setExpandedThumbnailIndex(expandedThumbnailIndex === 0 ? null : 0)}
+                isExpanded={!isUser && expandedThumbnailIndex === 0}
+                isAssistantMessage={!isUser}
+              />
+            ),
           }}
           className="prose max-w-none"
         >
@@ -212,13 +232,21 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
         {message.images && message.images.length > 0 && (
           <div className="mt-2 flex gap-2 overflow-x-auto">
             {message.images.map((imageUrl, index) => (
-              <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} onClick={() => setExpandedImage(imageUrl)} />
+              <ImageThumbnail 
+                key={`${imageUrl}-${index}`} 
+                src={imageUrl} 
+                onClick={() => isUser 
+                  ? setExpandedImage(imageUrl) 
+                  : setExpandedThumbnailIndex(expandedThumbnailIndex === index ? null : index)}
+                isExpanded={!isUser && expandedThumbnailIndex === index}
+                isAssistantMessage={!isUser}
+              />
             ))}
           </div>
         )}
 
-        {/* Display expanded image */}
-        {expandedImage && (
+        {/* Only show expanded image view for user messages */}
+        {isUser && expandedImage && (
           <div className="mt-4">
             <img
               src={expandedImage}
