@@ -120,7 +120,10 @@ export const FundManage = () => {
       toast({
         title: 'Subscribed',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),
@@ -147,7 +150,10 @@ export const FundManage = () => {
       toast({
         title: 'Claimed fees',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),

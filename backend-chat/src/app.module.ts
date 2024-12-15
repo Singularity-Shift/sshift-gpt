@@ -11,6 +11,7 @@ import { AuthGuard } from './auth/auth.guard';
 import { ChatModule } from './chat/chat.module';
 import { UserModule } from './user/user.module';
 import { AdminConfigModule } from './admin-config/admin-config.module';
+import { MultisignModule } from './multisign/multising.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AdminConfigModule } from './admin-config/admin-config.module';
     AuthModule,
     UserModule,
     AdminConfigModule,
+    MultisignModule,
   ],
   controllers: [],
   providers: [

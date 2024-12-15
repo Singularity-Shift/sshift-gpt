@@ -11,14 +11,14 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { IMoveBotFields, ISubscription } from '@helpers';
+import { IAction, IMoveBotFields, ISubscription } from '@helpers';
 import { aptosClient } from '../lib/utils';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { FeesABI, SubscriptionABI } from '@aptos';
 import { useBackend } from './BackendProvider';
 import * as jwtoken from 'jsonwebtoken';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -40,6 +40,10 @@ export type AppManagmenContextProp = {
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
   expirationDate: string | null;
   walletAddress: string;
+  isReviewer: boolean;
+  setIsReviewer: Dispatch<SetStateAction<boolean>>;
+  isPendingReviewer: boolean;
+  setIsPendingReviewer: Dispatch<SetStateAction<boolean>>;
 };
 
 const AppManagmentContext = createContext<AppManagmenContextProp>(
@@ -54,6 +58,8 @@ export const AppManagementProvider = ({
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPendingAdmin, setIsPendingAdmin] = useState(false);
   const [isCollector, setIsCollector] = useState(false);
+  const [isReviewer, setIsReviewer] = useState(false);
+  const [isPendingReviewer, setIsPendingReviewer] = useState(false);
   const [resourceAccount, setResourceAccount] = useState<`0x${string}` | null>(
     null
   );
@@ -68,9 +74,10 @@ export const AppManagementProvider = ({
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
   const [walletAddress, setWalletAddress] = useState('');
   const router = useRouter();
+  const pathname = usePathname();
 
   const { abi } = useAbiClient();
-  const { connected, account, disconnect } = useWallet();
+  const { connected, account, disconnect, connect, wallet } = useWallet();
   const { toast } = useToast();
   const aptos = aptosClient();
   const { client } = useWalletClient();
@@ -96,9 +103,11 @@ export const AppManagementProvider = ({
     if (address) {
       const payload = jwtoken.decode(jwt as string) as { address: string };
 
-      if (payload && payload.address === address) {
+      if (payload && payload.address === address && wallet) {
         setWalletAddress(address);
-        router.push('/dashboard'); // Changed from '/chat' to '/dashboard'
+        if (pathname === '/') {
+          router.push('/dashboard');
+        }
       }
     }
   };
@@ -169,7 +178,7 @@ export const AppManagementProvider = ({
       setIsAdmin(admin === walletAddress);
       setIsPendingAdmin(pendingAdmin === walletAddress);
     })();
-  }, [abi, connected, account?.address, isAdmin, isPendingAdmin]);
+  }, [abi, connected, walletAddress, isAdmin, isPendingAdmin]);
 
   useEffect(() => {
     if (!connected) return;
@@ -192,7 +201,46 @@ export const AppManagementProvider = ({
 
       setIsCollector(collectors?.some((c) => c === walletAddress) || false);
     })();
-  }, [abi, connected, account?.address, isCollector]);
+  }, [abi, connected, walletAddress, isCollector]);
+
+  useEffect(() => {
+    if (!connected) return;
+    (async () => {
+      let reviewerResult;
+      let pendingReviewerResult;
+      try {
+        reviewerResult = await abi?.useABI(FeesABI).view.get_reviewer({
+          typeArguments: [],
+          functionArguments: [],
+        });
+      } catch (error) {
+        toast({
+          title: 'Error fetching collector',
+          description: `Not Collectors probably set yet: ${error}`,
+          variant: 'destructive',
+        });
+      }
+
+      try {
+        pendingReviewerResult = await abi
+          ?.useABI(FeesABI)
+          .view.get_pending_reviewer({
+            typeArguments: [],
+            functionArguments: [],
+          });
+      } catch (error) {
+        console.error('Error fetching pending reviewer:', error);
+      }
+
+      const reviewer = reviewerResult?.[0];
+
+      setIsReviewer(reviewer === walletAddress);
+
+      const pendingReviewer = pendingReviewerResult?.[0];
+
+      setIsPendingReviewer(pendingReviewer === walletAddress);
+    })();
+  }, [abi, connected, walletAddress, isReviewer, isPendingReviewer]);
 
   useEffect(() => {
     void (async () => {
@@ -361,7 +409,10 @@ export const AppManagementProvider = ({
       toast({
         title: 'Subscribe',
         description: (
-          <a href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}>
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
             {tx?.hash}
           </a>
         ),
@@ -396,6 +447,10 @@ export const AppManagementProvider = ({
     setIsSubscriptionActive,
     expirationDate,
     walletAddress,
+    isReviewer,
+    setIsReviewer,
+    isPendingReviewer,
+    setIsPendingReviewer,
   };
 
   return (

@@ -80,7 +80,16 @@ export class AuthGuard implements CanActivate {
 
     const currentAdmin = currentAdminResult?.[0];
 
-    const isAdmin = currentAdmin.toLowerCase() === address.toLowerCase();
+    const isAdmin = currentAdmin?.toLowerCase() === address.toLowerCase();
+
+    const currentReviewerResult = await abis.useABI(FeesABI).view.get_reviewer({
+      typeArguments: [],
+      functionArguments: [],
+    });
+
+    const currentReviewer = currentReviewerResult?.[0];
+
+    const isReviewer = currentReviewer?.toLowerCase() === address.toLowerCase();
 
     const currentCollectorsResult = await abis
       .useABI(FeesABI)
@@ -131,6 +140,7 @@ export class AuthGuard implements CanActivate {
             }),
       },
       isAdmin,
+      isReviewer,
       isCollector,
     };
 

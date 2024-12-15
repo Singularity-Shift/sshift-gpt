@@ -1,14 +1,38 @@
 'use client';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import backend from '../services/backend';
-import { IAdminConfig, IAuth, IJwt } from '@helpers';
-import { createContext, ReactNode, useContext } from 'react';
+import { IAction, IAdminConfig, IAuth, IJwt, MultisignAction } from '@helpers';
+import {
+  createContext,
+  ReactNode,
+  useContext,
+  useEffect,
+  useState,
+} from 'react';
 import { useToast } from '../components/ui/use-toast';
+import { AccountAuthenticator } from '@aptos-labs/ts-sdk';
 
 export type BackendContextProp = {
   sigIn: () => Promise<IJwt | undefined>;
-  submitAdminConfig: (config: IAdminConfig) => Promise<IAdminConfig>;
+  submitAdminConfig: (
+    config: IAdminConfig
+  ) => Promise<IAdminConfig | undefined>;
   fetchAdminConfig: () => Promise<IAdminConfig>;
+  addAction: (
+    action: MultisignAction,
+    transaction: string,
+    targetAddress?: string
+  ) => Promise<void>;
+  getActions: () => Promise<IAction[]>;
+  updateAction: (
+    action: MultisignAction,
+    targetAddress: string,
+    signature: string
+  ) => Promise<void>;
+  deleteAction: (
+    action: MultisignAction,
+    targetAddress: string
+  ) => Promise<void>;
 };
 
 const BackendContext = createContext<BackendContextProp>(
@@ -44,7 +68,7 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
 
   const submitAdminConfig = async (
     config: IAdminConfig
-  ): Promise<IAdminConfig> => {
+  ): Promise<IAdminConfig | undefined> => {
     try {
       const body = {
         ...config,
@@ -82,10 +106,79 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
     return response.data;
   };
 
+  const addAction = async (
+    action: MultisignAction,
+    transaction: string,
+    targetAddress?: string
+  ) => {
+    const payload = {
+      action,
+      transaction,
+      targetAddress,
+    };
+
+    const jwt = localStorage.getItem('jwt');
+
+    await backend.post('/multisign', payload, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+  };
+
+  const getActions = async (): Promise<IAction[]> => {
+    const jwt = localStorage.getItem('jwt');
+
+    const response = await backend.get('/multisign', {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+
+    return response.data;
+  };
+
+  const updateAction = async (
+    action: MultisignAction,
+    targetAddress: string,
+    signature: string
+  ): Promise<void> => {
+    const payload = {
+      action,
+      targetAddress,
+      signature,
+    };
+
+    const jwt = localStorage.getItem('jwt');
+
+    await backend.put(`/multisign`, payload, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+  };
+
+  const deleteAction = async (
+    action: MultisignAction,
+    targetAddress: string
+  ) => {
+    const jwt = localStorage.getItem('jwt');
+
+    await backend.delete(`/multisign/${action}/${targetAddress}`, {
+      headers: {
+        Authorization: `Bearer ${jwt}`,
+      },
+    });
+  };
+
   const values: BackendContextProp = {
     sigIn,
     submitAdminConfig,
     fetchAdminConfig,
+    addAction,
+    getActions,
+    updateAction,
+    deleteAction,
   };
 
   return (

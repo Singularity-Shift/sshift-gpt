@@ -6,22 +6,23 @@ import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { useState } from 'react';
 
-export const ChangeAdmin = () => {
+export const ChangeReviewer = () => {
   const { client } = useWalletClient();
 
-  const { isPendingAdmin, setIsAdmin, setIsPendingAdmin } = useAppManagment();
+  const { isPendingReviewer, setIsReviewer, setIsPendingReviewer } =
+    useAppManagment();
 
-  const [pendingAdmin, setPendingAdmin] = useState('');
+  const [pendingReviewer, setPendingReviewer] = useState('');
 
-  const handleSubmitPendingAdmin = async () => {
+  const handleSubmitPendingReviewer = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).set_pending_admin({
+      const tx = await client?.useABI(FeesABI).set_pending_reviewer({
         type_arguments: [],
-        arguments: [pendingAdmin as `0x${string}`],
+        arguments: [pendingReviewer as `0x${string}`],
       });
 
       toast({
-        title: 'Set Pending Admin',
+        title: 'Set Pending reviewer',
         description: (
           <a
             href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
@@ -33,23 +34,23 @@ export const ChangeAdmin = () => {
         variant: 'default',
       });
 
-      setPendingAdmin('');
-      setIsPendingAdmin(false);
-      setIsAdmin(true);
+      setPendingReviewer('');
+      setIsPendingReviewer(false);
+      setIsReviewer(true);
     } catch (error) {
       toast({ title: 'Error submot', message: error, variant: 'destructive' });
     }
   };
 
-  const handleAcceptAdmin = async () => {
+  const handleAcceptReviewer = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).accept_admin({
+      const tx = await client?.useABI(FeesABI).accept_reviewer({
         type_arguments: [],
         arguments: [],
       });
 
       toast({
-        title: 'Accept Admin',
+        title: 'Accepted Reviewer',
         description: (
           <a
             href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
@@ -61,7 +62,7 @@ export const ChangeAdmin = () => {
         variant: 'default',
       });
 
-      setIsAdmin(true);
+      setIsReviewer(true);
     } catch (error) {
       toast({
         title: 'Error accepting admin',
@@ -73,35 +74,37 @@ export const ChangeAdmin = () => {
 
   return (
     <div className="mt-10">
-      {isPendingAdmin && (
+      {isPendingReviewer && (
         <div>
-          <h2>Previous admin select you to be the admin now</h2>
+          <h2>Previous reviewer select you to be the reviewer now</h2>
           <button
             className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md"
-            onClick={handleAcceptAdmin}
+            onClick={handleAcceptReviewer}
           >
-            Accept admin
+            Accept reviewer
           </button>
         </div>
       )}
-      {!isPendingAdmin && (
+      {!isPendingReviewer && (
         <div>
           <LabeledInput
             id="pending-admin-address"
             label="Set the new admin address"
             tooltip="Who will be the new admin"
             required={true}
-            value={pendingAdmin}
-            onChange={(e) => setPendingAdmin(e.target.value as `0x${string}`)}
+            value={pendingReviewer}
+            onChange={(e) =>
+              setPendingReviewer(e.target.value as `0x${string}`)
+            }
             type="text"
           />
 
           <Button
-            onClick={handleSubmitPendingAdmin}
+            onClick={handleSubmitPendingReviewer}
             variant="green"
             className="mt-10 mb-20"
           >
-            Set pending admin
+            Set pending reviewer
           </Button>
         </div>
       )}

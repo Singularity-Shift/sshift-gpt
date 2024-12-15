@@ -8,8 +8,14 @@ import { useAppManagment } from '../../context/AppManagment';
 import { useRouter, usePathname } from 'next/navigation';
 
 const DashboardHeader = () => {
-  const { isAdmin, isPendingAdmin, isCollector, isSubscriptionActive } =
-    useAppManagment();
+  const {
+    isAdmin,
+    isPendingAdmin,
+    isCollector,
+    isReviewer,
+    isPendingReviewer,
+    isSubscriptionActive,
+  } = useAppManagment();
   const router = useRouter(); // Import the useRouter hook from Next.js
   const pathname = usePathname();
   return (
@@ -48,6 +54,18 @@ const DashboardHeader = () => {
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Collector</span>
+          </Button>
+        )}
+
+        {(isReviewer || isPendingReviewer) && pathname !== '/reviewer' && (
+          <Button
+            onClick={() => router.push('/reviewer')}
+            variant="ghost"
+            size="sm"
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Reviewer</span>
           </Button>
         )}
 

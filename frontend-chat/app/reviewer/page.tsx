@@ -2,16 +2,17 @@
 import { useAppManagment } from '../../src/context/AppManagment';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
-import { FundManage } from './fundManage';
+import { PendingActions } from '../pendingActions';
+import { ChangeReviewer } from './changeReviewer';
 
-const CollectorPage = () => {
-  const { isCollector } = useAppManagment();
+const ReviewerPage = () => {
+  const { isReviewer, isPendingReviewer } = useAppManagment();
 
   return (
     <div>
       <AGIThoughtBackground />
       <DashboardHeader />
-      {!isCollector ? (
+      {!isReviewer && !isPendingReviewer && (
         <div className="flex justify-center">
           <div className="w-[500px] bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300">
             <div className="text-center">
@@ -24,16 +25,31 @@ const CollectorPage = () => {
             </div>
           </div>
         </div>
-      ) : (
+      )}
+
+      {(isReviewer || isPendingReviewer) && (
         <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
           <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Fund Managment</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Change reviewer
+            </h2>
           </div>
-          <FundManage />
+          <ChangeReviewer />
+        </div>
+      )}
+
+      {isReviewer && (
+        <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+          <div className="text-center mb-6">
+            <h2 className="text-2xl font-bold text-gray-900">
+              Pending actions
+            </h2>
+          </div>
+          <PendingActions />
         </div>
       )}
     </div>
   );
 };
 
-export default CollectorPage;
+export default ReviewerPage;

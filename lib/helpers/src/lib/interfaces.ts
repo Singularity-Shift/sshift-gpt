@@ -1,3 +1,5 @@
+import { MultisignAction } from './enums';
+
 export interface IAuth {
   message: string;
   address: string;
@@ -157,6 +159,7 @@ export interface ISubscriptionPlan {
 export interface IUserConfig {
   subscriptionPlan: ISubscriptionPlan;
   isAdmin: boolean;
+  isReviewer: boolean;
   isCollector: boolean;
 }
 
@@ -168,6 +171,13 @@ export interface ICredits {
 export interface IAdminConfig {
   models: ICredits[];
   tools: ICredits[];
+}
+
+export interface IAction {
+  action: MultisignAction;
+  transaction: string;
+  targetAddress: `0x${string}`;
+  signature: string;
 }
 
 // NFT Collection Interfaces
