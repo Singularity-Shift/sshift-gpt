@@ -60,21 +60,13 @@ interface MessageBubbleProps {
   onEdit: (message: Message, newContent: string) => void;
 }
 
-const ImageThumbnail: React.FC<{ src: string }> = ({ src }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const imageKey = useRef(Math.random().toString(36).substring(7));
-
+const ImageThumbnail: React.FC<{ src: string; onClick: () => void }> = ({ src, onClick }) => {
   return (
-    <div className="mt-2" key={imageKey.current}>
+    <div className="cursor-pointer" onClick={onClick}>
       <img
         src={src}
         alt="Generated or Uploaded"
-        className={`cursor-pointer rounded ${
-          isExpanded
-            ? 'max-w-full h-auto'
-            : 'max-w-[200px] max-h-[200px] object-cover'
-        }`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        className="rounded max-w-[100px] max-h-[100px] object-cover"
       />
     </div>
   );
@@ -100,6 +92,7 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
     text: string; 
     images?: string[] 
   }>({ text: message.content });
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
 
   useEffect(() => {
     try {
@@ -208,7 +201,7 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
               <ol className="list-decimal pl-4 mb-2">{children}</ol>
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
-            img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
+            img: ({ src, alt }) => <ImageThumbnail src={src || ''} onClick={() => setExpandedImage(src || '')} />,
           }}
           className="prose max-w-none"
         >
@@ -217,10 +210,22 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
         
         {/* Display images if present */}
         {message.images && message.images.length > 0 && (
-          <div className="mt-2 grid grid-cols-2 gap-2">
+          <div className="mt-2 flex gap-2 overflow-x-auto">
             {message.images.map((imageUrl, index) => (
-              <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
+              <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} onClick={() => setExpandedImage(imageUrl)} />
             ))}
+          </div>
+        )}
+
+        {/* Display expanded image */}
+        {expandedImage && (
+          <div className="mt-4">
+            <img
+              src={expandedImage}
+              alt="Expanded view"
+              className="w-full h-auto rounded cursor-pointer"
+              onClick={() => setExpandedImage(null)}
+            />
           </div>
         )}
       </>
