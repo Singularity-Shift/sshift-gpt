@@ -179,3 +179,37 @@ export interface IAction {
   targetAddress: `0x${string}`;
   signature: string;
 }
+
+// NFT Collection Interfaces
+export interface INFTCollection {
+  id: string;
+  slug: string;
+  title: string;
+  cover_url: string;
+  floor: number;
+  verified: boolean;
+  volume: number;
+  description?: string;
+  creator?: string;
+  supply?: number;
+  minted?: number;
+  traits?: INFTTrait[];
+  items?: INFTItem[];
+}
+
+export interface INFTTrait {
+  name: string;
+  value: string;
+  rarity?: number;
+}
+
+export interface INFTItem {
+  id: string;
+  name: string;
+  description?: string;
+  image_url: string;
+  traits?: INFTTrait[];
+  owner?: string;
+  last_price?: number;
+  last_sale_date?: string;
+}

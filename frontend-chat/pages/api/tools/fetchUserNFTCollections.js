@@ -1,6 +1,5 @@
 import { gql } from '@apollo/client';
 import indexerClient from '../clients/indexerClient';
-import { jwtDecode } from 'jwt-decode';
 
 const WALLET_COLLECTIONS_QUERY = gql`
   query fetchWalletItemsCollections($where: collections_bool_exp!, $order_by: [collections_order_by!]) {
@@ -18,94 +17,97 @@ const WALLET_COLLECTIONS_QUERY = gql`
   }
 `;
 
-async function fetchWalletItemsCollections(token) {
-  if (!token) {
-    throw new Error('No wallet connected - please connect your wallet first');
+function transformCoverUrl(url) {
+  if (!url) return null;
+  
+  // Handle IPFS URLs
+  if (url.startsWith('ipfs://')) {
+    return `https://ipfs.io/ipfs/${url.replace('ipfs://', '')}`;
   }
-
-  // Decode the JWT to get the wallet address
-  const decoded = jwtDecode(token);
-  const walletAddress = decoded.address;
-
-  if (!walletAddress) {
-    throw new Error('No wallet address found in session');
+  
+  // Handle Aptos Names API URLs
+  if (url.includes('aptos-names-api')) {
+    // The URL is already in the correct format for direct access
+    return url;
   }
+  
+  return url;
+}
 
-  console.log('Auth headers:', {
-    userId: process.env.INDEXER_USER_ID,
-    apiKey: process.env.INDEXER_API_KEY?.slice(0, 4) + '****'
-  });
+async function fetchWalletItemsCollections(address) {
+  if (!address) {
+    throw new Error('No wallet connected');
+  }
 
   try {
-    const { data, error } = await indexerClient.query({
+    const { data } = await indexerClient.query({
       query: WALLET_COLLECTIONS_QUERY,
       variables: {
         where: {
           nfts: {
-            _or: [
-              {
-                owner: {
-                  _eq: walletAddress
-                }
-              }
-            ]
-          },
-          verified: {
-            _eq: true
+            _or: [{ owner: { _eq: address } }]
           }
         },
-        order_by: {
-          volume: "desc_nulls_last"
-        }
+        order_by: [{ volume: 'desc' }]
       }
     });
 
-    if (error) {
-      throw new Error(`GraphQL Error: ${error.message}`);
-    }
-
-    // Convert floor prices to APT
     const collections = data?.aptos?.collections || [];
     return collections.map(collection => ({
       ...collection,
-      floor: collection.floor * Math.pow(10, -8) // Convert to APT
+      floor: collection.floor * Math.pow(10, -8), // Convert to APT
+      volume: collection.volume * Math.pow(10, -8), // Convert to APT
+      cover_url: transformCoverUrl(collection.cover_url)
     }));
-
   } catch (error) {
-    console.error('Error with full details:', {
-      message: error.message,
-      stack: error.stack
-    });
+    console.error('Error fetching collections:', error);
     throw error;
   }
 }
 
 export default async function handler(req, res) {
-  if (req.method === 'POST') {
-    try {
-      // Get JWT from the request cookies or authorization header
-      const token = req.cookies?.jwt || req.headers.authorization?.replace('Bearer ', '');
-      
-      if (!token) {
-        return res.status(401).json({
-          status: 'error',
-          message: 'No authentication token found'
-        });
-      }
+  if (req.method !== 'POST') {
+    res.setHeader('Allow', ['POST']);
+    return res.status(405).end(`Method ${req.method} Not Allowed`);
+  }
 
-      const collections = await fetchWalletItemsCollections(token);
-      res.status(200).json({
-        status: 'success',
-        data: collections
-      });
-    } catch (error) {
-      res.status(500).json({
+  try {
+    console.log('Request received:', {
+      method: req.method,
+      headers: req.headers
+    });
+
+    // Get userConfig from headers
+    let userConfig;
+    try {
+      userConfig = req.headers['x-user-config'] ? JSON.parse(req.headers['x-user-config']) : null;
+    } catch (e) {
+      console.error('Error parsing user config from headers:', e);
+    }
+
+    console.log('Extracted userConfig from headers:', userConfig);
+    
+    const address = userConfig?.address;
+    console.log('Extracted address:', address);
+
+    if (!address) {
+      console.log('No address found in userConfig');
+      return res.status(400).json({
         status: 'error',
-        message: error.message || 'Internal Server Error',
+        message: 'No wallet connected'
       });
     }
-  } else {
-    res.setHeader('Allow', ['POST']);
-    res.status(405).end(`Method ${req.method} Not Allowed`);
+
+    const collections = await fetchWalletItemsCollections(address);
+    return res.status(200).json({
+      status: 'success',
+      data: collections
+    });
+  } catch (error) {
+    console.error('Error in fetchUserNFTCollections:', error);
+    return res.status(500).json({
+      status: 'error',
+      message: error.message || 'Internal Server Error'
+    });
   }
 }

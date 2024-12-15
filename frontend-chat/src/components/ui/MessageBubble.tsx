@@ -16,7 +16,7 @@ interface Message {
   model?: string;
   finish_reason?: string;
   system_fingerprint?: string;
-  image?: string;
+  images?: string[];
 }
 
 interface CodeBlockProps {
@@ -60,21 +60,23 @@ interface MessageBubbleProps {
   onEdit: (message: Message, newContent: string) => void;
 }
 
-const ImageThumbnail: React.FC<{ src: string }> = ({ src }) => {
-  const [isExpanded, setIsExpanded] = useState(false);
-  const imageKey = useRef(Math.random().toString(36).substring(7));
-
+const ImageThumbnail: React.FC<{ 
+  src: string; 
+  onClick: () => void;
+  isExpanded?: boolean;
+  isAssistantMessage?: boolean;
+}> = ({ src, onClick, isExpanded, isAssistantMessage }) => {
   return (
-    <div className="mt-2" key={imageKey.current}>
+    <div className="cursor-pointer" onClick={onClick}>
       <img
         src={src}
         alt="Generated or Uploaded"
-        className={`cursor-pointer rounded ${
-          isExpanded
-            ? 'max-w-full h-auto'
-            : 'max-w-[200px] max-h-[200px] object-cover'
-        }`}
-        onClick={() => setIsExpanded(!isExpanded)}
+        className={`rounded ${isAssistantMessage 
+          ? isExpanded 
+            ? "max-w-full w-full h-auto" 
+            : "max-w-[100px] max-h-[100px]"
+          : "max-w-[100px] max-h-[100px]"} 
+          object-cover transition-all duration-200`}
       />
     </div>
   );
@@ -100,20 +102,22 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
     text: string; 
     images?: string[] 
   }>({ text: message.content });
+  const [expandedImage, setExpandedImage] = useState<string | null>(null);
+  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<number | null>(null);
 
   useEffect(() => {
     try {
-        const contentObj = JSON.parse(message.content);
-        if (contentObj.final_message) {
-            setParsedContent({
-                text: contentObj.final_message.content,
-                images: contentObj.final_message.images || [] // Handle array of images
-            });
-        } else {
-            setParsedContent({ text: message.content });
-        }
-    } catch (e) {
+      const contentObj = JSON.parse(message.content);
+      if (contentObj.final_message) {
+        setParsedContent({
+          text: contentObj.final_message.content,
+          images: contentObj.final_message.images || []
+        });
+      } else {
         setParsedContent({ text: message.content });
+      }
+    } catch (e) {
+      setParsedContent({ text: message.content });
     }
   }, [message.content]);
 
@@ -208,42 +212,67 @@ export function MessageBubble({ message, onCopy, onRegenerate, onEdit }: Message
               <ol className="list-decimal pl-4 mb-2">{children}</ol>
             ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
-            img: ({ src, alt }) => <ImageThumbnail src={src || ''} />,
+            img: ({ src, alt }) => (
+              <ImageThumbnail 
+                src={src || ''} 
+                onClick={() => isUser 
+                  ? setExpandedImage(src || '') 
+                  : setExpandedThumbnailIndex(expandedThumbnailIndex === 0 ? null : 0)}
+                isExpanded={!isUser && expandedThumbnailIndex === 0}
+                isAssistantMessage={!isUser}
+              />
+            ),
           }}
           className="prose max-w-none"
         >
           {parsedContent.text}
         </ReactMarkdown>
         
-        {/* Render all images in the array */}
-        {parsedContent.images?.map((imageUrl, index) => (
-          <ImageThumbnail key={`${imageUrl}-${index}`} src={imageUrl} />
-        ))}
-        
-        {/* Render user's uploaded image if present */}
-        {isUser && message.image && (
-          <ImageThumbnail src={message.image} />
+        {/* Display images if present */}
+        {message.images && message.images.length > 0 && (
+          <div className="mt-2 flex gap-2 overflow-x-auto">
+            {message.images.map((imageUrl, index) => (
+              <ImageThumbnail 
+                key={`${imageUrl}-${index}`} 
+                src={imageUrl} 
+                onClick={() => isUser 
+                  ? setExpandedImage(imageUrl) 
+                  : setExpandedThumbnailIndex(expandedThumbnailIndex === index ? null : index)}
+                isExpanded={!isUser && expandedThumbnailIndex === index}
+                isAssistantMessage={!isUser}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Only show expanded image view for user messages */}
+        {isUser && expandedImage && (
+          <div className="mt-4">
+            <img
+              src={expandedImage}
+              alt="Expanded view"
+              className="w-full h-auto rounded cursor-pointer"
+              onClick={() => setExpandedImage(null)}
+            />
+          </div>
         )}
       </>
     );
   };
 
   return (
-    <div
-      className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
-    >
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       {!isUser && (
         <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
           <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
           <AvatarFallback>AI</AvatarFallback>
         </Avatar>
       )}
-      <div
-        className={`max-w-[75%] w-auto p-3 rounded-lg ${
-          isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        }`}
-      >
+      <div className={`max-w-[75%] w-auto p-3 rounded-lg ${
+        isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
+      }`}>
         {renderContent()}
+
         {!isUser && (
           <AssistantButtonArray
             onCopy={onCopy}

@@ -14,7 +14,7 @@ export interface Message {
   role: 'user' | 'assistant' | 'system';
   content: string;
   auth?: string;
-  image?: string;
+  images?: string[];
   created?: number;
   model?: string;
   finish_reason?: string;
@@ -98,7 +98,7 @@ export default function ChatPage() {
 
   const handleSendMessage = async (
     inputMessage: string,
-    selectedImage: string | null
+    selectedImages: string[]
   ) => {
     if (chats.length === 0) {
       setShowNoChatsMessage(true);
@@ -111,27 +111,26 @@ export default function ChatPage() {
     setIsTyping(false);
     setIsAssistantResponding(true);
 
-    if (inputMessage.trim() || selectedImage) {
+    if (inputMessage.trim() || selectedImages.length > 0) {
       const userMessage: Message = {
         id: Date.now().toString(),
         role: 'user',
         content: inputMessage,
-        image: selectedImage || undefined,
+        images: selectedImages,
       };
+
+      // Prepare the content array for the API request
+      const contentArray = [
+        ...selectedImages.map(imageUrl => ({
+          type: 'image_url',
+          image_url: { url: imageUrl, detail: 'high' }
+        })),
+        { type: 'text', text: inputMessage }
+      ];
 
       const formattedMessage = {
         role: 'user',
-        content: [
-          ...(selectedImage
-            ? [
-                {
-                  type: 'image_url',
-                  image_url: { url: selectedImage, detail: 'high' },
-                },
-              ]
-            : []),
-          { type: 'text', text: inputMessage },
-        ],
+        content: contentArray
       };
 
       setChats((prevChats) => {
@@ -165,8 +164,24 @@ export default function ChatPage() {
           body: JSON.stringify({
             auth: localStorage.getItem('jwt') as string,
             messages: [
-              ...(chats.find((chat) => chat.id === currentChatId)?.messages ||
-                []),
+              ...(chats.find((chat) => chat.id === currentChatId)?.messages || []).map(msg => {
+                if (msg.role === 'user' && msg.images) {
+                  return {
+                    role: msg.role,
+                    content: [
+                      ...msg.images.map(imageUrl => ({
+                        type: 'image_url',
+                        image_url: { url: imageUrl, detail: 'high' }
+                      })),
+                      { type: 'text', text: msg.content }
+                    ]
+                  };
+                }
+                return {
+                  role: msg.role,
+                  content: msg.content
+                };
+              }),
               formattedMessage,
             ],
             model: selectedModel,
@@ -214,8 +229,10 @@ export default function ChatPage() {
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
                   if (parsedData.tool_response.name === 'generateImage') {
-                    assistantMessage.image =
-                      parsedData.tool_response.result.image_url;
+                    assistantMessage.images = [
+                      ...(assistantMessage.images || []),
+                      parsedData.tool_response.result.image_url
+                    ];
                     updateChat(assistantMessage);
                   } else if (parsedData.tool_response.name === 'searchWeb') {
                     assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
@@ -226,7 +243,7 @@ export default function ChatPage() {
                   assistantMessage = {
                     ...assistantMessage,
                     content: parsedData.final_message.content,
-                    image: parsedData.final_message.image,
+                    images: parsedData.final_message.images || assistantMessage.images
                   };
                   updateChat(assistantMessage);
                 }
@@ -284,7 +301,8 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
-      setIsAssistantResponding(true); // Add this line
+      setIsAssistantResponding(true);
+      
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
@@ -297,15 +315,128 @@ export default function ChatPage() {
       // Get all messages up to and including the previous user message
       const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
 
-      // Call regenerateConversation with these messages
-      await regenerateConversation(messagesUpToLastUser);
+      // Format messages for the API request
+      const formattedMessages = messagesUpToLastUser.map(msg => {
+        if (msg.role === 'user' && msg.images && msg.images.length > 0) {
+          return {
+            role: msg.role,
+            content: [
+              ...msg.images.map(imageUrl => ({
+                type: 'image_url',
+                image_url: { url: imageUrl, detail: 'high' }
+              })),
+              { type: 'text', text: msg.content }
+            ]
+          };
+        }
+        return {
+          role: msg.role,
+          content: msg.content
+        };
+      });
+
+      // Call the API with formatted messages
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          auth: localStorage.getItem('jwt') as string,
+          messages: formattedMessages,
+          model: selectedModel,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      if (!response.body) throw new Error('No response body');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let newAssistantMessage: Message = {
+        id: Date.now().toString(),
+        role: 'assistant',
+        content: '',
+      };
+
+      setIsWaiting(false);
+      setIsTyping(true);
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            const data = line.substring(6);
+            if (data === '[DONE]') {
+              setStatus('thinking');
+              break;
+            }
+            try {
+              const parsedData = JSON.parse(data);
+              if (parsedData.content) {
+                newAssistantMessage.content += parsedData.content;
+                updateChat(newAssistantMessage);
+                setStatus('typing');
+              } else if (parsedData.tool_call) {
+                setStatus('tool-calling');
+              } else if (parsedData.tool_response) {
+                if (parsedData.tool_response.name === 'generateImage') {
+                  newAssistantMessage.images = [
+                    ...(newAssistantMessage.images || []),
+                    parsedData.tool_response.result.image_url
+                  ];
+                  updateChat(newAssistantMessage);
+                } else if (parsedData.tool_response.name === 'searchWeb') {
+                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
+                  updateChat(newAssistantMessage);
+                }
+                setStatus('typing');
+              } else if (parsedData.final_message) {
+                newAssistantMessage = {
+                  ...newAssistantMessage,
+                  content: parsedData.final_message.content,
+                  images: parsedData.final_message.images || newAssistantMessage.images
+                };
+                updateChat(newAssistantMessage);
+              }
+            } catch (error) {
+              console.error('Error parsing JSON:', error);
+            }
+          }
+        }
+      }
+
+      // Update the chat with the regenerated message
+      setChats(prevChats =>
+        prevChats.map(chat => {
+          if (chat.id === currentChatId) {
+            const updatedMessages = chat.messages.slice(0, messageIndex);
+            return {
+              ...chat,
+              messages: [...updatedMessages, newAssistantMessage],
+              lastUpdated: Date.now()
+            };
+          }
+          return chat;
+        })
+      );
+
+      console.log('Final regenerated message:', newAssistantMessage);
     } catch (error) {
       console.error('Error in handleRegenerateMessage:', error);
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
       setStatus('thinking');
-      setIsAssistantResponding(false); // Add this line
+      setIsAssistantResponding(false);
     }
   };
 
@@ -414,35 +545,35 @@ export default function ChatPage() {
         },
         body: JSON.stringify({
           auth: localStorage.getItem('jwt') as string,
-          messages: messagesUpToEdit.map((msg) => {
-            if (msg.role === 'user' && msg.image) {
+          messages: messagesUpToEdit.map(msg => {
+            if (msg.role === 'user' && msg.images) {
               return {
                 role: msg.role,
                 content: [
-                  {
+                  ...msg.images.map(imageUrl => ({
                     type: 'image_url',
-                    image_url: { url: msg.image, detail: 'high' },
-                  },
-                  { type: 'text', text: msg.content },
-                ],
-              };
-            } else {
-              return {
-                role: msg.role,
-                content: msg.content,
+                    image_url: { url: imageUrl, detail: 'high' }
+                  })),
+                  { type: 'text', text: msg.content }
+                ]
               };
             }
+            return {
+              role: msg.role,
+              content: msg.content
+            };
           }),
           model: selectedModel,
         }),
       });
-      console.log('API response received for regeneration:', response);
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
       const reader = response.body?.getReader();
+      if (!reader) throw new Error('No response body reader');
+      
       const decoder = new TextDecoder();
       let done = false;
 
@@ -453,16 +584,11 @@ export default function ChatPage() {
       };
 
       while (!done) {
-        const { value, done: doneReading } = await reader?.read()!;
+        const { value, done: doneReading } = await reader.read();
         done = doneReading;
+        if (!value) continue;
+
         const chunk = decoder.decode(value, { stream: true });
-
-        if (!isTyping) {
-          setIsTyping(true);
-          setIsWaiting(false);
-          setStatus('typing');
-        }
-
         const lines = chunk.split('\n');
 
         for (const line of lines) {
@@ -481,11 +607,12 @@ export default function ChatPage() {
                 newAssistantMessage.content += parsedData.content;
               } else if (parsedData.tool_response) {
                 if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.image =
-                    parsedData.tool_response.result.image_url;
+                  newAssistantMessage.images = [
+                    ...(newAssistantMessage.images || []),
+                    parsedData.tool_response.result.image_url
+                  ];
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response.name === 'searchWeb') {
-                  // Incorporate the web search result into the assistant's message
                   newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
                   setStatus('tool-calling');
                 }
