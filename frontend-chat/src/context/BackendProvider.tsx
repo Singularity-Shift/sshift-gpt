@@ -11,6 +11,7 @@ import {
 } from 'react';
 import { useToast } from '../components/ui/use-toast';
 import { AccountAuthenticator } from '@aptos-labs/ts-sdk';
+import { DataProtection } from '../content/DataProtection';
 
 export type BackendContextProp = {
   sigIn: () => Promise<IJwt | undefined>;
@@ -46,8 +47,7 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
   const sigIn = async (): Promise<IJwt | undefined> => {
     if (!connected) return;
 
-    const message =
-      'Signning this message your are agree with the terms and condition of SShift GPT';
+    const message = DataProtection;
 
     const messageResp = await signMessage({
       message,
