@@ -1,13 +1,12 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
+import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
+import { APTOS_NETWORK } from '../../config/env';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-
-import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
-import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
-import { APTOS_NETWORK } from '../../config/env';
 
 export function calculatePrice(days: number) {
   const minPrice = config.MIN_PRICE; // Price for 1 day
@@ -45,14 +44,23 @@ export function calculateDates(days: number): {
   };
 }
 
-export function calculateDiscount(owned: number, days: number, collectionType: 'Qribbles' | 'ShiftRecords' | 'MoveBots'): number {
+export function calculateDiscount(
+  owned: number,
+  days: number,
+  collectionType: 'Qribbles' | 'ShiftRecords' | 'MoveBots'
+): number {
   const discountRate = config.DISCOUNTS[collectionType];
   const discountPerDay = discountRate * owned;
   const totalDiscountAmount = discountPerDay * days;
   return totalDiscountAmount;
 }
 
-export function calculateMaxDiscount(moveBotsOwned: number, qribbleNFTsOwned: number, sshiftRecordsOwned: number, days: number): number {
+export function calculateMaxDiscount(
+  moveBotsOwned: number,
+  qribbleNFTsOwned: number,
+  sshiftRecordsOwned: number,
+  days: number
+): number {
   // If user owns any MoveBots, they get 50% discount
   if (moveBotsOwned > 0) {
     return config.MAX_DISCOUNT;
@@ -63,14 +71,23 @@ export function calculateMaxDiscount(moveBotsOwned: number, qribbleNFTsOwned: nu
 
   const moveBotDiscount = calculateDiscount(moveBotsOwned, days, 'MoveBots');
   const qribbleDiscount = calculateDiscount(qribbleNFTsOwned, days, 'Qribbles');
-  const sshiftRecordDiscount = calculateDiscount(sshiftRecordsOwned, days, 'ShiftRecords');
+  const sshiftRecordDiscount = calculateDiscount(
+    sshiftRecordsOwned,
+    days,
+    'ShiftRecords'
+  );
 
   // Get highest discount amount
-  const highestDiscountAmount = Math.max(moveBotDiscount, qribbleDiscount, sshiftRecordDiscount);
-  
+  const highestDiscountAmount = Math.max(
+    moveBotDiscount,
+    qribbleDiscount,
+    sshiftRecordDiscount
+  );
+
   // Convert discount amount to percentage
-  const discountPercentage = (Math.min(highestDiscountAmount, maxDiscountAmount) / basePrice) * 100;
-  
+  const discountPercentage =
+    (Math.min(highestDiscountAmount, maxDiscountAmount) / basePrice) * 100;
+
   return Math.min(discountPercentage, config.MAX_DISCOUNT);
 }
 

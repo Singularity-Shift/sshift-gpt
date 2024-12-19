@@ -1,13 +1,13 @@
-import { FeesABI, SubscriptionABI } from '@aptos';
-import { ConfirmButton } from '@fn-chat/components/ui/confirm-button';
-import { LabeledInput } from '@fn-chat/components/ui/labeled-input';
-import { useToast } from '@fn-chat/components/ui/use-toast';
-import { useAbiClient } from '@fn-chat/context/AbiProvider';
-import { useAppManagment } from '@fn-chat/context/AppManagment';
+import { SubscriptionABI } from '@aptos';
+import { ConfirmButton } from '../../src/components/ui/confirm-button';
+import { LabeledInput } from '../../src/components/ui/labeled-input';
+import { useToast } from '../../src/components/ui/use-toast';
+import { useAbiClient } from '../../src/context/AbiProvider';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { useState } from 'react';
+import { truncateAddress } from '@aptos-labs/wallet-adapter-core';
 
-const GrantSubscriptions = () => {
+export const GrantSubscriptions = () => {
   const [days, setDays] = useState(0);
   const [grantedAddress, setGrantedAddress] = useState('');
   const [isUpdating, setIsUpdating] = useState(false);
@@ -54,6 +54,9 @@ const GrantSubscriptions = () => {
           </a>
         ),
       });
+
+      setGrantedAddress('');
+      setDays(0);
     } catch (error) {
       toast({
         title: 'Error checking subscription status',
@@ -67,36 +70,40 @@ const GrantSubscriptions = () => {
 
   return (
     <div>
-      <LabeledInput
-        id="granted-duration-subscription"
-        label="Grant subscription for an account"
-        tooltip="Duration in days"
-        required={true}
-        value={days}
-        onChange={(e) => setDays(parseInt(e.target.value))}
-        type="number"
-      />
+      <div className="mb-10">
+        <LabeledInput
+          id="granted-duration-subscription"
+          label="Duration (Days) of Subscription"
+          tooltip="Duration in days"
+          required={true}
+          value={days}
+          onChange={(e) => setDays(parseInt(e.target.value))}
+          type="number"
+        />
+      </div>
 
-      <LabeledInput
-        id="granted-address-subscription"
-        label="Account Address"
-        tooltip="The address of the account to gift the subscription to"
-        required={true}
-        value={grantedAddress}
-        onChange={(e) => setGrantedAddress(e.target.value as `0x${string}`)}
-        type="text"
-      />
+      <div className="mb-10">
+        <LabeledInput
+          id="granted-address-subscription"
+          label="Account Address"
+          tooltip="The address of the account to gift the subscription to"
+          required={true}
+          value={grantedAddress}
+          onChange={(e) => setGrantedAddress(e.target.value as `0x${string}`)}
+          type="text"
+        />
+      </div>
 
       <div className="pt-4">
         <ConfirmButton
           variant="green"
-          title="Save Config"
+          title="Grant Subscription"
           onSubmit={onGrantSubscription}
           disabled={isUpdating || !grantedAddress || days <= 0}
           confirmMessage={
             <p>
-              You will grant a subscription for the account {grantedAddress}{' '}
-              with the given duration {days}.
+              You will grant a subscription for the account{' '}
+              {truncateAddress(grantedAddress)} with the given duration {days}.
               <br />
               <br />
               Are you agree with this action?

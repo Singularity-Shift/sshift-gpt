@@ -9,6 +9,7 @@ import { silkscreen } from '../fonts';
 import { Features } from './features';
 import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
+import { GrantSubscriptions } from './grantSubscriptions';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
@@ -111,6 +112,17 @@ const AdminPage = () => {
               </h2>
             </div>
             <PendingActions />
+          </div>
+        )}
+
+        {isAdmin && (
+          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center mb-10">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Grant Subscription
+              </h2>
+            </div>
+            <GrantSubscriptions />
           </div>
         )}
       </div>

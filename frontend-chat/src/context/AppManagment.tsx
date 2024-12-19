@@ -44,6 +44,8 @@ export type AppManagmenContextProp = {
   setIsReviewer: Dispatch<SetStateAction<boolean>>;
   isPendingReviewer: boolean;
   setIsPendingReviewer: Dispatch<SetStateAction<boolean>>;
+  hasSubscriptionToClaim: boolean;
+  setHasSubscriptionToClaim: Dispatch<SetStateAction<boolean>>;
 };
 
 const AppManagmentContext = createContext<AppManagmenContextProp>(
@@ -69,6 +71,7 @@ export const AppManagementProvider = ({
   const [nftAddressesRequiredOwned, setNftAddressesRequiredOwned] = useState<
     string[]
   >([]);
+  const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
@@ -144,6 +147,21 @@ export const AppManagementProvider = ({
       handleDisconnect();
     }
   }, [connected, account]);
+
+  useEffect(() => {
+    if (!connected) return;
+
+    void (async () => {
+      const hasSubscriptionToClaimResult = await abi
+        ?.useABI(SubscriptionABI)
+        .view.has_subscription_to_claim({
+          typeArguments: [],
+          functionArguments: [walletAddress as `0x${string}`],
+        });
+
+      setHasSubscriptionToClaim(Boolean(hasSubscriptionToClaimResult?.[0]));
+    })();
+  }, [abi, connected, walletAddress]);
 
   useEffect(() => {
     if (!connected) return;
@@ -395,7 +413,7 @@ export const AppManagementProvider = ({
         });
       }
     })();
-  }, [connected, walletAddress, abi]);
+  }, [connected, walletAddress, abi, hasSubscriptionToClaim]);
 
   const onSubscribe = async (days: number) => {
     try {
@@ -451,6 +469,8 @@ export const AppManagementProvider = ({
     setIsReviewer,
     isPendingReviewer,
     setIsPendingReviewer,
+    hasSubscriptionToClaim,
+    setHasSubscriptionToClaim,
   };
 
   return (

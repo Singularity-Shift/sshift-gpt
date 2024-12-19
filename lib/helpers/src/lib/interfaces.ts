@@ -213,3 +213,8 @@ export interface INFTItem {
   last_price?: number;
   last_sale_date?: string;
 }
+
+export interface ISubscriptionToClaim {
+  account: string;
+  duration: number;
+}
