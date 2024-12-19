@@ -62,6 +62,17 @@ export const SubscriptionABI = {
       ],
     },
     {
+      name: 'get_subscription_to_claim',
+      visibility: 'public',
+      is_entry: false,
+      is_view: true,
+      generic_type_params: [],
+      params: ['address'],
+      return: [
+        '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d::subscription_v3::FreeSubscription',
+      ],
+    },
+    {
       name: 'gift_subscription',
       visibility: 'public',
       is_entry: true,
@@ -72,6 +83,15 @@ export const SubscriptionABI = {
     },
     {
       name: 'has_subscription_active',
+      visibility: 'public',
+      is_entry: false,
+      is_view: true,
+      generic_type_params: [],
+      params: ['address'],
+      return: ['bool'],
+    },
+    {
+      name: 'has_subscription_to_claim',
       visibility: 'public',
       is_entry: false,
       is_view: true,

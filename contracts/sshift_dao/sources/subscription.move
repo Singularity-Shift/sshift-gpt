@@ -22,6 +22,8 @@ module sshift_dao_addr::subscription_v3 {
     const ENOT__FREE_SUBSCRIPTION_TO_CLAIM: u64 = 6;
     const ENOT_ENOUGH_BALANCE: u64 = 7;
     const ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION: u64 = 8;
+    const EHAS_SUBSCRIPTION_ACTIVE: u64 = 9;
+    const EHAS_SUBSCRIPTION_TO_CLAIM: u64 = 10;
 
 
     struct CollectionAddressDiscount has key, store, drop, copy {
@@ -126,43 +128,73 @@ module sshift_dao_addr::subscription_v3 {
         subscription_plan.collections_discount = collections_discount
     }
 
-    public entry fun gift_subscription(sender: &signer, account: address, duration: u64) acquires SubscriptionsGifted {
+    public entry fun gift_subscription(sender: &signer, account: address, duration: u64) acquires SubscriptionsGifted, UserSubscription {
         check_admin(sender);
+
+        assert!(!has_subscription_active(account), EHAS_SUBSCRIPTION_ACTIVE);
+        assert!(!has_subscription_to_claim(account), EHAS_SUBSCRIPTION_TO_CLAIM);
+        
 
         let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
 
-        let subscription = FreeSubscription {
-            account,
-            duration,
-        };
+        let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
+            let FreeSubscription {
+                account: account_addr,
+                duration: _duration,
+            }= *s;
 
-        vector::push_back(&mut free_subscriptions.subscriptions, subscription);
+            account_addr == account
+        });
+
+        if(has_free_subscription) {
+            let subscription_to_update = vector::borrow_mut(&mut free_subscriptions.subscriptions, index);
+
+            subscription_to_update.account = account;
+            subscription_to_update.duration = duration;
+        } else {
+            let subscription = FreeSubscription {
+                account,
+                duration,
+            };
+
+            vector::push_back(&mut free_subscriptions.subscriptions, subscription);
+        };
     }
 
-    public entry fun claim_subscription(sender: &signer) acquires SubscriptionsGifted {
+    public entry fun claim_subscription(sender: &signer) acquires SubscriptionsGifted, UserSubscription {
         let account_addr = signer::address_of(sender);
 
-        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
+        let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
 
         let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions, |s| {
             let FreeSubscription {
                 account,
-                duration: _duration,
+                duration: duration,
             }= *s;
 
-            account == account_addr
+            account == account_addr && duration > 0
         });
 
         assert!(has_free_subscription, ENOT__FREE_SUBSCRIPTION_TO_CLAIM);
 
-        let subscription = vector::borrow<FreeSubscription>(&free_subscriptions.subscriptions, index);
+        let subscription = vector::borrow_mut<FreeSubscription>(&mut free_subscriptions.subscriptions, index);
 
         let start_time = timestamp::now_seconds();
 
-        move_to(
-            sender,
-            UserSubscription { start_time, end_time: start_time + subscription.duration }
-        );
+        if(exists<UserSubscription>(account_addr)) {
+            let subscription_obj = borrow_global_mut<UserSubscription>(account_addr);
+
+            subscription_obj.start_time = start_time;
+            subscription_obj.end_time = start_time + subscription.duration;
+
+        } else {
+            move_to(
+                sender,
+                UserSubscription { start_time, end_time: start_time + subscription.duration }
+            );
+        };
+
+        subscription.duration = 0;
 
         event::emit(
             UserSubscribed {
@@ -181,6 +213,8 @@ module sshift_dao_addr::subscription_v3 {
         nfts_holding: vector<address>
     ) acquires SubscriptionPlan, UserSubscription {
         let buyer_addr = signer::address_of(sender);
+
+        assert!(!has_subscription_active(buyer_addr), EHAS_SUBSCRIPTION_ACTIVE);
 
         let days = duration / (24 * 60 * 60);
 
@@ -304,6 +338,43 @@ module sshift_dao_addr::subscription_v3 {
         
         is_active
     }
+
+    #[view]
+    public fun has_subscription_to_claim(account: address): bool acquires SubscriptionsGifted {
+        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
+
+        let (has_free_subscription, _index) = vector::find(&free_subscriptions.subscriptions,|s| {
+            let FreeSubscription {
+                account: account_addr,
+                duration,
+            }= *s;
+
+            account_addr == account&& duration > 0
+        });
+
+        if(has_free_subscription) { return true };
+
+        false
+    }
+
+    #[view]
+    public fun get_subscription_to_claim(account_addr: address): FreeSubscription acquires SubscriptionsGifted {
+        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
+
+        let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
+            let FreeSubscription {
+                account,
+                duration: _duration,
+            }= *s;
+
+            account == account_addr
+        });
+
+        assert!(has_free_subscription, ENOT__FREE_SUBSCRIPTION_TO_CLAIM);
+
+        *vector::borrow<FreeSubscription>(&free_subscriptions.subscriptions, index)
+    }
+
 
     fun check_admin(sender: &signer) {
         let account_addr = signer::address_of(sender);
@@ -659,6 +730,55 @@ module sshift_dao_addr::subscription_v3 {
         let prices_list = get_prices();
 
         assert!(vector::length(&prices_list) == 30, EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_if_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees_v3::set_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty());
+
+        timestamp::update_global_time_for_test_secs(804800);
+
+        buy_plan(user, 604800, vector::empty());
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
+
+        assert!(user_balance == 19998422000000, EINCORRECT_BALANCE);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1096,6 +1216,52 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
+    fun should_be_able_to_gift_again_after_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        timestamp::update_global_time_for_test_secs(704800);
+
+        let is_active = has_subscription_active(user_addr);
+
+        assert!(!is_active, ESHOULD_NOT_HAVE_SUBSCRIPTION_ACTIVE);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        is_active = has_subscription_active(user_addr);
+
+        assert!(is_active == true, ESHOULD_HAVE_SUBSCRIPTION_ACTIVE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
     fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
@@ -1282,7 +1448,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 1, location = Self)]
-    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionsGifted {
+    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionsGifted, UserSubscription {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1356,6 +1522,195 @@ module sshift_dao_addr::subscription_v3 {
         vector::push_back(&mut token_holding, token_addr_1);
 
         buy_plan(user2, 604800, token_holding);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300,
+        )
+    ]
+    #[expected_failure(abort_code = 10, location = Self)]
+    fun should_not_gift_subscription_an_account_which_has_already_one(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        create_subscription(owner, admin);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300,
+        )
+    ]
+    #[expected_failure(abort_code = 9, location = Self)]
+    fun should_not_gift_subscription_an_account_which_has_on_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, FAController {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees_v3::set_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty());
+
+        gift_subscription(admin, user_addr, 604800);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300,
+        )
+    ]
+    #[expected_failure(abort_code = 9, location = Self)]
+    fun should_not_buy_subscription_when_account_has_one_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees_v3::set_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty());
+
+        buy_plan(user, 604800, vector::empty());
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 6, location = Self)]
+    fun should_not_claim_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        timestamp::update_global_time_for_test_secs(804800);
+
+        claim_subscription(user);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_dao_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 6, location = Self)]
+    fun should_not_claim_active_free_subscription_if_already_claimed(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        create_subscription(owner, admin);
+
+        timestamp::update_global_time_for_test_secs(10000);
+
+        gift_subscription(admin, user_addr, 604800);
+
+        claim_subscription(user);
+
+        claim_subscription(user);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);

@@ -1,0 +1,105 @@
+import { toast } from '../../src/components/ui/use-toast';
+import { useWalletClient } from '@thalalabs/surf/hooks';
+import { SubscriptionABI } from '@aptos';
+import { Button } from '../../src/components/ui/button';
+import { useAppManagment } from '../../src/context/AppManagment';
+import { useEffect, useState } from 'react';
+import { useAbiClient } from '../../src/context/AbiProvider';
+import { ISubscriptionToClaim } from '@helpers';
+import { truncateAddress } from '@aptos-labs/wallet-adapter-core';
+
+export const ClaimSubscripton = () => {
+  const { client } = useWalletClient();
+  const { abi } = useAbiClient();
+  const { setHasSubscriptionToClaim, walletAddress } = useAppManagment();
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [subscriptionToClaim, setSubscriptionToClaim] =
+    useState<ISubscriptionToClaim>({
+      account: '',
+      duration: 0,
+    });
+
+  const onClaimSubscription = async () => {
+    try {
+      setIsUpdating(true);
+      const tx = await client?.useABI(SubscriptionABI).claim_subscription({
+        type_arguments: [],
+        arguments: [],
+      });
+
+      toast({
+        title: 'Claimed subscription successfully',
+        description: (
+          <a
+            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+            target="_blank"
+          >
+            {tx?.hash}
+          </a>
+        ),
+        variant: 'default',
+      });
+
+      setHasSubscriptionToClaim(false);
+    } catch (error) {
+      toast({
+        title: 'Error claiming subscription',
+        message: `${error}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  useEffect(() => {
+    void (async () => {
+      try {
+        const subscriptionToClaimResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.get_subscription_to_claim({
+            typeArguments: [],
+            functionArguments: [walletAddress as `0x${string}`],
+          });
+
+        if (subscriptionToClaimResult?.[0]) {
+          const { account, duration } =
+            subscriptionToClaimResult[0] as ISubscriptionToClaim;
+          setSubscriptionToClaim({
+            account,
+            duration: Math.ceil(duration / (24 * 60 * 60)),
+          });
+        }
+      } catch (error) {
+        toast({
+          title: 'Error fetching subscription to claim',
+          message: `${error}`,
+          variant: 'error',
+        });
+      }
+    })();
+  }, [abi, walletAddress]);
+
+  return (
+    <div className="mt-10">
+      <div>
+        <h2>You have Subscription to claim</h2>
+        <p>
+          Account: {truncateAddress(subscriptionToClaim.account)}
+          <br />
+          Duration: {subscriptionToClaim.duration}{' '}
+          {subscriptionToClaim.duration > 1 ? 'days' : 'day'}
+        </p>
+
+        <Button
+          variant="green"
+          className="w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md mt-10"
+          onClick={onClaimSubscription}
+          disabled={isUpdating}
+        >
+          Claim subscription
+        </Button>
+      </div>
+    </div>
+  );
+};

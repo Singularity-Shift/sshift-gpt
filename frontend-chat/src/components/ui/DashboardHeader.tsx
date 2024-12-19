@@ -80,6 +80,18 @@ const DashboardHeader = () => {
             <span>Dashboard</span>
           </Button>
         )}
+
+        {!isAdmin && !isCollector && !isReviewer && pathname !== '/claim' && (
+          <Button
+            onClick={() => router.push('/claim')}
+            variant="ghost"
+            size="sm"
+            className="flex items-center space-x-2 text-sm text-gray-600 hover:bg-gray-100"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Claim</span>
+          </Button>
+        )}
       </div>
       <UserLoginStatus />
     </div>
