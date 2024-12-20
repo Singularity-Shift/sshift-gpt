@@ -38,7 +38,11 @@ export const ChangeReviewer = () => {
       setIsPendingReviewer(false);
       setIsReviewer(true);
     } catch (error) {
-      toast({ title: 'Error submot', message: error, variant: 'destructive' });
+      toast({
+        title: 'Error submot',
+        description: `${error}`,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -66,7 +70,7 @@ export const ChangeReviewer = () => {
     } catch (error) {
       toast({
         title: 'Error accepting admin',
-        message: error,
+        description: `${error}`,
         variant: 'destructive',
       });
     }

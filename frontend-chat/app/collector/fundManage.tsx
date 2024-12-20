@@ -37,7 +37,7 @@ export const FundManage = () => {
       } catch (error) {
         toast({
           title: 'Error checking subscription status',
-          description: error,
+          description: `${error}`,
           variant: 'destructive',
         });
       }
@@ -60,7 +60,7 @@ export const FundManage = () => {
         } catch (error) {
           toast({
             title: 'Error fetching coins data account',
-            description: error,
+            description: `${error}`,
             variant: 'destructive',
           });
         }
@@ -102,7 +102,7 @@ export const FundManage = () => {
         } catch (error) {
           toast({
             title: 'Error fetching balance',
-            description: error,
+            description: `${error}`,
             variant: 'destructive',
           });
         }
@@ -134,7 +134,7 @@ export const FundManage = () => {
     } catch (error) {
       toast({
         title: 'Error subscribing',
-        description: error,
+        description: `${error}`,
         variant: 'destructive',
       });
     }
@@ -164,7 +164,7 @@ export const FundManage = () => {
     } catch (error) {
       toast({
         title: 'Error claiming fees',
-        description: error,
+        description: `${error}`,
         variant: 'destructive',
       });
     }

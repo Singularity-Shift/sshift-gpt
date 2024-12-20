@@ -37,7 +37,11 @@ export const ChangeAdmin = () => {
       setIsPendingAdmin(false);
       setIsAdmin(true);
     } catch (error) {
-      toast({ title: 'Error submot', message: error, variant: 'destructive' });
+      toast({
+        title: 'Error submot',
+        description: `${error}`,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -65,7 +69,7 @@ export const ChangeAdmin = () => {
     } catch (error) {
       toast({
         title: 'Error accepting admin',
-        message: error,
+        description: `${error}`,
         variant: 'destructive',
       });
     }

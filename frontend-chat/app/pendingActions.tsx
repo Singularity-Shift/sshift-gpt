@@ -1,6 +1,6 @@
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useBackend } from '../src/context/BackendProvider';
-import { IAction, MultisignAction } from '@helpers';
+import { IAction } from '@helpers';
 import { useEffect, useState } from 'react';
 import { Button } from '../src/components/ui/button';
 import {
@@ -41,7 +41,7 @@ export const PendingActions = () => {
       toast({
         title: 'Action signed successfully',
         description: 'Your action has been signed.',
-        variant: 'success',
+        variant: 'default',
       });
       setActions(actions.filter((_, i) => i !== index));
     } catch (error) {
@@ -92,7 +92,7 @@ export const PendingActions = () => {
             </a>
           </div>
         ),
-        variant: 'success',
+        variant: 'default',
       });
 
       await deleteAction(action.action, action.targetAddress);
@@ -118,7 +118,7 @@ export const PendingActions = () => {
       toast({
         title: 'Action removed successfully',
         description: `The action ${action.action} with target address ${action.targetAddress} has been removed.`,
-        variant: 'success',
+        variant: 'default',
       });
     } catch (error) {
       toast({
