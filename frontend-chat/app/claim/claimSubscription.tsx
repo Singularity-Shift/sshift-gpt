@@ -44,7 +44,7 @@ export const ClaimSubscripton = () => {
     } catch (error) {
       toast({
         title: 'Error claiming subscription',
-        message: `${error}`,
+        description: `${error}`,
         variant: 'destructive',
       });
     } finally {
@@ -73,8 +73,8 @@ export const ClaimSubscripton = () => {
       } catch (error) {
         toast({
           title: 'Error fetching subscription to claim',
-          message: `${error}`,
-          variant: 'error',
+          description: `${error}`,
+          variant: 'destructive',
         });
       }
     })();

@@ -439,7 +439,7 @@ export const AppManagementProvider = ({
     } catch (error) {
       toast({
         title: 'Error subscribing',
-        message: error,
+        description: `${error}`,
         variant: 'destructive',
       });
     }

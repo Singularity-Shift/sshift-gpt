@@ -2,7 +2,7 @@
 
 import Image from 'next/image';
 import { silkscreen } from './fonts';
-import { SshiftWallet } from '@fn-chat/components/SshigtWallet';
+import { SshiftWallet } from '../src/components/SshigtWallet';
 import { GameOfLife } from '../src/components/ui/gameOfLife';
 
 export default function Home() {

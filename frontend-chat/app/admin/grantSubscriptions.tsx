@@ -29,7 +29,7 @@ export const GrantSubscriptions = () => {
         toast({
           title: 'Error granting subscription',
           description: 'The account already has a subscription.',
-          variant: 'error',
+          variant: 'destructive',
         });
 
         setIsUpdating(false);
@@ -61,7 +61,7 @@ export const GrantSubscriptions = () => {
       toast({
         title: 'Error checking subscription status',
         description: `${error}`,
-        variant: 'error',
+        variant: 'destructive',
       });
     } finally {
       setIsUpdating(false);
