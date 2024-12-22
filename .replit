@@ -1,0 +1,17 @@
+run = ["sh", "-c", "docker-compose up -d"]
+modules = ["nodejs-20", "docker-compose"]
+
+[nix]
+channel = "stable-24_05"
+
+[[ports]]
+localPort = 3000
+externalPort = 80
+
+[[ports]]
+localPort = 3100
+externalPort = 3100
+
+[deployment]
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "docker-compose up -d"]
