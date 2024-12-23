@@ -1,5 +1,9 @@
-run = ["sh", "-c", "docker-compose up -d"]
-modules = ["nodejs-20", "docker-compose"]
+run = [
+  "sh",
+  "-c",
+  "mongod --dbpath db & redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PWD} & yarn prod",
+]
+modules = ["nodejs-20"]
 
 [nix]
 channel = "stable-24_05"
@@ -12,6 +16,14 @@ externalPort = 80
 localPort = 3100
 externalPort = 3100
 
+[[ports]]
+localPort = 6379
+externalPort = 3000
+
 [deployment]
 deploymentTarget = "cloudrun"
-run = ["sh", "-c", "docker-compose up -d"]
+run = [
+  "sh",
+  "-c",
+  "mongod --dbpath db & redis-server --save 20 1 --loglevel warning --requirepass ${REDIS_PWD} & yarn prod",
+]
