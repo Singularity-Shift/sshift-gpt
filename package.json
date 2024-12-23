@@ -6,7 +6,7 @@
     "fn-chat:dev": "nx run frontend-chat:dev",
     "fn-chat:build": "nx run frontend-chat:build",
     "fn-chat:start": "nx run frontend-chat:start",
-    "fn-chat:prod": "nx run frontend-chat:preview",
+    "fn-chat:prod": "nx run frontend-chat:start:production",
     "bn-chat:dev": "nx run backend-chat:serve:development",
     "bn-chat:build": "nx run backend-chat:build",
     "bn-chat:prod": "nx run backend-chat:serve:production",
