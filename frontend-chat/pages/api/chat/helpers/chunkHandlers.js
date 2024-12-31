@@ -50,7 +50,10 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
             
             if (typeof toolFunction === 'function') {
                 console.log(`Processing tool call: ${toolCall.function.name}`, args);
-                await checkToolsCredits(userConfig, toolCall.function.name, auth)
+                if(!userConfig?.isCollector) {
+                    await checkToolsCredits(userConfig, toolCall.function.name, auth)
+                }
+                
                 const result = await toolFunction(...Object.values(args));
                 
                 if (result.error) {
