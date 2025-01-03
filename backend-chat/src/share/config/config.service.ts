@@ -28,6 +28,9 @@ const DOTENV_SCHEMA = Joi.object({
     secret: Joi.string().required(),
     expiredTime: Joi.string().default('31d'),
   }),
+  openApi: Joi.object({
+    apiKey: Joi.string().required(),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -38,7 +41,8 @@ type DotenvSchemaKeys =
   | 'redis.host'
   | 'mongo.uri'
   | 'jwt.secret'
-  | 'jwt.expiredTime';
+  | 'jwt.expiredTime'
+  | 'openApi.apiKey';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

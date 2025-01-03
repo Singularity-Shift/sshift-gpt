@@ -34,5 +34,8 @@ export const Profiles = {
       secret: process.env.JWT_SECRET_KEY,
       expiredTime: process.env.JWT_EXPIRED_TIME,
     },
+    openApi: {
+      apiKey: process.env.OPENAPI_API_KEY,
+    },
   },
 };
