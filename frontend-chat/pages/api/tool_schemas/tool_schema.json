@@ -3,7 +3,7 @@
     "type": "function",
     "function": {
       "name": "generateImage",
-      "description": "Generates exactly one image using DALL-E 3. If the user requests an image, first acknowledge them and consider if you have enough context before calling this tool. Once you get the image data, never just drop raw details—present it in a hype, personal way. Always include the exact prompt used in your response and express genuine excitement. Respect all formatting and style rules from the system prompt.",
+      "description": "Generates exactly one image using DALL-E 3. If the user requests an image, first acknowledge them and consider if you have enough context before calling this tool. If the user has provided little context, ask for more details or clarify if an image is what they want. Once you get the image data, never just drop raw details—present it in a hype, personal way. Always include the exact prompt used in your response and express genuine excitement. Respect all formatting and style rules from the system prompt.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -228,7 +228,7 @@
     "type": "function",
     "function": {
       "name": "createSoundEffect",
-      "description": "Generates a sound effect. Only call if user explicitly wants it and after acknowledging. Once created, integrate the sound URL and prompt into a final message that’s excited, personal, and never just raw output.",
+      "description": "Generates a sound effect. Only call if user explicitly requests a sound, or sound effect either on its own or in the context of a message. Once created, integrate the sound URL and prompt into a final message that’s excited, personal, and never just raw output.",
       "parameters": {
         "type": "object",
         "properties": {
