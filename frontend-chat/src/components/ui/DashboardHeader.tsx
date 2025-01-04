@@ -19,8 +19,8 @@ const DashboardHeader = () => {
   const router = useRouter(); // Import the useRouter hook from Next.js
   const pathname = usePathname();
   return (
-    <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
-      <div className="flex items-center space-x-4">
+    <div className="bg-white bg-opacity-90 shadow-sm py-3 md:py-4 px-2 md:px-4 flex justify-between items-center relative z-10">
+      <div className="flex items-center space-x-2 md:space-x-4">
         {(isSubscriptionActive || isCollector) && (
           <Button
             onClick={() => router.push('/chat')}

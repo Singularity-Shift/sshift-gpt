@@ -8,10 +8,10 @@ export const UserProfileContainer = () => {
   const { isSubscriptionActive, expirationDate, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } = useAppManagment();
 
   return (
-    <div className="bg-white rounded-xl shadow-md p-6">
-      <h2 className="text-2xl font-bold mb-6">User Profile</h2>
+    <div className="bg-white rounded-xl shadow-md p-4 md:p-6">
+      <h2 className="text-xl md:text-2xl font-bold mb-4 md:mb-6">User Profile</h2>
 
-      <div className="space-y-4">
+      <div className="space-y-3 md:space-y-4">
         <div className="flex justify-between items-center">
           <span className="text-sm text-gray-600">Subscription Status:</span>
           <span
@@ -49,7 +49,7 @@ export const UserProfileContainer = () => {
           <Input
             type="number"
             value={moveBotsOwned}
-            className="w-16 text-right bg-gray-100"
+            className="w-20 md:w-24 text-right bg-gray-100"
             readOnly
           />
         </div>
@@ -69,7 +69,7 @@ export const UserProfileContainer = () => {
           <Input
             type="number"
             value={qribbleNFTsOwned}
-            className="w-16 text-right bg-gray-100"
+            className="w-20 md:w-24 text-right bg-gray-100"
             readOnly
           />
         </div>
@@ -89,7 +89,7 @@ export const UserProfileContainer = () => {
           <Input
             type="number"
             value={sshiftRecordsOwned}
-            className="w-16 text-right bg-gray-100"
+            className="w-20 md:w-24 text-right bg-gray-100"
             readOnly
           />
         </div>

@@ -28,17 +28,21 @@ const AGIThoughtBackground: React.FC = () => {
 
     const resizeCanvas = () => {
       if (canvas) {
-        canvas.width = window.innerWidth;
-        canvas.height = window.innerHeight;
+        canvas.width = canvas.clientWidth;
+        canvas.height = canvas.clientHeight;
         // Adjust particle count based on screen resolution
         const newParticleCount = Math.floor(
           (canvas.width * canvas.height) / 10000
         );
-        setParticleCount(Math.max(150, newParticleCount)); // Ensure a minimum of 150 particles
+        setParticleCount(Math.max(150, newParticleCount));
       }
     };
 
     window.addEventListener('resize', resizeCanvas);
+    window.addEventListener('orientationchange', () => {
+      // Add small delay to ensure new dimensions are available
+      setTimeout(resizeCanvas, 100);
+    });
     resizeCanvas();
 
     const particles: Particle[] = [];
@@ -115,6 +119,9 @@ const AGIThoughtBackground: React.FC = () => {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
+      window.removeEventListener('orientationchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
       cancelAnimationFrame(animationFrameId);
     };
   }, [particleCount]);
@@ -122,7 +129,7 @@ const AGIThoughtBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-[100vw] h-[100vh] -z-10"
+      className="fixed inset-0 w-full h-full -z-10"
     />
   );
 };
