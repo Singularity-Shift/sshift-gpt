@@ -13,9 +13,12 @@ import {
 } from '../../src/lib/utils';
 import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
-import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
+import { SubscriptionContainer } from '../../src/components/ui/SubscriptionContainer';
+import { UserProfileContainer } from '../../src/components/ui/UserProfileContainer';
+import { SubscriptionUpgradeContainer } from '../../src/components/ui/SubscriptionUpgradeContainer';
+import UserDashboardTitle from '../../src/components/ui/UserDashboardTitle';
 
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
@@ -60,16 +63,29 @@ export default function SubscriptionPage() {
 
       {/* Main Content */}
       <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
-        <DashboardDisplayArea
-          days={days}
-          setDays={setDays}
-          price={price}
-          dates={dates}
-          discount={discount}
-          moveBotsOwned={moveBotsOwned}
-          qribbleNFTsOwned={qribbleNFTsOwned}
-          sshiftRecordsOwned={sshiftRecordsOwned}
-        />
+        <div className="flex flex-col items-center">
+          <UserDashboardTitle />
+          <div className="flex space-x-8 mb-8">
+            {/* Subscription Container */}
+            <SubscriptionContainer
+              days={days}
+              setDays={setDays}
+              price={price}
+              dates={dates}
+              discount={discount}
+            />
+
+            {/* User Profile Container */}
+            <UserProfileContainer
+              moveBotsOwned={moveBotsOwned}
+              qribbleNFTsOwned={qribbleNFTsOwned}
+              sshiftRecordsOwned={sshiftRecordsOwned}
+            />
+
+            {/* Subscription Upgrade Container */}
+            <SubscriptionUpgradeContainer />
+          </div>
+        </div>
 
         <Button
           variant="default"
