@@ -13,12 +13,9 @@ import {
 } from '../../src/lib/utils';
 import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
+import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
-import { SubscriptionContainer } from '../../src/components/ui/SubscriptionContainer';
-import { UserProfileContainer } from '../../src/components/ui/UserProfileContainer';
-import { SubscriptionUpgradeContainer } from '../../src/components/ui/SubscriptionUpgradeContainer';
-import UserDashboardTitle from '../../src/components/ui/UserDashboardTitle';
 
 const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
 const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
@@ -62,30 +59,17 @@ export default function SubscriptionPage() {
       <DashboardHeader />
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-start px-4 py-8 relative z-10 w-full max-w-[1400px] mx-auto overflow-y-auto">
-        <div className="flex flex-col items-center w-full">
-          <UserDashboardTitle />
-          <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0 mb-8 w-full items-center lg:items-stretch">
-            {/* Subscription Container */}
-            <SubscriptionContainer
-              days={days}
-              setDays={setDays}
-              price={price}
-              dates={dates}
-              discount={discount}
-            />
-
-            {/* User Profile Container */}
-            <UserProfileContainer
-              moveBotsOwned={moveBotsOwned}
-              qribbleNFTsOwned={qribbleNFTsOwned}
-              sshiftRecordsOwned={sshiftRecordsOwned}
-            />
-
-            {/* Subscription Upgrade Container */}
-            <SubscriptionUpgradeContainer />
-          </div>
-        </div>
+      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
+        <DashboardDisplayArea
+          days={days}
+          setDays={setDays}
+          price={price}
+          dates={dates}
+          discount={discount}
+          moveBotsOwned={moveBotsOwned}
+          qribbleNFTsOwned={qribbleNFTsOwned}
+          sshiftRecordsOwned={sshiftRecordsOwned}
+        />
 
         <Button
           variant="default"
@@ -109,9 +93,6 @@ export default function SubscriptionPage() {
             border
             border-gray-700
             relative z-10
-            mt-4
-            w-full
-            max-w-[400px]
           `}
           onClick={handleEnterSShiftGPT}
         >
