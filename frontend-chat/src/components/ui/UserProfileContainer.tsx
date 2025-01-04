@@ -3,6 +3,9 @@ import { Input } from './input';
 import Link from 'next/link';
 import config from '../../../config/dashboard_config.json';
 import { useAppManagment } from '../../../src/context/AppManagment';
+import { Button } from './button';
+import { useRouter } from 'next/navigation';
+import { silkscreen } from '../../../app/fonts';
 
 interface UserProfileContainerProps {
   moveBotsOwned: number;
@@ -16,12 +19,17 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
   sshiftRecordsOwned,
 }) => {
   const { isSubscriptionActive, expirationDate } = useAppManagment();
+  const router = useRouter();
+
+  const handleEnterSShiftGPT = () => {
+    router.push('/chat');
+  };
 
   return (
-    <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg flex flex-col border border-gray-300">
+    <div className="w-full max-w-[400px] h-[600px] bg-white bg-opacity-90 p-6 lg:p-10 rounded-xl shadow-lg flex flex-col border border-gray-300">
       <div>
         <div className="text-center">
-          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          <h2 className="mt-6 text-2xl lg:text-3xl font-extrabold text-gray-900">
             User Profile
           </h2>
           <p className="mt-2 text-sm text-gray-600">&nbsp;</p>
@@ -54,7 +62,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
         </div>
       </div>
 
-      <div className="mt-16 space-y-4">
+      <div className="flex-grow mt-16 space-y-4">
         <div className="flex justify-between items-center">
           <div>
             <span className="text-sm font-medium text-gray-700">
@@ -119,6 +127,37 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
           />
         </div>
       </div>
+
+      <Button
+        variant="default"
+        className={`
+          ${silkscreen.className}
+          py-2
+          px-3
+          text-sm
+          font-bold
+          text-black
+          bg-green-400
+          hover:bg-green-500
+          focus:outline-none
+          focus:ring-2
+          focus:ring-offset-2
+          focus:ring-green-400
+          transform
+          transition-transform
+          hover:scale-105
+          rounded-xl
+          shadow-lg
+          border
+          border-gray-700
+          w-full
+          whitespace-nowrap
+          mt-auto
+        `}
+        onClick={handleEnterSShiftGPT}
+      >
+        ENTER SSHIFT GPT
+      </Button>
     </div>
   );
 };
