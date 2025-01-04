@@ -1,48 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
+import { Button } from './button';
 import { Slider } from './slider';
 import { useAppManagment } from '@fn-chat/context/AppManagment';
-import { calculatePrice, calculateDates, calculateMaxDiscount } from '../../lib/utils';
 
-export const SubscriptionContainer = () => {
-  const [days, setDays] = useState(15);
-  const [price, setPrice] = useState(0);
-  const [dates, setDates] = useState({ startDate: '', expirationDate: '' });
-  const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned, isSubscriptionActive } = useAppManagment();
+interface SubscriptionContainerProps {
+  days: number;
+  setDays: (days: number) => void;
+  price: number;
+  dates: {
+    startDate: string;
+    expirationDate: string;
+  };
+  discount: number;
+}
 
-  useEffect(() => {
-    const priceWithoutDiscount = calculatePrice(days);
-    const maxDiscount = calculateMaxDiscount(
-      moveBotsOwned,
-      qribbleNFTsOwned,
-      sshiftRecordsOwned,
-      days
-    );
-
-    const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
-    setPrice(parseFloat(finalPrice.toFixed(2)));
-    setDates(calculateDates(days));
-  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
+export function SubscriptionContainer({
+  days,
+  setDays,
+  price,
+  dates,
+  discount,
+}: SubscriptionContainerProps) {
+  const { onSubscribe, isSubscriptionActive } = useAppManagment();
 
   return (
-    <div className="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-md p-4 md:p-6 lg:p-8">
-      <div className="space-y-4 md:space-y-6">
-        {/* Header Section */}
-        <div className="text-center md:text-left">
-          <h2 className="text-xl md:text-2xl lg:text-3xl font-bold">
-            SShift GPT Subscription
-          </h2>
-          <p className="text-sm md:text-base text-gray-600 mt-2">
-            Choose your subscription length
-          </p>
-        </div>
-
-        {/* Slider Section */}
-        <div className="mt-6 md:mt-8">
-          <div className="flex justify-between text-xs md:text-sm text-gray-600 mb-2">
-            <span>1 day</span>
-            <span>30 days</span>
+    <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
+      <div className="text-center">
+        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+          SShift GPT Subscription
+        </h2>
+        <p className="mt-2 text-sm text-gray-600">
+          Choose your subscription length
+        </p>
+      </div>
+      <div className="mt-8 space-y-6">
+        <div className="space-y-4">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-700">1 day</span>
+            <span className="text-sm font-medium text-gray-700">30 days</span>
           </div>
-          
           <Slider
             min={1}
             max={30}
@@ -51,52 +47,39 @@ export const SubscriptionContainer = () => {
             onValueChange={(value) => setDays(value[0])}
             className="w-full"
           />
-
-          {/* Date Information */}
-          <div className="mt-4 md:mt-6 text-center">
-            <div className="text-base md:text-lg font-semibold">
-              {days} days
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 text-sm md:text-base text-gray-600">
-              <div className="sm:text-right sm:pr-2">
-                Starts: <span className="font-medium">{dates.startDate}</span>
-              </div>
-              <div className="sm:text-left sm:pl-2">
-                Expires: <span className="font-medium">{dates.expirationDate}</span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Price Section */}
-        <div className="bg-gray-50 rounded-lg p-4 md:p-6 mt-6 md:mt-8">
           <div className="text-center space-y-2">
-            <div className="text-sm md:text-base text-gray-600">
-              Total Price
-            </div>
-            <div className="text-2xl md:text-3xl lg:text-4xl font-bold">
-              {price} USDT
-            </div>
-            <div className="text-xs md:text-sm text-green-600">
-              Discount Applied: 3.33%
-            </div>
+            <span className="text-lg font-semibold text-gray-900">
+              {days} day{days !== 1 ? 's' : ''}
+            </span>
+            <p className="text-sm text-gray-600">Starts: {dates.startDate}</p>
+            <p className="text-sm text-gray-600">
+              Expires: {dates.expirationDate}
+            </p>
           </div>
         </div>
-
-        {/* Action Button */}
-        <button
-          className="w-full py-3 px-4 bg-indigo-100 text-indigo-700 rounded-lg 
-                     text-sm md:text-base font-medium transition-colors duration-200
-                     hover:bg-indigo-200 focus:outline-none focus:ring-2 
-                     focus:ring-indigo-500 focus:ring-offset-2 disabled:opacity-50
-                     disabled:cursor-not-allowed"
+        <div className="bg-gray-100 px-4 py-5 sm:p-6 rounded-md">
+          <div className="text-center">
+            <p className="text-sm text-gray-600">Total Price</p>
+            <p className="mt-1 text-4xl font-extrabold text-gray-900">
+              {price} USDT
+            </p>
+            {discount > 0 && (
+              <p className="text-sm text-green-600">
+                Discount Applied: {discount.toFixed(2)}%
+              </p>
+            )}
+          </div>
+        </div>
+        <Button
           disabled={isSubscriptionActive}
+          onClick={() => onSubscribe(days)}
+          className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          {isSubscriptionActive 
-            ? "Currently with subscription active"
-            : "Purchase Subscription"}
-        </button>
+          {isSubscriptionActive
+            ? 'Currently with subscription active'
+            : 'Subscribe'}
+        </Button>
       </div>
     </div>
   );
-};
+}
