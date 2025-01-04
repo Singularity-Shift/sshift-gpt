@@ -31,6 +31,24 @@ const DOTENV_SCHEMA = Joi.object({
   openApi: Joi.object({
     apiKey: Joi.string().required(),
   }),
+  storage: Joi.object({
+    type: Joi.string().default('local'),
+    project_id: Joi.string().required(),
+    private_key_id: Joi.string().required(),
+    private_key: Joi.string().required(),
+    client_email: Joi.string().required(),
+    client_id: Joi.string().required(),
+    universe_domain: Joi.string().required(),
+  }),
+  eleven: Joi.object({
+    url: Joi.string().required(),
+    apiKey: Joi.string().required(),
+  }),
+  indexer: Joi.object({
+    url: Joi.string().required(),
+    apiKey: Joi.string().required(),
+    userId: Joi.string().required(),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -42,7 +60,19 @@ type DotenvSchemaKeys =
   | 'mongo.uri'
   | 'jwt.secret'
   | 'jwt.expiredTime'
-  | 'openApi.apiKey';
+  | 'openApi.apiKey'
+  | 'storage.type'
+  | 'storage.project_id'
+  | 'storage.private_key_id'
+  | 'storage.private_key'
+  | 'storage.client_email'
+  | 'storage.client_id'
+  | 'storage.universe_domain'
+  | 'eleven.url'
+  | 'eleven.apiKey'
+  | 'indexer.url'
+  | 'indexer.apiKey'
+  | 'indexer.userId';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

@@ -14,8 +14,8 @@ import { IUserAuth, IUserConfig } from '@helpers';
 import { AiService } from './ai.service';
 import { ChatMessagesDto } from '@fn-backend/chat/dto/chat-messages.dto';
 import { systemPrompt } from './ai.prompt';
-import { OpenAIProvider } from '@fn-backend/gpt/gpt.module';
 import { Response } from 'express';
+import OpenAI from 'openai';
 
 
 @Controller('ai')
@@ -23,7 +23,7 @@ import { Response } from 'express';
 export class AiController {
   logger = new Logger(AiController.name);
 
-  constructor(private readonly aiService: AiService,private readonly openApi: OpenAIProvider) {}
+  constructor(private readonly aiService: AiService,private readonly gpt: OpenAI) {}
   @Post()
   @ApiOperation({ summary: 'Generate AI response' })
   async generateAiResponse(@Body() aiDto: AiDto, @UserAuth() user: IUserAuth, @Res() res: Response) {
@@ -91,7 +91,7 @@ export class AiController {
     ];
 
     try {
-        const stream = await this.openApi.chat.completions.create({
+        const stream = await this.gpt.chat.completions.create({
             model: model || 'gpt-4o-mini',
             messages: messagesWithSystemPrompt,
             max_tokens: 8192,
@@ -142,7 +142,7 @@ export class AiController {
                 messagesWithSystemPrompt.push(...toolResults);
 
                 // Create continuation with the updated message history
-                const continuationResponse = await openai.chat.completions.create({
+                const continuationResponse = await this.gpt.chat.completions.create({
                     model: model || 'gpt-4o-mini',
                     messages: messagesWithSystemPrompt,
                     max_tokens: 1000,

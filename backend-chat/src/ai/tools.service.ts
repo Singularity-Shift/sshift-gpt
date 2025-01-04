@@ -2,11 +2,17 @@ import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '@google-cloud/storage';
 import { Response } from 'express';
+import { ConfigService } from '../share/config/config.service';
+import { ElevenLabsService } from './elevenlabs.service';
 
 @Injectable()
 export class ToolsService {
   private logger = new Logger(ToolsService.name);
-  constructor() {}
+  constructor(
+    private elevenLabsService: ElevenLabsService,
+    private configService: ConfigService,
+    private storage: Storage
+  ) {}
 
   async createSoundEffect(
     text: string,
@@ -14,16 +20,14 @@ export class ToolsService {
     prompt_influence: number,
     res: Response
   ) {
-    console.log('Generating sound effect with prompt:', text);
-
-    // Create ElevenLabs client instance
-    const elevenLabs = createElevenLabsClient(process.env.ELVEN_API_KEY);
+    this.logger.log('Generating sound effect with prompt:', text);
 
     // Generate sound effect
-    const response = await elevenLabs.generateSoundEffect(text, {
+    const response = await this.elevenLabsService.generateSoundEffect(
+      text,
       duration_seconds,
-      prompt_influence,
-    });
+      prompt_influence
+    );
 
     // Get the audio data as an ArrayBuffer
     const audioBuffer = await response.arrayBuffer();
@@ -37,26 +41,7 @@ export class ToolsService {
     const filename = `${sanitizedText}-${uuidv4()}.mp3`;
     const bucketName = 'sshift-gpt-bucket';
 
-    const credentialOptions: any = {
-      type: process.env.TYPE,
-      project_id: process.env.PROJECT_ID,
-      private_key_id: process.env.PRIVATE_KEY_ID,
-      private_key: process.env.PRIVATE_KEY,
-      client_email: process.env.CLIENT_EMAIL,
-      client_id: process.env.CLIENT_ID,
-      auth_uri: process.env.AUTH_URI,
-      token_uri: process.env.TOKEN_URI,
-      auth_provider_x509_cert_url: process.env.AUTH_PROVIDER_X509_CERT_URL,
-      client_x509_cert_url: process.env.CLIENT_X509_CERT_URL,
-      universe_domain: process.env.UNIVERSE_DOMAIN,
-    };
-
-    const storage = new Storage({
-      projectId: 'sshiftdao-ai',
-      credentials: credentialOptions,
-    });
-
-    const bucket = storage.bucket(bucketName);
+    const bucket = this.storage.bucket(bucketName);
     const blob = bucket.file(filename);
 
     // Set up the upload with proper metadata

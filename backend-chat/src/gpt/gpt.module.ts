@@ -3,9 +3,7 @@ import { ConfigService } from '../share/config/config.service';
 import { OpenAI } from 'openai';
 import { ConfigModule } from '../share/config/config.module';
 
-export type OpenAIProvider = OpenAI;
-
-export const openApiProvider = {
+export const gptProvider = {
   provide: OpenAI,
   inject: [ConfigService],
   useFactory: (configService: ConfigService) => {
@@ -16,7 +14,7 @@ export const openApiProvider = {
 
 @Module({
   imports: [ConfigModule],
-  providers: [openApiProvider],
+  providers: [gptProvider],
   exports: [OpenAI],
 })
-export class OpenAIModule {}
+export class GPTModule {}
