@@ -1,104 +1,58 @@
 'use client';
 
-import * as React from 'react';
-import { Button } from '../../src/components/ui/button';
+import React from 'react';
 import { useRouter } from 'next/navigation';
-import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
-import {
-  calculatePrice,
-  calculateDates,
-  calculateDiscount,
-  calculateMaxDiscount,
-} from '../../src/lib/utils';
-import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
-import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
+import { SubscriptionContainer } from '../../src/components/ui/SubscriptionContainer';
+import { UserProfileContainer } from '../../src/components/ui/UserProfileContainer';
+import { SubscriptionUpgradeContainer } from '../../src/components/ui/SubscriptionUpgradeContainer';
+import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';
 
-const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
-const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
-const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
-
-export default function SubscriptionPage() {
-  const [days, setDays] = React.useState(15);
-  const [price, setPrice] = React.useState(0);
-  const [dates, setDates] = React.useState({
-    startDate: '',
-    expirationDate: '',
-  });
-
+export default function DashboardPage() {
   const router = useRouter();
-  const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
-    useAppManagment();
-  const [discount, setDiscount] = useState(0);
-
-  useEffect(() => {
-    const priceWithoutDiscount = calculatePrice(days);
-    const maxDiscount = calculateMaxDiscount(
-      moveBotsOwned,
-      qribbleNFTsOwned,
-      sshiftRecordsOwned,
-      days
-    );
-    setDiscount(maxDiscount);
-
-    const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
-    setPrice(parseFloat(finalPrice.toFixed(2)));
-    setDates(calculateDates(days));
-  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
-
-  const handleEnterSShiftGPT = () => {
-    router.push('/chat');
-  };
 
   return (
     <div className="min-h-screen flex flex-col relative">
       <AGIThoughtBackground />
       <DashboardHeader />
 
-      {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
-        <DashboardDisplayArea
-          days={days}
-          setDays={setDays}
-          price={price}
-          dates={dates}
-          discount={discount}
-          moveBotsOwned={moveBotsOwned}
-          qribbleNFTsOwned={qribbleNFTsOwned}
-          sshiftRecordsOwned={sshiftRecordsOwned}
-        />
+      <main className="flex-grow flex flex-col items-center">
+        {/* Dashboard Title */}
+        <div className="bg-white rounded-xl shadow-md px-8 py-4 mb-6">
+          <h1 className={`${silkscreen.className} text-2xl`}>
+            USER DASHBOARD
+          </h1>
+        </div>
 
+        {/* Cards Container - Grid for desktop, Stack for mobile */}
+        <div className="w-full max-w-7xl px-4 grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+          <SubscriptionContainer />
+          <UserProfileContainer />
+          <SubscriptionUpgradeContainer />
+        </div>
+
+        {/* Enter Button */}
         <Button
-          variant="default"
+          onClick={() => router.push('/chat')}
           className={`
             ${silkscreen.className}
-            py-4 px-6
-            text-lg
-            font-bold
+            px-8
+            py-2
             text-black
             bg-green-400
             hover:bg-green-500
-            focus:outline-none
-            focus:ring-2
-            focus:ring-offset-2
-            focus:ring-green-400
-            transform
-            transition-transform
-            hover:scale-105
-            rounded-xl
-            shadow-lg
-            border
-            border-gray-700
-            relative z-10
+            rounded-full
+            font-medium
+            transition-colors
+            shadow-md
           `}
-          onClick={handleEnterSShiftGPT}
         >
           Enter SShift GPT
         </Button>
-      </div>
+      </main>
     </div>
   );
 }
