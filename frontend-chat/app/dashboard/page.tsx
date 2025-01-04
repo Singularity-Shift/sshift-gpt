@@ -62,10 +62,10 @@ export default function SubscriptionPage() {
       <DashboardHeader />
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
-        <div className="flex flex-col items-center">
+      <div className="flex-grow flex flex-col items-center justify-start px-4 py-8 relative z-10 w-full max-w-[1400px] mx-auto overflow-y-auto">
+        <div className="flex flex-col items-center w-full">
           <UserDashboardTitle />
-          <div className="flex space-x-8 mb-8">
+          <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0 mb-8 w-full items-center lg:items-stretch">
             {/* Subscription Container */}
             <SubscriptionContainer
               days={days}
@@ -109,6 +109,9 @@ export default function SubscriptionPage() {
             border
             border-gray-700
             relative z-10
+            mt-4
+            w-full
+            max-w-[400px]
           `}
           onClick={handleEnterSShiftGPT}
         >

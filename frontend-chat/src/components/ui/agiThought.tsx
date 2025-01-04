@@ -19,9 +19,10 @@ const AGIThoughtBackground: React.FC = () => {
   const rafRef = useRef<number>();
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
-  // Memoize particle count calculation
+  // Memoize particle count calculation based on screen size
   const particleCount = useMemo(() => {
-    return Math.max(150, Math.floor((dimensions.width * dimensions.height) / 10000));
+    const baseCount = Math.max(50, Math.floor((dimensions.width * dimensions.height) / 15000));
+    return Math.min(baseCount, 200); // Cap at 200 particles for performance
   }, [dimensions]);
 
   // Optimized particle creation
@@ -43,21 +44,32 @@ const AGIThoughtBackground: React.FC = () => {
     particlesRef.current = particles;
   }, [particleCount]);
 
-  // Optimized resize handler
+  // Enhanced resize handler with immediate update
   const handleResize = useCallback(() => {
     if (!canvasRef.current) return;
     
-    const { clientWidth, clientHeight } = document.documentElement;
-    canvasRef.current.width = clientWidth;
-    canvasRef.current.height = clientHeight;
-    setDimensions({ width: clientWidth, height: clientHeight });
-    createParticles(clientWidth, clientHeight);
+    const updateSize = () => {
+      const { innerWidth, innerHeight } = window;
+      canvasRef.current!.width = innerWidth;
+      canvasRef.current!.height = innerHeight;
+      setDimensions({ width: innerWidth, height: innerHeight });
+      createParticles(innerWidth, innerHeight);
+    };
+
+    // Update immediately
+    updateSize();
+
+    // Also handle orientation changes on mobile
+    if (window.screen?.orientation) {
+      window.screen.orientation.addEventListener('change', updateSize);
+      return () => window.screen.orientation.removeEventListener('change', updateSize);
+    }
   }, [createParticles]);
 
   // Optimized drawing function
   const drawParticles = useCallback((time: number) => {
     const canvas = canvasRef.current;
-    const ctx = canvas?.getContext('2d');
+    const ctx = canvas?.getContext('2d', { alpha: false });
     if (!canvas || !ctx) return;
 
     ctx.fillStyle = '#f3f4f6';
@@ -90,8 +102,8 @@ const AGIThoughtBackground: React.FC = () => {
       for (let j = i + 1; j < particles.length; j++) {
         const dx = particle.x - particles[j].x;
         const dy = particle.y - particles[j].y;
-        const distance = dx * dx + dy * dy; // Optimized distance calculation
-        if (distance < 10000) { // Square of 100
+        const distance = dx * dx + dy * dy;
+        if (distance < 10000) {
           connections.push([particle.x, particle.y, j]);
         }
       }
@@ -112,7 +124,7 @@ const AGIThoughtBackground: React.FC = () => {
     rafRef.current = requestAnimationFrame(drawParticles);
   }, []);
 
-  // Setup effect
+  // Setup effect with enhanced cleanup
   useEffect(() => {
     handleResize();
     drawParticles(0);
@@ -120,8 +132,20 @@ const AGIThoughtBackground: React.FC = () => {
     const debouncedResize = debounce(handleResize, 250);
     window.addEventListener('resize', debouncedResize);
 
+    // Handle visibility change to pause/resume animation
+    const handleVisibilityChange = () => {
+      if (document.hidden && rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      } else {
+        rafRef.current = requestAnimationFrame(drawParticles);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
     return () => {
       window.removeEventListener('resize', debouncedResize);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
       if (rafRef.current) {
         cancelAnimationFrame(rafRef.current);
       }
@@ -131,8 +155,15 @@ const AGIThoughtBackground: React.FC = () => {
   return (
     <canvas
       ref={canvasRef}
-      className="fixed inset-0 w-[100vw] h-[100vh] -z-10"
-      style={{ touchAction: 'none' }}
+      className="fixed inset-0 w-full h-full -z-10"
+      style={{ 
+        touchAction: 'none',
+        width: '100vw',
+        height: '100vh',
+        position: 'fixed',
+        top: 0,
+        left: 0
+      }}
     />
   );
 };
