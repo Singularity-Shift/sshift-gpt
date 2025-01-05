@@ -2,19 +2,19 @@ export async function fetchWithHandling(url, options) {
     // Define timeouts for different types of requests
     const getTimeout = (url) => {
         if (url.includes('/generateImage') || url.includes('/createSoundEffect')) {
-            return 30000; // 30 seconds for media generation
+            return 60000; // 60 seconds for media generation
         }
         if (url.includes('/searchWeb')) {
-            return 45000; // 45 seconds for web searches (increased from 20s)
+            return 60000; // 60 seconds for web searches
         }
         if (url.includes('/wikiSearch')) {
-            return 15000; // 15 seconds for wiki searches
+            return 30000; // 30 seconds for wiki searches
         }
         if (url.includes('/getCryptoInfoFromCMC') || 
             url.includes('/getStockInfo') ||
             url.includes('/searchNftCollection') || 
             url.includes('/searchTrendingNFT')) {
-            return 15000; // 15 seconds for financial and NFT data
+            return 30000; // 30 seconds for financial and NFT data
         }
         return 10000; // 10 seconds default timeout
     };
