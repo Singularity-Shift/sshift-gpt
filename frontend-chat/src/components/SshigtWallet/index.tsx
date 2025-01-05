@@ -98,10 +98,10 @@ export const SshiftWalletDisconnect = () => {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2">
-          <span className="hidden md:inline">
+          <span className="hidden min-[800px]:inline">
             {account?.ansName || truncateAddress(walletAddress) || 'Unknown'}
           </span>
-          <Wallet className="h-4 w-4 md:hidden" />
+          <Wallet className="h-4 w-4 min-[800px]:hidden" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[200px]">

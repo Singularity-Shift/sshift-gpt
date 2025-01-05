@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './select';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
 import UserLoginStatus from './UserLoginStatus';
 
 interface ChatHeaderProps {
@@ -26,28 +26,28 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   currentChatModel,
 }) => {
   return (
-    <div className="flex items-center justify-between p-2 md:p-4 border-b border-border h-[60px] md:h-[73px] w-full">
-      <div className="flex items-center gap-2 md:gap-4">
+    <div className="flex items-center justify-between p-2 min-[1010px]:p-4 border-b border-border h-[60px] min-[1010px]:h-[73px] w-full">
+      <div className="flex items-center gap-2 min-[1010px]:gap-4">
         <Button
           onClick={onNavigateToDashboard}
           variant="ghost"
-          size="icon-sm"
-          className="md:hidden"
-          title="Back to Dashboard"
+          size="sm"
+          className="min-[1010px]:hidden flex items-center gap-1.5 text-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
+          <span className="text-sm font-medium">Dash</span>
         </Button>
         <Button
           onClick={onNavigateToDashboard}
           variant="ghost"
           size="sm"
-          className="hidden md:flex items-center space-x-2 text-gray-800 font-semibold"
+          className="hidden min-[1010px]:flex items-center space-x-2 text-gray-800 font-semibold"
         >
           <ArrowLeft className="h-4 w-4" />
           <span>Dashboard</span>
         </Button>
         <Select value={currentChatModel || selectedModel} onValueChange={onModelChange}>
-          <SelectTrigger className="w-[130px] md:w-[180px]">
+          <SelectTrigger className="w-[130px] min-[1010px]:w-[180px]">
             <SelectValue placeholder="Select model" />
           </SelectTrigger>
           <SelectContent className="bg-white">
@@ -58,17 +58,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <Button 
           onClick={onNewChat} 
           variant="outline"
-          size="icon-sm"
-          className="md:hidden"
-          title="New Chat"
-        >
-          <Plus className="h-4 w-4" />
-        </Button>
-        <Button 
-          onClick={onNewChat} 
-          variant="outline"
-          size="sm"
-          className="hidden md:inline-flex"
+          className="h-9 px-4 whitespace-nowrap"
         >
           New Chat
         </Button>
