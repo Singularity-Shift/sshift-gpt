@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '../share/config/config.service';
 import { firstValueFrom } from 'rxjs';
 
 @Injectable()
 export class ElevenLabsService {
+  private logger = new Logger(ElevenLabsService.name);
   constructor(
     private readonly httpService: HttpService,
     private readonly configService: ConfigService
@@ -28,19 +29,20 @@ export class ElevenLabsService {
         this.httpService.post(
           url,
           {
-            prompt: text,
+            text,
             duration_seconds,
             prompt_influence,
           },
           {
             headers,
+            responseType: 'arraybuffer',
           }
         )
       );
 
       return response.data;
     } catch (error) {
-      console.error('ElevenLabs API error', error);
+      this.logger.error('ElevenLabs API error', error.response?.data);
       throw error;
     }
   }

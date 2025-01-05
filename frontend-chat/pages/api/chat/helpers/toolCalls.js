@@ -1,3 +1,4 @@
+import backend from '../../../../src/services/backend';
 import { fetchWithHandling } from '../utils/fetchWithHandling.js';
 
 const API_BACKEND_URL = process.env.API_BACKEND_URL;
@@ -6,18 +7,21 @@ export async function generateImage(prompt, size, style, auth) {
     try {
         console.log('Generating image with params:', { prompt, size, style });
         
-        const result = await fetchWithHandling(`${API_BACKEND_URL}/tools/generate-image`, {
-            method: 'POST',
+        const result = await backend.post(`${API_BACKEND_URL}/tools/generate-image`, {
+            prompt,
+            size,
+            style,
+        }, {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
-            body: JSON.stringify({ prompt, size, style }),
+            timeout: 60000
         });
 
-        if (!result.url) {
+        if (!result.data.url) {
             throw new Error('No image URL returned from generation');
         }
 
         return {
-            url: result.url,
+            url: result.data.url,
             prompt: result.prompt || prompt
         };
     } catch (error) {
@@ -169,18 +173,20 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     try {
         console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
         
-        const result = await fetchWithHandling(`${API_BACKEND_URL}/tools/create-sound-effect`, {
-            method: 'POST',
+        const result = await backend.post(`${API_BACKEND_URL}/tools/create-sound-effect`, {
+            text, duration_seconds, prompt_influence 
+        },
+        {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
-            body: JSON.stringify({ text, duration_seconds, prompt_influence }),
+            timeout: 60000
         });
 
-        if (!result.url) {
+        if (!result.data.url) {
             throw new Error('No sound effect URL returned from generation');
         }
 
         return {
-            content: `[Sound Effect: ${text}](${result.url})`,
+            content: `[Sound Effect: ${text}](${result.data.url})`,
             duration_seconds,
             text
         };
@@ -195,13 +201,15 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
 
 export async function fetchUserNFTCollections(auth) {
     try {
-        return await fetchWithHandling(`${API_BACKEND_URL}/tools/fetchUserNFTCollections`, {
-            method: 'POST',
+        const response = await backend.post(`${API_BACKEND_URL}/tools/fetch-user-nft-collections`, {}, {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 
-            }
+            },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in fetchUserNFTCollections:', error);
         return {

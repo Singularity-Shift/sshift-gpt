@@ -218,3 +218,26 @@ export interface ISubscriptionToClaim {
   account: string;
   duration: number;
 }
+
+export interface IImage {
+  prompt: string;
+  url: string;
+}
+
+export interface ISoundEffect {
+  url: string;
+  duration_seconds: string | number;
+  text: string;
+  prompt: string;
+  description: string;
+}
+
+export interface ICollection {
+  id: string;
+  slug: string;
+  title: string;
+  cover_url: string;
+  floor: number;
+  verified: boolean;
+  volume: number;
+}

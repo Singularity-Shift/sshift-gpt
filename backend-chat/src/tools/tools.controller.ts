@@ -1,33 +1,35 @@
-import {
-  Body,
-  Controller,
-  HttpException,
-  Logger,
-  Post,
-  Res,
-} from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
+import { Body, Controller, HttpException, Logger, Post } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { ToolsService } from './tools.service';
-import { Response } from 'express';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { IUserAuth } from '@helpers';
 import { UserAuth } from '../auth/auth.decorator';
 import { GenerateImageDto } from './dto/generate-image.dto';
+import { GetImageDto } from './dto/get-image.dto';
+import { GetSoundEffect } from './dto/get-sound-effect.dto';
+import { GetUserNftsCollectionsDto } from './dto/get-user-nfts-collections.dto';
 
 @Controller('tools')
 @ApiBearerAuth('Authorization')
+@ApiResponse({ status: 401, description: 'Unauthorized' })
+@ApiResponse({ status: 500, description: 'Internal server error' })
 export class ToolsController {
   logger = new Logger(ToolsController.name);
 
   constructor(private readonly toolsService: ToolsService) {}
   @Post('create-sound-effect')
   @ApiOperation({ summary: 'Generate AI response' })
-  async createUserEffect(
-    @Body() createSoundEffectDto: CreateSoundEffectDto,
-    @Res() res: Response
-  ) {
+  @ApiResponse({
+    description: 'Generated sound effect',
+    type: GetSoundEffect,
+  })
+  async createUserEffect(@Body() createSoundEffectDto: CreateSoundEffectDto) {
     try {
-      await this.toolsService.createSoundEffect(createSoundEffectDto, res);
+      const soundEffect = await this.toolsService.createSoundEffect(
+        createSoundEffectDto
+      );
+
+      return GetSoundEffect.fromJson(soundEffect);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -40,9 +42,15 @@ export class ToolsController {
 
   @Post('fetch-user-nft-collections')
   @ApiOperation({ summary: 'Fetch user NFT collections' })
-  async fetchUserNftCollections(@UserAuth() user: IUserAuth) {
+  @ApiResponse({
+    description: 'User NFT collections',
+    type: [GetUserNftsCollectionsDto],
+  })
+  async fetchUserNftCollections(
+    @UserAuth() user: IUserAuth
+  ): Promise<GetUserNftsCollectionsDto[]> {
     try {
-      await this.toolsService.fetchWalletItemsCollections(user.address);
+      return this.toolsService.fetchWalletItemsCollections(user.address);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -55,12 +63,17 @@ export class ToolsController {
 
   @Post('generate-image')
   @ApiOperation({ summary: 'Generame image by chat gpt' })
-  async createImage(
-    @Body() generateImageDto: GenerateImageDto,
-    @Res() res: Response
-  ) {
+  @ApiResponse({
+    description: 'Generated image',
+    type: GetImageDto,
+  })
+  async createImage(@Body() generateImageDto: GenerateImageDto) {
     try {
-      await this.toolsService.generateImage(generateImageDto, res);
+      const imageGenerated = await this.toolsService.generateImage(
+        generateImageDto
+      );
+
+      return GetImageDto.fromJson(imageGenerated);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

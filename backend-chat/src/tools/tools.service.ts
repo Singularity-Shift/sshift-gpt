@@ -5,7 +5,7 @@ import { Response } from 'express';
 import { ElevenLabsService } from './elevenlabs.service';
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client';
 import { WALLET_COLLECTIONS_QUERY } from '../indexer/indexer.queries';
-import { transformCoverUrl } from '@helpers';
+import { ICollection, IImage, ISoundEffect, transformCoverUrl } from '@helpers';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import { OpenAI } from 'openai';
@@ -23,21 +23,21 @@ export class ToolsService {
   ) {}
 
   async createSoundEffect(
-    createSoundEffectDto: CreateSoundEffectDto,
-    res: Response
-  ) {
-    const { text, duration_seconds, prompt_influence } = createSoundEffectDto;
+    createSoundEffectDto: CreateSoundEffectDto
+  ): Promise<ISoundEffect> {
+    const {
+      text,
+      duration_seconds = null,
+      prompt_influence = 1.0,
+    } = createSoundEffectDto;
     this.logger.log('Generating sound effect with prompt:', text);
 
     // Generate sound effect
-    const response = await this.elevenLabsService.generateSoundEffect(
+    const audioBuffer = await this.elevenLabsService.generateSoundEffect(
       text,
       duration_seconds,
       prompt_influence
     );
-
-    // Get the audio data as an ArrayBuffer
-    const audioBuffer = await response.arrayBuffer();
 
     // Create a sanitized filename from the text
     const sanitizedText = text
@@ -61,40 +61,45 @@ export class ToolsService {
       },
     });
 
-    // Handle upload errors
-    blobStream.on('error', (err) => {
-      this.logger.error('Upload error:', err);
-      return res
-        .status(500)
-        .json({ error: 'Upload error', details: err.message });
-    });
-
-    // Handle upload success
-    blobStream.on('finish', async () => {
-      try {
-        const publicUrl = `https://storage.googleapis.com/${bucketName}/${filename}`;
-
-        this.logger.log('Upload successful:', publicUrl);
-        return res.status(200).json({
-          url: publicUrl,
-          duration_seconds: duration_seconds || 'auto',
-          text: text,
-          prompt: text,
-          description: `Sound effect generated using the prompt: "${text}"`,
+    const soundEffect = (await new Promise((resolve, reject) => {
+      // Handle upload errors
+      blobStream.on('error', (err) => {
+        this.logger.error('Upload error:', err);
+        reject({
+          error: 'Failed to upload sound effect',
+          details: err.message,
         });
-      } catch (error) {
-        this.logger.error('Error getting public URL:', error);
-        return res
-          .status(500)
-          .json({ error: 'Failed to get public URL', details: error.message });
-      }
-    });
+      });
 
-    // Write the buffer to the upload stream
-    blobStream.end(Buffer.from(audioBuffer));
+      // Handle upload success
+      blobStream.on('finish', () => {
+        try {
+          const publicUrl = `https://storage.googleapis.com/${bucketName}/${filename}`;
+
+          this.logger.log('Upload successful:', publicUrl);
+          resolve({
+            url: publicUrl,
+            duration_seconds: duration_seconds || 'auto',
+            text: text,
+            prompt: text,
+            description: `Sound effect generated using the prompt: "${text}"`,
+          });
+        } catch (error) {
+          this.logger.error('Error getting public URL:', error);
+          reject({ error: 'Failed to get public URL', details: error.message });
+        }
+      });
+
+      // Write the buffer to the upload stream
+      blobStream.end(Buffer.from(audioBuffer));
+    })) as ISoundEffect;
+
+    this.logger.log('Sound effect created:', soundEffect);
+
+    return soundEffect;
   }
 
-  async fetchWalletItemsCollections(address: string) {
+  async fetchWalletItemsCollections(address: string): Promise<ICollection[]> {
     const { data } = await this.indexer.query({
       query: WALLET_COLLECTIONS_QUERY,
       variables: {
@@ -115,7 +120,7 @@ export class ToolsService {
       cover_url: transformCoverUrl(collection.cover_url),
     }));
   }
-  async generateImage(generateImageDto: GenerateImageDto, res: Response) {
+  async generateImage(generateImageDto: GenerateImageDto): Promise<IImage> {
     const { prompt, size, style } = generateImageDto;
 
     this.logger.log('Generating image with prompt:', prompt);
@@ -141,10 +146,15 @@ export class ToolsService {
 
     this.logger.log('Image generated successfully:', imageUrl);
 
-    const bucketUrl = await this.bucketService.uploadImageToBucket(
-      imageUrl,
-      res
-    );
+    const bucketUrl = (await this.bucketService.uploadImageToBucket(
+      imageUrl
+    )) as Pick<IImage, 'url'>;
+
     this.logger.log('Image uploaded to bucket:', bucketUrl);
+
+    return {
+      url: bucketUrl.url,
+      prompt,
+    };
   }
 }

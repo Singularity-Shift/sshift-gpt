@@ -1,7 +1,7 @@
 export async function fetchWithHandling(url, options) {
     // Define timeouts for different types of requests
     const getTimeout = (url) => {
-        if (url.includes('/generateImage') || url.includes('/createSoundEffect')) {
+        if (url.includes('/generateImage') || url.includes('/create-sound-effect')) {
             return 60000; // 60 seconds for media generation
         }
         if (url.includes('/searchWeb')) {
