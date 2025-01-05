@@ -20,8 +20,8 @@ const DashboardHeader = () => {
   const pathname = usePathname();
   
   return (
-    <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex flex-col lg:flex-row justify-between items-center min-h-[73px] relative z-10">
-      <div className="flex flex-wrap items-center gap-2 justify-center lg:justify-start w-full lg:w-auto">
+    <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex flex-row justify-between items-center min-h-[60px] relative z-10">
+      <div className="flex items-center gap-2">
         {(isSubscriptionActive || isCollector) && (
           <Button
             onClick={() => router.push('/chat')}
@@ -94,7 +94,7 @@ const DashboardHeader = () => {
           </Button>
         )}
       </div>
-      <div className="mt-2 lg:mt-0">
+      <div>
         <UserLoginStatus />
       </div>
     </div>

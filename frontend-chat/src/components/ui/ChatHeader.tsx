@@ -60,7 +60,8 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           variant="outline"
           className="h-9 px-4 whitespace-nowrap"
         >
-          New Chat
+          <span className="hidden min-[390px]:inline">New Chat</span>
+          <span className="min-[390px]:hidden">New</span>
         </Button>
       </div>
       <UserLoginStatus />

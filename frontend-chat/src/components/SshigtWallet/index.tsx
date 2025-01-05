@@ -104,8 +104,8 @@ export const SshiftWalletDisconnect = () => {
           <Wallet className="h-4 w-4 min-[800px]:hidden" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px]">
-        <DropdownMenuItem onSelect={copyAddress} className="gap-2">
+      <DropdownMenuContent align="end" className="w-[200px] bg-white shadow-lg border border-gray-200">
+        <DropdownMenuItem onSelect={copyAddress} className="gap-2 hover:bg-gray-100">
           <Copy className="h-4 w-4" /> Copy address
         </DropdownMenuItem>
         {wallet && isAptosConnectWallet(wallet) && (
@@ -114,13 +114,13 @@ export const SshiftWalletDisconnect = () => {
               href={APTOS_CONNECT_ACCOUNT_URL}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex gap-2"
+              className="flex gap-2 hover:bg-gray-100"
             >
               <User className="h-4 w-4" /> Account
             </a>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onSelect={onDisconnect} className="gap-2">
+        <DropdownMenuItem onSelect={onDisconnect} className="gap-2 hover:bg-gray-100">
           <LogOut className="h-4 w-4" /> Disconnect
         </DropdownMenuItem>
       </DropdownMenuContent>
