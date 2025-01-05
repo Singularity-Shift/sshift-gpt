@@ -15,7 +15,6 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
     const files = event.target.files;
     if (!files) return;
 
-    // Check if adding new files would exceed the 4 image limit
     if (uploadedImages.length + files.length > 4) {
       alert('Maximum 4 images allowed.');
       return;
@@ -57,7 +56,6 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
       onImageSelect([...uploadedImages, ...uploadedUrls]);
     }
     
-    // Clear the input to allow uploading the same file again
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -83,15 +81,15 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
       />
       <Button 
         variant="outline" 
-        size="icon" 
+        size="icon-sm"
         onClick={handleButtonClick}
         disabled={isUploading || uploadedImages.length >= 4}
         className="border-gray-200 hover:bg-gray-100"
       >
         {isUploading ? (
-          <Loader2 className="h-4 w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin" />
         ) : (
-          <Image className="h-4 w-4" />
+          <Image className="h-3.5 w-3.5 md:h-4 md:w-4" />
         )}
       </Button>
     </>

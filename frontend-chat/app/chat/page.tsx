@@ -684,7 +684,7 @@ export default function ChatPage() {
   };
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-[100dvh] overflow-hidden bg-background">
       <ChatSidebar
         chats={chats}
         currentChatId={currentChatId}
@@ -699,8 +699,7 @@ export default function ChatPage() {
         }}
         onClearAllChats={handleClearAllChats}
       />
-
-      <div className="flex flex-col flex-1">
+      <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <ChatHeader
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
@@ -708,8 +707,7 @@ export default function ChatPage() {
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
         />
-
-        <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col">
           <ChatWindow
             messages={currentChat?.messages || []}
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
@@ -717,7 +715,7 @@ export default function ChatPage() {
             onEdit={handleEdit}
             status={status}
             showNoChatsMessage={showNoChatsMessage}
-            isAssistantResponding={isAssistantResponding} // Pass the new state here
+            isAssistantResponding={isAssistantResponding}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>
