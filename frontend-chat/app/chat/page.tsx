@@ -2,13 +2,30 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { v4 as uuidv4 } from 'uuid'; // Add this import
-import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
-import { ChatHeader } from '../../src/components/ui/ChatHeader';
-import { ChatWindow } from '../../src/components/ui/ChatWindow';
-import { ChatInput } from '../../src/components/ui/ChatInput';
-import backend from '../../src/services/backend';
+import { v4 as uuidv4 } from 'uuid';
 
+// Core Layout Components
+import { ChatSidebar } from '@fn-chat/components/ui/ChatSidebar';
+import { ChatHeader } from '@fn-chat/components/ui/ChatHeader';
+import { ChatWindow } from '@fn-chat/components/ui/ChatWindow';
+import { ChatInput } from '@fn-chat/components/ui/ChatInput';
+
+// Message Components
+import { MessageBubble } from '@fn-chat/components/ui/MessageBubble';
+import { CodeBlock } from '@fn-chat/components/ui/CodeBlock';
+import { ImageThumbnail } from '@fn-chat/components/ui/ImageThumbnail';
+import { AudioPlayer } from '@fn-chat/components/ui/AudioPlayer';
+
+// Button Components
+import { AssistantButtonArray } from '@fn-chat/components/ui/assistantButtonArray';
+import { UserButtonArray } from '@fn-chat/components/ui/userButtonArray';
+import { ImageUploadButton } from '@fn-chat/components/ui/ImageUploadButton';
+import { StopButton } from '@fn-chat/components/ui/StopButton';
+import { SendButton } from '@fn-chat/components/ui/SendButton';
+
+import backend from '@fn-chat/services/backend';
+
+// Types
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -33,7 +50,7 @@ interface Chat {
   };
   createdAt: number;
   lastUpdated: number;
-  model: string; // Add this line
+  model: string;
 }
 
 export default function ChatPage() {
