@@ -1,12 +1,14 @@
 import { fetchWithHandling } from '../utils/fetchWithHandling.js';
 
-export async function generateImage(prompt, size, style) {
+const API_BACKEND_URL = process.env.API_BACKEND_URL;
+
+export async function generateImage(prompt, size, style, auth) {
     try {
         console.log('Generating image with params:', { prompt, size, style });
         
-        const result = await fetchWithHandling('http://localhost:3000/api/tools/generateImage', {
+        const result = await fetchWithHandling(`${API_BACKEND_URL}/tools/generate-image`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
             body: JSON.stringify({ prompt, size, style }),
         });
 
@@ -163,13 +165,13 @@ export async function searchTrendingNFT(period, trending_by, limit) {
     }
 }
 
-export async function createSoundEffect(text, duration_seconds, prompt_influence) {
+export async function createSoundEffect(text, duration_seconds, prompt_influence, auth) {
     try {
         console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
         
-        const result = await fetchWithHandling('http://localhost:3000/api/tools/createSoundEffect', {
+        const result = await fetchWithHandling(`${API_BACKEND_URL}/tools/create-sound-effect`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
             body: JSON.stringify({ text, duration_seconds, prompt_influence }),
         });
 
@@ -191,12 +193,13 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     }
 }
 
-export async function fetchUserNFTCollections() {
+export async function fetchUserNFTCollections(auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/fetchUserNFTCollections', {
+        return await fetchWithHandling(`${API_BACKEND_URL}/tools/fetchUserNFTCollections`, {
             method: 'POST',
             headers: { 
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
             }
         });
     } catch (error) {

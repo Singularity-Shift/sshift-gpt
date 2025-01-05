@@ -12,6 +12,7 @@ import { ChatModule } from './chat/chat.module';
 import { UserModule } from './user/user.module';
 import { AdminConfigModule } from './admin-config/admin-config.module';
 import { MultisignModule } from './multisign/multising.module';
+import { ToolsModule } from './tools/tools.module';
 
 @Module({
   imports: [
@@ -42,6 +43,7 @@ import { MultisignModule } from './multisign/multising.module';
     UserModule,
     AdminConfigModule,
     MultisignModule,
+    ToolsModule,
   ],
   controllers: [],
   providers: [

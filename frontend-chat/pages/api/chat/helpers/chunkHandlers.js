@@ -54,7 +54,7 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
                     await checkToolsCredits(userConfig, toolCall.function.name, auth)
                 }
                 
-                const result = await toolFunction(...Object.values(args));
+                const result = await toolFunction(...Object.values(args), auth);
                 
                 if (result.error) {
                     console.error(`Tool call error for ${toolCall.function.name}:`, result.error);

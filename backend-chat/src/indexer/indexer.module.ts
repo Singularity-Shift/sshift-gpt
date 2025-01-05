@@ -6,9 +6,8 @@ import {
 } from '@apollo/client';
 import { setContext } from '@apollo/client/link/context';
 import { ConfigService } from '../share/config/config.service';
-import { Module } from '@nestjs/common';
-import { ConfigModule } from '@fn-backend/share/config/config.module';
-import exp from 'constants';
+import { Logger, Module } from '@nestjs/common';
+import { ConfigModule } from '../share/config/config.module';
 
 const httpLink = (configService: ConfigService) =>
   createHttpLink({
@@ -33,10 +32,11 @@ const loggingLink = new ApolloLink((operation, forward) => {
     const endTime = Date.now();
     const requestTime = endTime - startTime;
 
-    console.log('\x1b[36m%s\x1b[0m', '[Indexer Client]'); // Cyan color
-    console.log(`Operation: ${operation.operationName}`);
-    console.log(`Time: ${requestTime}ms`);
-    console.log('----------------------------------------');
+    const logger = new Logger(ApolloClient.name);
+    logger.log('\x1b[36m%s\x1b[0m', '[Indexer Client]'); // Cyan color
+    logger.log(`Operation: ${operation.operationName}`);
+    logger.log(`Time: ${requestTime}ms`);
+    logger.log('----------------------------------------');
 
     return response;
   });
