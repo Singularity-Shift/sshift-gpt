@@ -19,6 +19,7 @@ import {
   Copy,
   LogOut,
   User,
+  Wallet,
 } from 'lucide-react';
 import { useCallback, useState } from 'react';
 import {
@@ -96,11 +97,14 @@ export const SshiftWalletDisconnect = () => {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button>
-          {account?.ansName || truncateAddress(walletAddress) || 'Unknown'}
+        <Button variant="ghost" size="sm" className="gap-2">
+          <span className="hidden md:inline">
+            {account?.ansName || truncateAddress(walletAddress) || 'Unknown'}
+          </span>
+          <Wallet className="h-4 w-4 md:hidden" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
+      <DropdownMenuContent align="end" className="w-[200px]">
         <DropdownMenuItem onSelect={copyAddress} className="gap-2">
           <Copy className="h-4 w-4" /> Copy address
         </DropdownMenuItem>
