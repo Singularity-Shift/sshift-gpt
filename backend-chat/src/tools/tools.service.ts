@@ -18,10 +18,8 @@ import { OpenAI } from 'openai';
 import { BucketService } from './bucket.service';
 import { CMCService } from './coin-market-cap.service';
 import yahooFinance from 'yahoo-finance2';
-import {
-  ChartOptionsWithReturnObject,
-  ChartResultObject,
-} from 'yahoo-finance2/dist/esm/src/modules/chart';
+import { ChartOptionsWithReturnObject } from 'yahoo-finance2/dist/esm/src/modules/chart';
+import { StockInfoDto } from './dto/stockInfo.dto';
 
 @Injectable()
 export class ToolsService {
@@ -175,11 +173,11 @@ export class ToolsService {
     return await this.cmcService.getFullCryptoInfo(tokenSymbol);
   }
 
-  async getStockInfo(tickers: string[], info_types: string[]) {
-    try {
-      const result: ITicker[] = [];
+  async getStockInfo(stockInfoDto: StockInfoDto) {
+    const { tickers, info_types } = stockInfoDto;
 
-      for (const ticker of tickers) {
+    const result = await Promise.all(
+      tickers.map(async (ticker) => {
         try {
           const tickerResult = {} as ITicker;
 
@@ -197,16 +195,12 @@ export class ToolsService {
                   events: 'splits',
                   return: 'object',
                 };
-                const chartData = (await yahooFinance.chart(
+                const chartData = await yahooFinance.chart(
                   ticker,
                   chartOptions
-                )) as any;
+                );
 
-                tickerResult.splits =
-                  chartData.events?.map((s) => ({
-                    date: new Date(s.date * 1000).toISOString().split('T')[0],
-                    split: `${s.numerator}:${s.denominator}`,
-                  })) || ([] as any);
+                tickerResult.splits = chartData.events?.splits;
                 break;
               }
               case 'dividends': {
@@ -220,11 +214,7 @@ export class ToolsService {
                   ticker,
                   divChartOptions
                 );
-                tickerResult.dividends =
-                  divData.events?.dividends?.map((d) => ({
-                    date: new Date(d.date * 1000).toISOString().split('T')[0],
-                    dividend: d.amount,
-                  })) || [];
+                tickerResult.dividends = divData.events?.dividends;
                 break;
               }
               case 'company_info': {
@@ -254,17 +244,16 @@ export class ToolsService {
               }
             }
           }
-          result[ticker] = tickerResult;
+          return tickerResult;
         } catch (error) {
           console.error(`Error fetching data for ${ticker}:`, error);
           result[ticker] = { error: error.message };
         }
-      }
+      })
+    );
 
-      return;
-    } catch (error) {
-      console.error('General error:', error);
-      res.status(500).json({ error: error.message });
-    }
+    this.logger.log('Stock info fetched successfully:', result);
+
+    return result;
   }
 }

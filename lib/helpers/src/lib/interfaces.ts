@@ -275,7 +275,7 @@ export interface IFinancial {
 export interface ITicker {
   current_price: number;
   splits: object;
-  dividends: IDividend[];
+  dividends: object;
   company_info: QuoteSummaryResult['price'] &
     QuoteSummaryResult['summaryProfile'] &
     QuoteSummaryResult['summaryDetail'];

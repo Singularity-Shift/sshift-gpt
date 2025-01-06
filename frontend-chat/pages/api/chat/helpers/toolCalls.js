@@ -65,13 +65,19 @@ export async function wikiSearch(action, searchString) {
     }
 }
 
-export async function getStockInfo(tickers, info_types) {
+export async function getStockInfo(tickers, info_types, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getStockInfo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tickers, info_types }),
-        });
+        const result = await backend.post(`${API_BACKEND_URL}/tools/get-stock-info`, {
+             tickers, info_types },
+            {
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${auth}` 
+                },
+            }
+        );
+
+        return result.data;
     } catch (error) {
         console.error('Error in getStockInfo:', error);
         return {
