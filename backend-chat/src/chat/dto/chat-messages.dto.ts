@@ -16,10 +16,11 @@ export class ChatMessagesDto {
   content: string;
 
   @ApiProperty({
-    description: 'Image url',
-    example: 'https://example.com/image.png',
+    description: 'Image URLs',
+    example: ['https://example.com/image1.png', 'https://example.com/image2.png'],
     required: false,
+    isArray: true,
   })
   @IsOptional()
-  image: string;
+  images: string[];
 }

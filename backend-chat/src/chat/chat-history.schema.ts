@@ -12,8 +12,8 @@ export class ChatHistory {
   @Prop({ type: String, required: true })
   content: string;
 
-  @Prop({ type: String, required: false })
-  image: string;
+  @Prop({ type: [String], required: false })
+  images: string[];
 
   @Prop({ type: Date, default: now() })
   createdAt: Date;

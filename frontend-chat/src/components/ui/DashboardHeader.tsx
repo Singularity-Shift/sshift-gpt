@@ -16,11 +16,12 @@ const DashboardHeader = () => {
     isPendingReviewer,
     isSubscriptionActive,
   } = useAppManagment();
-  const router = useRouter(); // Import the useRouter hook from Next.js
+  const router = useRouter();
   const pathname = usePathname();
+  
   return (
-    <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex justify-between items-center h-[73px] relative z-10">
-      <div className="flex items-center space-x-4">
+    <div className="bg-white bg-opacity-90 shadow-sm py-2 px-4 flex flex-row justify-between items-center min-h-[60px] relative z-10">
+      <div className="flex items-center gap-2">
         {(isSubscriptionActive || isCollector) && (
           <Button
             onClick={() => router.push('/chat')}
@@ -93,7 +94,9 @@ const DashboardHeader = () => {
           </Button>
         )}
       </div>
-      <UserLoginStatus />
+      <div>
+        <UserLoginStatus />
+      </div>
     </div>
   );
 };

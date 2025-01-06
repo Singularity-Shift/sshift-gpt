@@ -49,56 +49,28 @@ export default function SubscriptionPage() {
     setDates(calculateDates(days));
   }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
 
-  const handleEnterSShiftGPT = () => {
-    router.push('/chat');
-  };
-
   return (
     <div className="min-h-screen flex flex-col relative">
       <AGIThoughtBackground />
       <DashboardHeader />
 
       {/* Main Content */}
-      <div className="flex-grow flex flex-col items-center justify-center px-4 py-8 relative z-10">
-        <DashboardDisplayArea
-          days={days}
-          setDays={setDays}
-          price={price}
-          dates={dates}
-          discount={discount}
-          moveBotsOwned={moveBotsOwned}
-          qribbleNFTsOwned={qribbleNFTsOwned}
-          sshiftRecordsOwned={sshiftRecordsOwned}
-        />
-
-        <Button
-          variant="default"
-          className={`
-            ${silkscreen.className}
-            py-4 px-6
-            text-lg
-            font-bold
-            text-black
-            bg-green-400
-            hover:bg-green-500
-            focus:outline-none
-            focus:ring-2
-            focus:ring-offset-2
-            focus:ring-green-400
-            transform
-            transition-transform
-            hover:scale-105
-            rounded-xl
-            shadow-lg
-            border
-            border-gray-700
-            relative z-10
-          `}
-          onClick={handleEnterSShiftGPT}
-        >
-          Enter SShift GPT
-        </Button>
+      <div className="flex-grow flex flex-col items-center justify-center py-8 relative z-10">
+        <div className="w-full max-w-[1400px] flex flex-col items-center">
+          <DashboardDisplayArea
+            days={days}
+            setDays={setDays}
+            price={price}
+            dates={dates}
+            discount={discount}
+            moveBotsOwned={moveBotsOwned}
+            qribbleNFTsOwned={qribbleNFTsOwned}
+            sshiftRecordsOwned={sshiftRecordsOwned}
+          />
+        </div>
       </div>
     </div>
   );
 }
+
+
