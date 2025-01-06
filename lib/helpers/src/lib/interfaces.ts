@@ -1,4 +1,5 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
+import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
 import { MultisignAction } from './enums';
 
 export interface IAuth {
@@ -257,23 +258,25 @@ export interface ICmcInfo {
 }
 
 export interface ISplit {
-  date: Date,
-  split: string
+  date: Date;
+  split: string;
 }
 
 export interface IDividend {
-  date: Date,
-  dividend: string
+  date: Date;
+  dividend: number;
 }
 
 export interface IFinancial {
-  financialData: QuoteSummaryResult
+  financialData: QuoteSummaryResult['financialData'];
+  incomeStatement: QuoteSummaryResult['incomeStatementHistory'];
 }
 
 export interface ITicker {
   current_price: string;
-  splits: ISplit[],
-  dividends: IDividend[],
-  company_info: string,
-  financials: 
+  splits: ISplit[];
+  dividends: IDividend[];
+  company_info: string;
+  financials: IFinancial;
+  recomendations: RecommendationsBySymbolResponse;
 }

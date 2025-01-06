@@ -9,6 +9,7 @@ import {
   ICollection,
   IImage,
   ISoundEffect,
+  ITicker,
   transformCoverUrl,
 } from '@helpers';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
@@ -172,7 +173,7 @@ export class ToolsService {
 
   async getStockInfo(tickers: string[], info_types: string[]) {
     try {
-      const result = {};
+      const result: ITicker = {} as ITicker;
 
       for (const ticker of tickers) {
         try {
@@ -186,7 +187,7 @@ export class ToolsService {
                 break;
               }
               case 'splits': {
-                const chartOptions = {
+                const chartOptions: ChartOptionsWithReturnObject = {
                   period1: '1970-01-01',
                   interval: '1d',
                   events: 'splits',
@@ -195,6 +196,7 @@ export class ToolsService {
                   ticker,
                   chartOptions
                 );
+
                 tickerResult.splits =
                   chartData.events?.splits?.map((s) => ({
                     date: new Date(s.date * 1000).toISOString().split('T')[0],
