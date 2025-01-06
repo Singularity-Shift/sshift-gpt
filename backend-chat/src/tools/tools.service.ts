@@ -18,6 +18,10 @@ import { OpenAI } from 'openai';
 import { BucketService } from './bucket.service';
 import { CMCService } from './coin-market-cap.service';
 import yahooFinance from 'yahoo-finance2';
+import {
+  ChartOptionsWithReturnObject,
+  ChartResultObject,
+} from 'yahoo-finance2/dist/esm/src/modules/chart';
 
 @Injectable()
 export class ToolsService {
@@ -173,11 +177,11 @@ export class ToolsService {
 
   async getStockInfo(tickers: string[], info_types: string[]) {
     try {
-      const result: ITicker = {} as ITicker;
+      const result: ITicker[] = [];
 
       for (const ticker of tickers) {
         try {
-          const tickerResult = {};
+          const tickerResult = {} as ITicker;
 
           for (const infoType of info_types) {
             switch (infoType) {
@@ -191,24 +195,26 @@ export class ToolsService {
                   period1: '1970-01-01',
                   interval: '1d',
                   events: 'splits',
+                  return: 'object',
                 };
-                const chartData = await yahooFinance.chart(
+                const chartData = (await yahooFinance.chart(
                   ticker,
                   chartOptions
-                );
+                )) as any;
 
                 tickerResult.splits =
-                  chartData.events?.splits?.map((s) => ({
+                  chartData.events?.map((s) => ({
                     date: new Date(s.date * 1000).toISOString().split('T')[0],
                     split: `${s.numerator}:${s.denominator}`,
-                  })) || [];
+                  })) || ([] as any);
                 break;
               }
               case 'dividends': {
-                const divChartOptions = {
+                const divChartOptions: ChartOptionsWithReturnObject = {
                   period1: '1970-01-01',
                   interval: '1d',
                   events: 'dividends',
+                  return: 'object',
                 };
                 const divData = await yahooFinance.chart(
                   ticker,
@@ -255,7 +261,7 @@ export class ToolsService {
         }
       }
 
-      res.status(200).json(result);
+      return;
     } catch (error) {
       console.error('General error:', error);
       res.status(500).json({ error: error.message });

@@ -273,10 +273,12 @@ export interface IFinancial {
 }
 
 export interface ITicker {
-  current_price: string;
-  splits: ISplit[];
+  current_price: number;
+  splits: object;
   dividends: IDividend[];
-  company_info: string;
+  company_info: QuoteSummaryResult['price'] &
+    QuoteSummaryResult['summaryProfile'] &
+    QuoteSummaryResult['summaryDetail'];
   financials: IFinancial;
-  recomendations: RecommendationsBySymbolResponse;
+  recommendations: RecommendationsBySymbolResponse;
 }
