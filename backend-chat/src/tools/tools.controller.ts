@@ -23,6 +23,7 @@ import { GetSoundEffect } from './dto/get-sound-effect.dto';
 import { GetUserNftsCollectionsDto } from './dto/get-user-nfts-collections.dto';
 import { GetCryptoInfoFromCMCDto } from './dto/get-crypto-info-from-cmc.dto';
 import { StockInfoDto } from './dto/stockInfo.dto';
+import { GetStockInfoDto } from './dto/get-stock-info.dto';
 
 @Controller('tools')
 @ApiBearerAuth('Authorization')
@@ -139,8 +140,11 @@ export class ToolsController {
   @ApiResponse({
     description: 'Stock info',
     status: 201,
+    type: [GetStockInfoDto],
   })
-  async getStockInfo(@Body() stockInfoDto: StockInfoDto) {
+  async getStockInfo(
+    @Body() stockInfoDto: StockInfoDto
+  ): Promise<GetStockInfoDto[]> {
     try {
       const stockInfo = await this.toolsService.getStockInfo(stockInfoDto);
 
