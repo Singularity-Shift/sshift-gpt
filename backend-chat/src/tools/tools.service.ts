@@ -1,15 +1,22 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '@google-cloud/storage';
-import { Response } from 'express';
 import { ElevenLabsService } from './elevenlabs.service';
 import { ApolloClient, NormalizedCacheObject } from '@apollo/client';
 import { WALLET_COLLECTIONS_QUERY } from '../indexer/indexer.queries';
-import { ICollection, IImage, ISoundEffect, transformCoverUrl } from '@helpers';
+import {
+  ICmcInfo,
+  ICollection,
+  IImage,
+  ISoundEffect,
+  transformCoverUrl,
+} from '@helpers';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import { OpenAI } from 'openai';
 import { BucketService } from './bucket.service';
+import { CMCService } from './coin-market-cap.service';
+import yahooFinance from 'yahoo-finance2';
 
 @Injectable()
 export class ToolsService {
@@ -19,7 +26,8 @@ export class ToolsService {
     private readonly storage: Storage,
     private readonly openApi: OpenAI,
     private readonly indexer: ApolloClient<NormalizedCacheObject>,
-    private readonly bucketService: BucketService
+    private readonly bucketService: BucketService,
+    private readonly cmcService: CMCService
   ) {}
 
   async createSoundEffect(
@@ -156,5 +164,99 @@ export class ToolsService {
       url: bucketUrl.url,
       prompt,
     };
+  }
+
+  async findCryptoInfoFromCMC(tokenSymbol: string): Promise<ICmcInfo> {
+    return await this.cmcService.getFullCryptoInfo(tokenSymbol);
+  }
+
+  async getStockInfo(tickers: string[], info_types: string[]) {
+    try {
+      const result = {};
+
+      for (const ticker of tickers) {
+        try {
+          const tickerResult = {};
+
+          for (const infoType of info_types) {
+            switch (infoType) {
+              case 'current_price': {
+                const quote = await yahooFinance.quote(ticker);
+                tickerResult.current_price = quote.regularMarketPrice;
+                break;
+              }
+              case 'splits': {
+                const chartOptions = {
+                  period1: '1970-01-01',
+                  interval: '1d',
+                  events: 'splits',
+                };
+                const chartData = await yahooFinance.chart(
+                  ticker,
+                  chartOptions
+                );
+                tickerResult.splits =
+                  chartData.events?.splits?.map((s) => ({
+                    date: new Date(s.date * 1000).toISOString().split('T')[0],
+                    split: `${s.numerator}:${s.denominator}`,
+                  })) || [];
+                break;
+              }
+              case 'dividends': {
+                const divChartOptions = {
+                  period1: '1970-01-01',
+                  interval: '1d',
+                  events: 'dividends',
+                };
+                const divData = await yahooFinance.chart(
+                  ticker,
+                  divChartOptions
+                );
+                tickerResult.dividends =
+                  divData.events?.dividends?.map((d) => ({
+                    date: new Date(d.date * 1000).toISOString().split('T')[0],
+                    dividend: d.amount,
+                  })) || [];
+                break;
+              }
+              case 'company_info': {
+                const quoteSummary = await yahooFinance.quoteSummary(ticker);
+                tickerResult.company_info = {
+                  ...quoteSummary.price,
+                  ...quoteSummary.summaryProfile,
+                  ...quoteSummary.summaryDetail,
+                };
+                break;
+              }
+              case 'financials': {
+                const financials = await yahooFinance.quoteSummary(ticker, {
+                  modules: ['financialData', 'incomeStatementHistory'],
+                });
+                tickerResult.financials = {
+                  financialData: financials.financialData,
+                  incomeStatement: financials.incomeStatementHistory,
+                };
+                break;
+              }
+              case 'recommendations': {
+                const recommendations =
+                  await yahooFinance.recommendationsBySymbol(ticker);
+                tickerResult.recommendations = recommendations;
+                break;
+              }
+            }
+          }
+          result[ticker] = tickerResult;
+        } catch (error) {
+          console.error(`Error fetching data for ${ticker}:`, error);
+          result[ticker] = { error: error.message };
+        }
+      }
+
+      res.status(200).json(result);
+    } catch (error) {
+      console.error('General error:', error);
+      res.status(500).json({ error: error.message });
+    }
   }
 }

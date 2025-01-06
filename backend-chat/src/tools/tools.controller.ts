@@ -1,5 +1,18 @@
-import { Body, Controller, HttpException, Logger, Post } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  Logger,
+  Param,
+  Post,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+} from '@nestjs/swagger';
 import { ToolsService } from './tools.service';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { IUserAuth } from '@helpers';
@@ -8,6 +21,7 @@ import { GenerateImageDto } from './dto/generate-image.dto';
 import { GetImageDto } from './dto/get-image.dto';
 import { GetSoundEffect } from './dto/get-sound-effect.dto';
 import { GetUserNftsCollectionsDto } from './dto/get-user-nfts-collections.dto';
+import { GetCryptoInfoFromCMCDto } from './dto/get-crypto-info-from-cmc.dto';
 
 @Controller('tools')
 @ApiBearerAuth('Authorization')
@@ -79,6 +93,37 @@ export class ToolsController {
         throw error;
       } else {
         this.logger.error('Error generating image:', error);
+        throw new HttpException('Internal server error', error.status);
+      }
+    }
+  }
+
+  @Get('get-crypto-info-from-cmd/:tokenSymbol')
+  @ApiParam({
+    name: 'tokenSymbol',
+    description: 'Token symbol to get the info',
+    type: String,
+    required: true,
+  })
+  @ApiOperation({ summary: 'Get crypto info from Coinmarketcap' })
+  @ApiResponse({
+    description: 'Crypto info',
+    type: GetCryptoInfoFromCMCDto,
+  })
+  async getCryptoInfoFromCMC(
+    @Param('tokenSymbol') tokenSymbol: string
+  ): Promise<GetCryptoInfoFromCMCDto> {
+    try {
+      const cryptoInfo = await this.toolsService.findCryptoInfoFromCMC(
+        tokenSymbol
+      );
+
+      return cryptoInfo;
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        this.logger.error('Error fetching crypto info:', error);
         throw new HttpException('Internal server error', error.status);
       }
     }

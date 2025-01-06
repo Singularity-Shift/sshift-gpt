@@ -37,6 +37,10 @@ export const Profiles = {
       apiKey: process.env.INDEXER_API_KEY,
       userId: process.env.INDEXER_USER_ID,
     },
+    cmc: {
+      apiKey: process.env.CMC_API_KEY,
+      baseUrl: process.env.CMC_BASE_URL,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,
@@ -75,6 +79,10 @@ export const Profiles = {
       url: process.env.INDEXER_URL,
       apiKey: process.env.INDEXER_API_KEY,
       userId: process.env.INDEXER_USER_ID,
+    },
+    cmc: {
+      apiKey: process.env.CMC_API_KEY,
+      baseUrl: process.env.CMC_BASE_URL,
     },
   },
 };

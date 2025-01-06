@@ -17,7 +17,7 @@ export class BucketService {
     const buffer = await response.arrayBuffer();
 
     const bucketName = 'sshift-gpt-bucket';
-    const filename = `${uuidv4()}-generated-image.png`;
+    const filename = `images/${uuidv4()}-generated-image.png`;
 
     const bucket = this.storage.bucket(bucketName);
     const blob = bucket.file(filename);

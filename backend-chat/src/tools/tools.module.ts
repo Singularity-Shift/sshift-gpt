@@ -8,11 +8,12 @@ import { ToolsService } from './tools.service';
 import { BucketService } from './bucket.service';
 import { ElevenLabsService } from './elevenlabs.service';
 import { HttpModule } from '@nestjs/axios';
+import { CMCService } from './coin-market-cap.service';
 
 @Module({
   imports: [ConfigModule, GPTModule, IndexerModule, StorageModule, HttpModule],
   controllers: [ToolsController],
-  providers: [ToolsService, ElevenLabsService, BucketService],
+  providers: [ToolsService, ElevenLabsService, BucketService, CMCService],
   exports: [],
 })
 export class ToolsModule {}

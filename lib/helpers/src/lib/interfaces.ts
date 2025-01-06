@@ -1,3 +1,4 @@
+import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { MultisignAction } from './enums';
 
 export interface IAuth {
@@ -240,4 +241,39 @@ export interface ICollection {
   floor: number;
   verified: boolean;
   volume: number;
+}
+
+export interface ICmcInfo {
+  market_cap: number;
+  current_price: number;
+  total_volume: number;
+  circulating_supply: number;
+  total_supply: number;
+  undiluted_market_cap: number;
+  description: string;
+  logo: string;
+  urls: unknown;
+  exchanges: string[];
+}
+
+export interface ISplit {
+  date: Date,
+  split: string
+}
+
+export interface IDividend {
+  date: Date,
+  dividend: string
+}
+
+export interface IFinancial {
+  financialData: QuoteSummaryResult
+}
+
+export interface ITicker {
+  current_price: string;
+  splits: ISplit[],
+  dividends: IDividend[],
+  company_info: string,
+  financials: 
 }
