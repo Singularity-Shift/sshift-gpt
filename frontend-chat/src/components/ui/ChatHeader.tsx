@@ -35,7 +35,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           className="min-[1010px]:hidden flex items-center gap-1.5 text-gray-800"
         >
           <ArrowLeft className="h-4 w-4" />
-          <span className="text-sm font-medium">Dash</span>
+          <span className="text-sm font-medium min-[435px]:inline hidden">Dash</span>
         </Button>
         <Button
           onClick={onNavigateToDashboard}
