@@ -9,12 +9,12 @@ interface SendButtonProps {
 export const SendButton: React.FC<SendButtonProps> = ({ onClick }) => {
   return (
     <Button
-      variant="outline" // Ensure this matches the other buttons
-      size="icon" // Add size prop to match
-      className="shrink-0 hover:bg-gray-200" // Ensure consistent hover effect
+      variant="outline"
+      size="icon-sm"
+      className="shrink-0 hover:bg-gray-200"
       onClick={onClick}
     >
-      <Send className="h-4 w-4" />
+      <Send className="h-3.5 w-3.5 md:h-4 md:w-4" />
     </Button>
   );
 };

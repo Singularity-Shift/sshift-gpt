@@ -39,16 +39,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   };
 
   return (
-    <div className="border-t border-border p-4 w-full relative">
-      <div className="max-w-6xl mx-auto relative">
+    <div className="w-full bg-background border-t border-border flex-shrink-0">
+      <div className="max-w-6xl mx-auto px-2 py-2 md:px-4 md:py-3">
         {uploadedImages.length > 0 && (
-          <div className="absolute right-14 top-0 transform -translate-y-full flex gap-1 items-center">
+          <div className="flex gap-1 items-center mb-2">
             {uploadedImages.map((url, index) => (
               <div key={url} className="relative flex-shrink-0">
                 <img
                   src={url}
                   alt={`Uploaded ${index + 1}`}
-                  className="h-8 w-8 object-cover rounded-full border border-gray-300"
+                  className="h-5 w-5 md:h-6 md:w-6 object-cover rounded-full border border-gray-300"
                 />
                 <button
                   className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
@@ -60,17 +60,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
             ))}
           </div>
         )}
-        <div className="flex gap-2 items-end">
-          <div className="flex-1">
+        <div className="flex gap-1.5 md:gap-2 items-end">
+          <div className="flex-1 min-h-0">
             <Textarea
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message here... (Ctrl+Enter to send)"
-              className="resize-none"
+              className="resize-none min-h-[45px] max-h-[120px]"
             />
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
             <ImageUploadButton
               onImageSelect={setUploadedImages}
               uploadedImages={uploadedImages}

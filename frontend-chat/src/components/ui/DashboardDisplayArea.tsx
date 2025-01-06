@@ -26,9 +26,9 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
   sshiftRecordsOwned,
 }) => {
   return (
-    <div className="flex flex-col items-center">
+    <div className="flex flex-col items-center w-full">
       <UserDashboardTitle />
-      <div className="flex space-x-8 mb-8">
+      <div className="flex flex-col lg:flex-row lg:space-x-8 space-y-8 lg:space-y-0 w-full items-center justify-center mb-8">
         {/* Subscription Container */}
         <SubscriptionContainer
           days={days}

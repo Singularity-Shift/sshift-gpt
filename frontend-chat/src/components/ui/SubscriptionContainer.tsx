@@ -24,16 +24,16 @@ export function SubscriptionContainer({
   const { onSubscribe, isSubscriptionActive } = useAppManagment();
 
   return (
-    <div className="w-[400px] bg-white bg-opacity-90 p-10 rounded-xl shadow-lg border border-gray-300">
+    <div className="w-full max-w-[400px] h-[600px] bg-white bg-opacity-90 p-6 lg:p-10 rounded-xl shadow-lg border border-gray-300 flex flex-col">
       <div className="text-center">
-        <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+        <h2 className="mt-6 text-2xl lg:text-3xl font-extrabold text-gray-900">
           SShift GPT Subscription
         </h2>
         <p className="mt-2 text-sm text-gray-600">
           Choose your subscription length
         </p>
       </div>
-      <div className="mt-8 space-y-6">
+      <div className="flex-grow mt-8 space-y-6">
         <div className="space-y-4">
           <div className="flex justify-between items-center">
             <span className="text-sm font-medium text-gray-700">1 day</span>
@@ -60,7 +60,7 @@ export function SubscriptionContainer({
         <div className="bg-gray-100 px-4 py-5 sm:p-6 rounded-md">
           <div className="text-center">
             <p className="text-sm text-gray-600">Total Price</p>
-            <p className="mt-1 text-4xl font-extrabold text-gray-900">
+            <p className="mt-1 text-3xl lg:text-4xl font-extrabold text-gray-900">
               {price} USDT
             </p>
             {discount > 0 && (
