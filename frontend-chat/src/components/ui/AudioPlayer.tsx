@@ -5,14 +5,16 @@ interface AudioPlayerProps {
   src: string;
 }
 
-export const AudioPlayer: React.FC<AudioPlayerProps> = ({ src }) => {
+const AudioPlayerComponent: React.FC<AudioPlayerProps> = ({ src }) => {
   return (
-    <div className="mt-2 flex items-center gap-2 p-2 bg-gray-100 rounded-lg">
-      <Volume2 className="h-4 w-4" />
-      <audio controls className="w-full max-w-md">
+    <div className="mt-2 flex items-center gap-2 p-2 bg-gray-100 rounded-lg w-full max-w-full sm:max-w-[90%] md:max-w-[80%]">
+      <Volume2 className="h-4 w-4 flex-shrink-0" />
+      <audio controls className="w-full min-w-0" key={src}>
         <source src={src} type="audio/mpeg" />
         Your browser does not support the audio element.
       </audio>
     </div>
   );
-}; 
+};
+
+export const AudioPlayer = React.memo(AudioPlayerComponent); 

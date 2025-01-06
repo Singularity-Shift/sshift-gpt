@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from './CodeBlock';
@@ -41,6 +41,28 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<number | null>(null);
 
+  // Extract audio URLs before rendering
+  const audioUrls = useMemo(() => {
+    const urls: string[] = [];
+    const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/g;
+    let match;
+    
+    // Find all sound effect matches
+    while ((match = soundEffectRegex.exec(parsedContent.text)) !== null) {
+      urls.push(match[2]);
+    }
+    
+    // Find all direct .mp3 links
+    const mp3LinkRegex = /\[(.*?)\]\((.*?\.mp3)\)/g;
+    while ((match = mp3LinkRegex.exec(parsedContent.text)) !== null) {
+      if (!urls.includes(match[2])) {
+        urls.push(match[2]);
+      }
+    }
+    
+    return urls;
+  }, [parsedContent.text]);
+
   React.useEffect(() => {
     try {
       const contentObj = JSON.parse(message.content);
@@ -79,6 +101,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
       <>
+        {/* Render audio players separately from markdown content */}
+        {audioUrls.map((url, index) => (
+          <AudioPlayer key={`audio-${url}-${index}`} src={url} />
+        ))}
+        
         <ReactMarkdown
           components={{
             code: ({ node, inline, className, children, ...props }: any) => {
@@ -96,24 +123,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               );
             },
             p: ({ children }) => {
-              const text = String(children);
-              const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/;
-              const match = text.match(soundEffectRegex);
-
-              if (match) {
-                return (
-                  <>
-                    <div className="mb-2">{text.replace(soundEffectRegex, '')}</div>
-                    <AudioPlayer src={match[2]} />
-                  </>
-                );
-              }
-
               return <div className="mb-2">{children}</div>;
             },
             a: ({ href, children }) => {
+              // Skip rendering audio players here since we handle them separately
               if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
+                return null;
               }
               return (
                 <a
