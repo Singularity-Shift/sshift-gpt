@@ -3,12 +3,14 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
+import { Menu } from 'lucide-react';
 
 // Core Layout Components
 import { ChatSidebar } from '@fn-chat/components/ui/ChatSidebar';
 import { ChatHeader } from '@fn-chat/components/ui/ChatHeader';
 import { ChatWindow } from '@fn-chat/components/ui/ChatWindow';
 import { ChatInput } from '@fn-chat/components/ui/ChatInput';
+import { Button } from '@fn-chat/components/ui/button';
 
 // Message Components
 import { MessageBubble } from '@fn-chat/components/ui/MessageBubble';
@@ -65,6 +67,7 @@ export default function ChatPage() {
     'thinking'
   );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -698,6 +701,8 @@ export default function ChatPage() {
           );
         }}
         onClearAllChats={handleClearAllChats}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
       />
       <div className="flex flex-col flex-1 min-h-0 overflow-hidden">
         <ChatHeader
@@ -707,6 +712,14 @@ export default function ChatPage() {
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
         />
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsSidebarOpen(true)}
+          className="md:hidden absolute top-[14px] left-2 z-40"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
         <div className="flex-1 min-h-0 flex flex-col">
           <ChatWindow
             messages={currentChat?.messages || []}

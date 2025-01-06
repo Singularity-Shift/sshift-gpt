@@ -27,7 +27,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
 }) => {
   return (
     <div className="flex items-center justify-between p-2 min-[1010px]:p-4 border-b border-border h-[60px] min-[1010px]:h-[73px] w-full">
-      <div className="flex items-center gap-2 min-[1010px]:gap-4">
+      <div className="flex items-center gap-2 min-[1010px]:gap-4 md:pl-0 pl-10">
         <Button
           onClick={onNavigateToDashboard}
           variant="ghost"
