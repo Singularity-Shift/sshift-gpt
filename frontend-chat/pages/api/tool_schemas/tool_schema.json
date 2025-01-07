@@ -3,23 +3,23 @@
     "type": "function",
     "function": {
       "name": "generateImage",
-      "description": "Generates exactly one image using DALL-E 3.",
+      "description": "Generates an image using DALL-E 3.",
       "parameters": {
         "type": "object",
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "A vivid, specific prompt for generating the image."
+            "description": "The detailed description of the image to generate."
           },
           "size": {
             "type": "string",
             "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "The dimensions of the generated image."
+            "description": "The size of the generated image."
           },
           "style": {
             "type": "string",
             "enum": ["vivid", "natural"],
-            "description": "The style of the image. 'vivid' = hyper-real; 'natural' = realistic."
+            "description": "The artistic style of the image."
           }
         },
         "required": ["prompt", "size", "style"],
@@ -32,13 +32,13 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Performs a web search to find relevant information.",
+      "description": "Performs a web search for the given query.",
       "parameters": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "description": "The search query to use."
+            "description": "The query string to search for."
           }
         },
         "required": ["query"],
@@ -51,17 +51,17 @@
     "type": "function",
     "function": {
       "name": "wikiSearch",
-      "description": "Searches Wikipedia for information.",
+      "description": "Searches Wikipedia for the given query.",
       "parameters": {
         "type": "object",
         "properties": {
           "action": {
             "type": "string",
-            "description": "The type of search action to perform."
+            "description": "Action to perform, usually 'query'."
           },
           "searchString": {
             "type": "string",
-            "description": "The search query for Wikipedia."
+            "description": "The term or phrase to search for on Wikipedia."
           }
         },
         "required": ["action", "searchString"],
@@ -74,14 +74,14 @@
     "type": "function",
     "function": {
       "name": "getStockInfo",
-      "description": "Fetches financial data about stocks.",
+      "description": "Fetches financial data about specified stocks.",
       "parameters": {
         "type": "object",
         "properties": {
           "tickers": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Array of stock ticker symbols."
+            "description": "Stock ticker symbols to retrieve data for."
           },
           "info_types": {
             "type": "array",
@@ -89,7 +89,7 @@
               "type": "string",
               "enum": ["current_price", "dividends", "splits", "company_info", "financials", "recommendations"]
             },
-            "description": "Types of financial information to retrieve."
+            "description": "The specific types of stock information to retrieve."
           }
         },
         "required": ["tickers", "info_types"],
@@ -102,13 +102,13 @@
     "type": "function",
     "function": {
       "name": "getCryptoInfoFromCMC",
-      "description": "Fetches cryptocurrency market data from CoinMarketCap.",
+      "description": "Fetches crypto market data for a specified token.",
       "parameters": {
         "type": "object",
         "properties": {
           "token_symbol": {
             "type": "string",
-            "description": "The cryptocurrency token symbol to look up."
+            "description": "The symbol of the cryptocurrency to look up."
           }
         },
         "required": ["token_symbol"],
@@ -127,21 +127,21 @@
         "properties": {
           "search_query": {
             "type": "string",
-            "description": "The search query for finding papers."
+            "description": "The search query for the papers."
           },
           "max_results": {
             "type": "integer",
-            "description": "Maximum number of papers to return."
+            "description": "The number of papers to return."
           },
           "sort_by": {
             "type": "string",
             "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
-            "description": "How to sort the results."
+            "description": "The sorting method for the results."
           },
           "sort_order": {
             "type": "string",
             "enum": ["ascending", "descending"],
-            "description": "Order of sorting."
+            "description": "The sorting order of the results."
           }
         },
         "required": ["search_query", "max_results", "sort_by", "sort_order"],
@@ -154,19 +154,19 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptocurrencies based on specified metrics.",
+      "description": "Fetches trending cryptocurrencies.",
       "parameters": {
         "type": "object",
         "properties": {
           "option": {
             "type": "string",
             "enum": ["popularity", "top_gainers", "market_cap"],
-            "description": "The metric to use for trending."
+            "description": "The metric to use for identifying trends."
           },
           "limit": {
             "type": "integer",
             "enum": [10, 20, 50, 100, 250],
-            "description": "Number of results to return."
+            "description": "The number of results to return."
           }
         },
         "required": ["option", "limit"],
@@ -179,13 +179,13 @@
     "type": "function",
     "function": {
       "name": "searchNftCollection",
-      "description": "Searches for an NFT collection on Aptos.",
+      "description": "Searches for an NFT collection on the Aptos blockchain.",
       "parameters": {
         "type": "object",
         "properties": {
           "collection_name": {
             "type": "string",
-            "description": "Name of the NFT collection to search for."
+            "description": "The name of the NFT collection to search for."
           }
         },
         "required": ["collection_name"],
@@ -205,17 +205,17 @@
           "period": {
             "type": "string",
             "enum": ["days_1", "days_7", "days_14", "days_30", "days_60", "days_90", "all_time"],
-            "description": "Time period for the trend analysis."
+            "description": "The timeframe for identifying trends."
           },
           "trending_by": {
             "type": "string",
             "enum": ["crypto_volume", "usd_volume", "trades_count", "average_trade"],
-            "description": "Metric to determine trending status."
+            "description": "The metric used to identify trends."
           },
           "limit": {
             "type": "integer",
             "enum": [5, 10, 20, 40],
-            "description": "Number of collections to return."
+            "description": "The number of results to return."
           }
         },
         "required": ["period", "trending_by", "limit"],
@@ -228,21 +228,21 @@
     "type": "function",
     "function": {
       "name": "createSoundEffect",
-      "description": "Generates a sound effect based on text description.",
+      "description": "Generates a sound effect based on user input.",
       "parameters": {
         "type": "object",
         "properties": {
           "text": {
             "type": "string",
-            "description": "Description of the desired sound."
+            "description": "The description of the sound to generate."
           },
           "duration_seconds": {
             "type": "number",
-            "description": "Length of the sound in seconds."
+            "description": "The duration of the sound in seconds."
           },
           "prompt_influence": {
             "type": "number",
-            "description": "Value (0.1 to 1.0) controlling how closely to follow the prompt."
+            "description": "Controls how closely to follow the provided description."
           }
         },
         "required": ["text", "duration_seconds", "prompt_influence"],
@@ -255,7 +255,7 @@
     "type": "function",
     "function": {
       "name": "fetchUserNFTCollections",
-      "description": "Fetches NFT collections from the user's connected Aptos wallet.",
+      "description": "Fetches NFT collections associated with the user's Aptos wallet.",
       "parameters": {
         "type": "object",
         "properties": {},
