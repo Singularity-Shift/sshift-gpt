@@ -30,6 +30,8 @@ import { GetStockInfoDto } from './dto/get-stock-info.dto';
 import { GetTrendingCryptoDto } from './dto/get-trending-crypto.dto';
 import { GetNFTCollectionDto } from './dto/get-nft-collection.dto';
 import { GetTrendingNFTDto } from './dto/get-trending-nft.dto';
+import { GetSearchWebDto } from './dto/get-search-web.dto';
+import { SearchArxivDto } from './dto/search-arxiv.dto';
 
 @Controller('tools')
 @ApiBearerAuth('Authorization')
@@ -314,6 +316,53 @@ export class ToolsController {
         throw error;
       } else {
         this.logger.error('Error searching Wikipedia:', error);
+        throw new HttpException('Internal server error', error.status);
+      }
+    }
+  }
+
+  @Get('search-web')
+  @ApiQuery({
+    name: 'query',
+    type: String,
+    required: true,
+    description: 'Search query',
+    example: 'Artificial intelligence',
+  })
+  @ApiOperation({ summary: 'Search web' })
+  @ApiResponse({
+    description: 'Web search results',
+    status: 200,
+    type: GetSearchWebDto,
+  })
+  searchWeb(@Query('query') query: string): Promise<GetSearchWebDto> {
+    try {
+      return this.toolsService.searchWeb(query);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        this.logger.error('Error searching web:', error);
+        throw new HttpException('Internal server error', error.status);
+      }
+    }
+  }
+
+  @Post('search-arxiv')
+  @ApiOperation({ summary: 'Search ArXiv' })
+  @ApiResponse({
+    description: 'ArXiv search results',
+    status: 200,
+    type: String,
+  })
+  searchArXiv(@Body() searchArXivDto: SearchArxivDto): Promise<string> {
+    try {
+      return this.toolsService.queryArxiv(searchArXivDto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      } else {
+        this.logger.error('Error searching ArXiv:', error);
         throw new HttpException('Internal server error', error.status);
       }
     }

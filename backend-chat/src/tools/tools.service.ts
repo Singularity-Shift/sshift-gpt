@@ -28,9 +28,11 @@ import { CMCService } from './coin-market-cap.service';
 import yahooFinance from 'yahoo-finance2';
 import { ChartOptionsWithReturnObject } from 'yahoo-finance2/dist/esm/src/modules/chart';
 import { StockInfoDto } from './dto/stockInfo.dto';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, lastValueFrom } from 'rxjs';
 import { HttpService } from '@nestjs/axios';
 import { ConfigService } from '../share/config/config.service';
+import xml2js from 'xml2js';
+import { SearchArxivDto } from './dto/search-arxiv.dto';
 
 @Injectable()
 export class ToolsService {
@@ -540,5 +542,166 @@ export class ToolsService {
       console.error('Error fetching data from Wikipedia API:', error);
       throw error;
     }
+  }
+
+  async searchWeb(query: string) {
+    // Add current date information to date-sensitive queries
+    const currentDate = new Date();
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ];
+
+    // Explicitly add the current year to queries about recent events or news
+    if (
+      query.toLowerCase().includes('news') ||
+      query.toLowerCase().includes('today') ||
+      query.toLowerCase().includes('recent') ||
+      query.toLowerCase().includes('latest')
+    ) {
+      const formattedDate = `${
+        monthNames[currentDate.getMonth()]
+      } ${currentDate.getFullYear()}`;
+      query = `${query} in ${formattedDate}`;
+    }
+
+    this.logger.log('Modified search query:', query);
+
+    const body = {
+      model: 'llama-3.1-sonar-large-128k-online',
+      messages: [
+        {
+          role: 'system',
+          content:
+            'Be verbose, precise and accurate as possible, maximising the amount of information you can provide by giving a detailed and in-depth summary of each result or topic. Always prioritize the most recent information available and explicitly mention the current date/year in your responses.',
+        },
+        {
+          role: 'user',
+          content: query,
+        },
+      ],
+      max_tokens: 1000,
+      temperature: 0.2,
+      top_p: 0.9,
+      return_citations: true,
+      search_domain_filter: ['perplexity.ai'],
+      return_images: false,
+      return_related_questions: false,
+      search_recency_filter: 'day',
+      top_k: 0,
+      stream: false,
+      presence_penalty: 0,
+      frequency_penalty: 1,
+    };
+
+    this.logger.log('Sending request to Perplexity API with query:', query);
+    const response = await firstValueFrom(
+      this.httpService.post(
+        this.configService.get('perplexity.baseUrl'),
+        body,
+        {
+          headers: {
+            Authorization: `Bearer ${this.configService.get<string>(
+              'perplexity.apiKey'
+            )}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+    );
+    this.logger.log('Perplexity API response status:', response.status);
+
+    // Handle different error status codes
+    switch (response.status) {
+      case 524:
+        return {
+          error: true,
+          message:
+            "I apologize, but I'm having trouble accessing the latest information right now due to a timeout. This usually means the search service is temporarily overloaded. Please try your question again in a moment.",
+        };
+      case 429:
+        return {
+          error: true,
+          message:
+            "I apologize, but I've hit the rate limit for web searches. Please try again in a few minutes when the limit resets.",
+        };
+      case 401:
+        return {
+          error: true,
+          message:
+            "I apologize, but I'm having authentication issues with the search service. This is a technical problem on our end that needs to be fixed.",
+        };
+    }
+
+    const data = await response.data;
+    this.logger.log('Perplexity API response data:', data);
+
+    return {
+      error: false,
+      result: data.choices[0].message.content,
+    };
+  }
+
+  async queryArxiv(searchQueryDto: SearchArxivDto) {
+    const baseUrl = this.configService.get<string>('arxiv.url');
+
+    const { search_query, sort_order, max_results, sort_by } = searchQueryDto;
+
+    // Ensure all required parameters have values
+    const params = {
+      search_query,
+      start: 0,
+      max_results: max_results || 10,
+      sortBy: sort_by || 'submittedDate',
+      sortOrder: sort_order || 'descending',
+    };
+
+    const response = await lastValueFrom(
+      this.httpService.get(baseUrl, {
+        params,
+        responseType: 'text',
+      })
+    );
+    const responseText = response.data;
+    const responseDict = await xml2js.parseStringPromise(responseText);
+
+    if (responseDict.feed && responseDict.feed.entry) {
+      responseDict.feed.entry = responseDict.feed.entry.map((entry) => {
+        // Format the date
+        if (entry.published && entry.published[0]) {
+          const publishDate = new Date(entry.published[0]);
+          entry.publishedFormatted = publishDate.toLocaleDateString();
+        }
+
+        // Format the links as markdown
+        if (entry.link) {
+          entry.link = entry.link.map((link) => {
+            // Convert link object to markdown format based on type
+            if (link.$.title === 'pdf') {
+              return `[PDF](${link.$.href})`;
+            } else if (link.$.rel === 'alternate') {
+              return `[Abstract](${link.$.href})`;
+            }
+            return link;
+          });
+        }
+
+        return entry;
+      });
+    }
+
+    this.logger.log('Fetched data from Arxiv API:', responseDict);
+
+    return JSON.stringify(responseDict);
   }
 }

@@ -1,5 +1,4 @@
 import backend from '../../../../src/services/backend';
-import { fetchWithHandling } from '../utils/fetchWithHandling.js';
 
 const API_BACKEND_URL = process.env.API_BACKEND_URL;
 
@@ -33,13 +32,15 @@ export async function generateImage(prompt, size, style, auth) {
     }
 }
 
-export async function searchWeb(query) {
+export async function searchWeb(query, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchWeb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-web`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            params: { query },
+            timeout: 60000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchWeb:', error);
         return {
@@ -54,6 +55,7 @@ export async function wikiSearch(action, searchString, auth) {
         const response = await backend.get(`${API_BACKEND_URL}/tools/wiki-search`, {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
             params: { action, searchString },
+            timeout: 30000
         });
 
         return response.data;
@@ -108,13 +110,16 @@ export async function getCryptoInfoFromCMC(token_symbol, auth) {
     }
 }
 
-export async function queryArxiv(search_query, max_results, sort_by, sort_order) {
+export async function queryArxiv(search_query, max_results, sort_by, sort_order, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchArxiv', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ search_query, max_results, sort_by, sort_order }),
+        const response = await backend.post(`${API_BACKEND_URL}/tools/search-arxiv`,
+        { search_query, max_results, sort_by, sort_order },
+        {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            timeout: 30000
         });
+        
+        return response.data;
     } catch (error) {
         console.error('Error in queryArxiv:', error);
         return {
@@ -129,6 +134,7 @@ export async function getTrendingCryptos(option, limit = 10, auth) {
         const response = await backend.get(`${API_BACKEND_URL}/tools/get-trending-cryptos/${option}`, {
             params: { limit },
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            timeout: 30000
         });
 
         return response.data;
@@ -165,7 +171,8 @@ export async function searchTrendingNFT(period, trending_by, limit, auth) {
     try {
         const response = await backend.get(`${API_BACKEND_URL}/tools/search-trending-nft`, {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
-            params: { period, trending_by, limit }
+            params: { period, trending_by, limit },
+            timeout: 30000
         });
 
         return response.data;
