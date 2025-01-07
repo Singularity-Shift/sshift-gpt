@@ -112,9 +112,9 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       )}
       <div className={`
         fixed md:relative top-0 left-0 h-[100dvh] w-80 border-r border-border
-        bg-background
+        bg-transparent
         md:block transform transition-transform duration-300 ease-in-out z-50
-        ${isOpen ? 'translate-x-0 !bg-white dark:!bg-gray-950' : '-translate-x-full md:translate-x-0'}
+        ${isOpen ? 'translate-x-0 !bg-white' : '-translate-x-full md:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border h-[73px] flex items-center justify-between">
