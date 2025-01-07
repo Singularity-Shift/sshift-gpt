@@ -53,6 +53,9 @@ const DOTENV_SCHEMA = Joi.object({
     baseUrl: Joi.string().required(),
     apiKey: Joi.string().required(),
   }),
+  wiki: Joi.object({
+    url: Joi.string().required(),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -78,7 +81,8 @@ type DotenvSchemaKeys =
   | 'indexer.apiKey'
   | 'indexer.userId'
   | 'cmc.baseUrl'
-  | 'cmc.apiKey';
+  | 'cmc.apiKey'
+  | 'wiki.url';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

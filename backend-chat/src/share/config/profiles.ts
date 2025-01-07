@@ -41,6 +41,9 @@ export const Profiles = {
       apiKey: process.env.CMC_API_KEY,
       baseUrl: process.env.CMC_BASE_URL,
     },
+    wiki: {
+      url: process.env.WIKI_URL,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,

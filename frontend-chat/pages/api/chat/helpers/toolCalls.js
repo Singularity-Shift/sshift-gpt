@@ -49,13 +49,14 @@ export async function searchWeb(query) {
     }
 }
 
-export async function wikiSearch(action, searchString) {
+export async function wikiSearch(action, searchString, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/wikiSearch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, searchString }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/wiki-search`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            params: { action, searchString },
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in wikiSearch:', error);
         return {
@@ -74,6 +75,7 @@ export async function getStockInfo(tickers, info_types, auth) {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${auth}` 
                 },
+                timeout: 30000
             }
         );
 
@@ -122,13 +124,14 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order)
     }
 }
 
-export async function getTrendingCryptos(option, limit = 10) {
+export async function getTrendingCryptos(option, limit = 10, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getTrendingCryptos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ option, limit }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/get-trending-cryptos/${option}`, {
+            params: { limit },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in getTrendingCryptos:', error);
         return {
@@ -138,13 +141,17 @@ export async function getTrendingCryptos(option, limit = 10) {
     }
 }
 
-export async function searchNftCollection(collection_name) {
+export async function searchNftCollection(collection_name, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchNftCollection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collection_name }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-nft-collection/${collection_name}`, {
+            headers: {
+                Authorization: `Bearer ${auth}`,
+                'Content-Type': 'application/json' 
+            },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchNftCollection:', error);
         return {
@@ -154,13 +161,14 @@ export async function searchNftCollection(collection_name) {
     }
 }
 
-export async function searchTrendingNFT(period, trending_by, limit) {
+export async function searchTrendingNFT(period, trending_by, limit, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchTrendingNFT', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ period, trending_by, limit }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-trending-nft`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            params: { period, trending_by, limit }
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchTrendingNFT:', error);
         return {
