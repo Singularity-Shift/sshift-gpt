@@ -3,23 +3,23 @@
     "type": "function",
     "function": {
       "name": "generateImage",
-      "description": "Generates exactly one image using DALL-E 3. If the user requests an image, first acknowledge them and consider if you have enough context before calling this tool. If the user has provided little context, ask for more details or clarify if an image is what they want. Once you get the image data, never just drop raw details—present it in a hype, personal way. Always include the exact prompt used in your response and express genuine excitement. Respect all formatting and style rules from the system prompt.",
+      "description": "Generates an image using DALL-E 3.",
       "parameters": {
         "type": "object",
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "A vivid, specific prompt for generating the image. Must be included verbatim in the final response."
+            "description": "The detailed description of the image to generate."
           },
           "size": {
             "type": "string",
             "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "Choose one predefined size. Integrate it naturally when describing the image."
+            "description": "The size of the generated image."
           },
           "style": {
             "type": "string",
             "enum": ["vivid", "natural"],
-            "description": "Choose a style that aligns with the vibe. 'vivid' = hyper-real; 'natural' = realistic."
+            "description": "The artistic style of the image."
           }
         },
         "required": ["prompt", "size", "style"],
@@ -32,13 +32,13 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Performs a web search. Before calling, acknowledge the user’s request and check if you already have enough info. After retrieving results, integrate them into your response with enthusiasm and commentary—no raw data dumps. If URLs help, include them once. Sync with the system prompt’s tone and style.",
+      "description": "Performs a web search for the given query.",
       "parameters": {
         "type": "object",
         "properties": {
           "query": {
             "type": "string",
-            "description": "A direct string query from the user. Use it exactly as provided. After retrieving data, fold it into a curated, hype-filled narrative."
+            "description": "The query string to search for."
           }
         },
         "required": ["query"],
@@ -51,17 +51,17 @@
     "type": "function",
     "function": {
       "name": "wikiSearch",
-      "description": "Searches Wikipedia. Only call if needed and after acknowledging the user. Integrate the returned info into your response with personality and no raw parroting. Keep it casual, hype, and consider all system prompt rules.",
+      "description": "Searches Wikipedia for the given query.",
       "parameters": {
         "type": "object",
         "properties": {
           "action": {
             "type": "string",
-            "description": "Typically 'query'. Stick to what the user asked for."
+            "description": "Action to perform, usually 'query'."
           },
           "searchString": {
             "type": "string",
-            "description": "The user's search query verbatim. Return results integrated into a fun, enthusiastic commentary."
+            "description": "The term or phrase to search for on Wikipedia."
           }
         },
         "required": ["action", "searchString"],
@@ -74,14 +74,14 @@
     "type": "function",
     "function": {
       "name": "getStockInfo",
-      "description": "Fetches financial data about stocks. If the user wants stock info, first acknowledge and check context. After the call, incorporate results into a lively narrative, no raw listing. Follow data rules (specific vs. generic) and keep the hype.",
+      "description": "Fetches financial data about specified stocks.",
       "parameters": {
         "type": "object",
         "properties": {
           "tickers": {
             "type": "array",
             "items": { "type": "string" },
-            "description": "Exactly as user provided. Don’t modify symbols."
+            "description": "Stock ticker symbols to retrieve data for."
           },
           "info_types": {
             "type": "array",
@@ -89,7 +89,7 @@
               "type": "string",
               "enum": ["current_price", "dividends", "splits", "company_info", "financials", "recommendations"]
             },
-            "description": "All requested data must be included if generic. For specific requests, follow the exact data rule. Integrate results with personality."
+            "description": "The specific types of stock information to retrieve."
           }
         },
         "required": ["tickers", "info_types"],
@@ -102,13 +102,13 @@
     "type": "function",
     "function": {
       "name": "getCryptoInfoFromCMC",
-      "description": "Fetches crypto market data. If user wants crypto info, first acknowledge. Return only what’s requested if specific. For generic asks, include all data. Don’t just list data—comment on it, keep the hype. Integrate results as per system prompt style.",
+      "description": "Fetches crypto market data for a specified token.",
       "parameters": {
         "type": "object",
         "properties": {
           "token_symbol": {
             "type": "string",
-            "description": "Use exactly what user provided. Then blend data into a dynamic, personal response."
+            "description": "The symbol of the cryptocurrency to look up."
           }
         },
         "required": ["token_symbol"],
@@ -121,27 +121,27 @@
     "type": "function",
     "function": {
       "name": "queryArxiv",
-      "description": "Fetches academic papers. If the user requests research info, acknowledge them, consider existing context, then call if needed. Don’t just spit out titles—summarize and hype them. Follow system rules and integrate results smoothly.",
+      "description": "Fetches academic papers from arXiv.",
       "parameters": {
         "type": "object",
         "properties": {
           "search_query": {
             "type": "string",
-            "description": "Use the user’s query exactly. Then incorporate results into a casual, curious narrative."
+            "description": "The search query for the papers."
           },
           "max_results": {
             "type": "integer",
-            "description": "Number of papers. Present them engagingly, keep it hype."
+            "description": "The number of papers to return."
           },
           "sort_by": {
             "type": "string",
             "enum": ["relevance", "lastUpdatedDate", "submittedDate"],
-            "description": "Sorting method. Mention it to add context to your commentary."
+            "description": "The sorting method for the results."
           },
           "sort_order": {
             "type": "string",
             "enum": ["ascending", "descending"],
-            "description": "Sorting order. If newest first, highlight how fresh these insights are."
+            "description": "The sorting order of the results."
           }
         },
         "required": ["search_query", "max_results", "sort_by", "sort_order"],
@@ -154,19 +154,19 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptos. Check if needed, then call. Integrate results with excitement, mention any interesting standouts, and always follow system prompt rules (no dry listing, maintain hype and personal flair).",
+      "description": "Fetches trending cryptocurrencies.",
       "parameters": {
         "type": "object",
         "properties": {
           "option": {
             "type": "string",
             "enum": ["popularity", "top_gainers", "market_cap"],
-            "description": "Exactly as user requested. Highlight the chosen metric in your commentary."
+            "description": "The metric to use for identifying trends."
           },
           "limit": {
             "type": "integer",
             "enum": [10, 20, 50, 100, 250],
-            "description": "Number of results. Acknowledge and reflect on the top picks with enthusiasm."
+            "description": "The number of results to return."
           }
         },
         "required": ["option", "limit"],
@@ -179,13 +179,13 @@
     "type": "function",
     "function": {
       "name": "searchNftCollection",
-      "description": "Searches for an NFT collection on Aptos. Acknowledge user first, then call if needed. For generic requests, provide all data. For specific data points, return just that. Always infuse personality and commentary—no raw parroting.",
+      "description": "Searches for an NFT collection on the Aptos blockchain.",
       "parameters": {
         "type": "object",
         "properties": {
           "collection_name": {
             "type": "string",
-            "description": "User’s exact input. Integrate returned data into a curated, enthusiastic response."
+            "description": "The name of the NFT collection to search for."
           }
         },
         "required": ["collection_name"],
@@ -198,24 +198,24 @@
     "type": "function",
     "function": {
       "name": "searchTrendingNFT",
-      "description": "Fetches trending NFT collections. Check if needed. Return all requested data and hype it up. Keep the conversation flowing, integrate the info with personal takes, and respect the system prompt’s style.",
+      "description": "Fetches trending NFT collections based on specified metrics.",
       "parameters": {
         "type": "object",
         "properties": {
           "period": {
             "type": "string",
             "enum": ["days_1", "days_7", "days_14", "days_30", "days_60", "days_90", "all_time"],
-            "description": "Timeframe from user request. Mention how that timeframe shapes these trends."
+            "description": "The timeframe for identifying trends."
           },
           "trending_by": {
             "type": "string",
             "enum": ["crypto_volume", "usd_volume", "trades_count", "average_trade"],
-            "description": "Metric for trending. Highlight what’s hot by that metric."
+            "description": "The metric used to identify trends."
           },
           "limit": {
             "type": "integer",
             "enum": [5, 10, 20, 40],
-            "description": "Number of results. Present them in a lively, engaging manner."
+            "description": "The number of results to return."
           }
         },
         "required": ["period", "trending_by", "limit"],
@@ -228,21 +228,21 @@
     "type": "function",
     "function": {
       "name": "createSoundEffect",
-      "description": "Generates a sound effect. Only call if user explicitly requests a sound, or sound effect either on its own or in the context of a message. Once created, integrate the sound URL and prompt into a final message that’s excited, personal, and never just raw output.",
+      "description": "Generates a sound effect based on user input.",
       "parameters": {
         "type": "object",
         "properties": {
           "text": {
             "type": "string",
-            "description": "User’s exact description for the sound. Include it verbatim when presenting the result."
+            "description": "The description of the sound to generate."
           },
           "duration_seconds": {
             "type": "number",
-            "description": "Length of the sound. Mention creatively in your final response."
+            "description": "The duration of the sound in seconds."
           },
           "prompt_influence": {
             "type": "number",
-            "description": "Value (0.1 to 1.0) controlling how closely to follow the prompt. Reflect on this setting in your final commentary."
+            "description": "Controls how closely to follow the provided description."
           }
         },
         "required": ["text", "duration_seconds", "prompt_influence"],
@@ -255,7 +255,7 @@
     "type": "function",
     "function": {
       "name": "fetchUserNFTCollections",
-      "description": "Fetches NFT collections from the user’s connected Aptos wallet. If asked, confirm and call if needed. Present the findings like a buddy checking out their stash, no raw data dumps—add your personal hype and commentary.",
+      "description": "Fetches NFT collections associated with the user's Aptos wallet.",
       "parameters": {
         "type": "object",
         "properties": {},

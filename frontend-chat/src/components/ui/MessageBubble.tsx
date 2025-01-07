@@ -79,11 +79,19 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     }
   }, [message.content]);
 
+  // Add useEffect to sync editedContent with message.content when edit mode changes
+  React.useEffect(() => {
+    if (isEditing) {
+      setEditedContent(message.content);
+    }
+  }, [isEditing, message.content]);
+
   const handleEditClick = () => {
     if (isEditing) {
       onEdit(message, editedContent);
       setIsEditing(false);
     } else {
+      setEditedContent(message.content); // Also set content when entering edit mode
       setIsEditing(true);
     }
   };
@@ -101,11 +109,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
 
     return (
       <>
-        {/* Render audio players separately from markdown content */}
-        {audioUrls.map((url, index) => (
-          <AudioPlayer key={`audio-${url}-${index}`} src={url} />
-        ))}
-        
         <ReactMarkdown
           components={{
             code: ({ node, inline, className, children, ...props }: any) => {
@@ -126,9 +129,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               return <div className="mb-2">{children}</div>;
             },
             a: ({ href, children }) => {
-              // Skip rendering audio players here since we handle them separately
+              // Handle audio files by rendering the AudioPlayer component
               if (href && href.endsWith('.mp3')) {
-                return null;
+                return <AudioPlayer src={href} />;
               }
               return (
                 <a
