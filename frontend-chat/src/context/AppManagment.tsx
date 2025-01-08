@@ -466,7 +466,7 @@ export const AppManagementProvider = ({
         }
 
         toast({
-          title: 'Subscribed',
+          title: 'Subscribe',
           description: (
             <a
               href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
