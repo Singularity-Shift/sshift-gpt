@@ -8,6 +8,7 @@ import {
   ParseIntPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -32,6 +33,7 @@ import { GetNFTCollectionDto } from './dto/get-nft-collection.dto';
 import { GetTrendingNFTDto } from './dto/get-trending-nft.dto';
 import { GetSearchWebDto } from './dto/get-search-web.dto';
 import { SearchArxivDto } from './dto/search-arxiv.dto';
+import { ToolsGuard } from './tools.guard';
 
 @Controller('tools')
 @ApiBearerAuth('Authorization')
@@ -42,6 +44,7 @@ export class ToolsController {
 
   constructor(private readonly toolsService: ToolsService) {}
   @Post('create-sound-effect')
+  @UseGuards(ToolsGuard('createSoundEffect'))
   @ApiOperation({ summary: 'Generate AI response' })
   @ApiResponse({
     description: 'Generated sound effect',
@@ -66,6 +69,7 @@ export class ToolsController {
   }
 
   @Post('fetch-user-nft-collections')
+  @UseGuards(ToolsGuard('fetchUserNFTCollections'))
   @ApiOperation({ summary: 'Fetch user NFT collections' })
   @ApiResponse({
     description: 'User NFT collections',
@@ -88,6 +92,7 @@ export class ToolsController {
   }
 
   @Post('generate-image')
+  @UseGuards(ToolsGuard('generateImage'))
   @ApiOperation({ summary: 'Generame image by chat gpt' })
   @ApiResponse({
     description: 'Generated image',
@@ -112,6 +117,7 @@ export class ToolsController {
   }
 
   @Get('get-crypto-info-from-cmd/:tokenSymbol')
+  @UseGuards(ToolsGuard('getCryptoInfoFromCMC'))
   @ApiParam({
     name: 'tokenSymbol',
     description: 'Token symbol to get the info',
@@ -144,6 +150,7 @@ export class ToolsController {
   }
 
   @Post('get-stock-info')
+  @UseGuards(ToolsGuard('getStockInfo'))
   @ApiOperation({ summary: 'Get stock info' })
   @ApiResponse({
     description: 'Stock info',
@@ -168,6 +175,7 @@ export class ToolsController {
   }
 
   @Get('get-trending-cryptos/:option')
+  @UseGuards(ToolsGuard('getTrendingCryptos'))
   @ApiParam({
     name: 'option',
     description: 'Option to get trending cryptos',
@@ -210,6 +218,7 @@ export class ToolsController {
   }
 
   @Get('search-nft-collection/:collectionName')
+  @UseGuards(ToolsGuard('searchNftCollection'))
   @ApiParam({
     name: 'collectionName',
     description: 'Collection name to search',
@@ -239,6 +248,7 @@ export class ToolsController {
   }
 
   @Get('search-trending-nft')
+  @UseGuards(ToolsGuard('searchTrendingNFT'))
   @ApiQuery({
     name: 'limit',
     type: Number,
@@ -285,6 +295,7 @@ export class ToolsController {
   }
 
   @Get('wiki-search')
+  @UseGuards(ToolsGuard('wikiSearch'))
   @ApiQuery({
     name: 'action',
     type: String,
@@ -322,6 +333,7 @@ export class ToolsController {
   }
 
   @Get('search-web')
+  @UseGuards(ToolsGuard('searchWeb'))
   @ApiQuery({
     name: 'query',
     type: String,
@@ -349,6 +361,7 @@ export class ToolsController {
   }
 
   @Post('search-arxiv')
+  @UseGuards(ToolsGuard('queryArxiv'))
   @ApiOperation({ summary: 'Search ArXiv' })
   @ApiResponse({
     description: 'ArXiv search results',

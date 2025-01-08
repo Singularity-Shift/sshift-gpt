@@ -15,6 +15,6 @@ import { UserModule } from '../user/user.module';
   ],
   providers: [AdminConfigService],
   controllers: [AdminConfigController],
-  exports: [],
+  exports: [AdminConfigService],
 })
 export class AdminConfigModule {}

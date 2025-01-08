@@ -9,9 +9,19 @@ import { BucketService } from './bucket.service';
 import { ElevenLabsService } from './elevenlabs.service';
 import { HttpModule } from '@nestjs/axios';
 import { CMCService } from './coin-market-cap.service';
+import { AdminConfigModule } from '../admin-config/admin-config.module';
+import { UserModule } from '../user/user.module';
 
 @Module({
-  imports: [ConfigModule, GPTModule, IndexerModule, StorageModule, HttpModule],
+  imports: [
+    ConfigModule,
+    GPTModule,
+    IndexerModule,
+    StorageModule,
+    HttpModule,
+    AdminConfigModule,
+    UserModule,
+  ],
   controllers: [ToolsController],
   providers: [ToolsService, ElevenLabsService, BucketService, CMCService],
   exports: [],

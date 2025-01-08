@@ -1,4 +1,3 @@
-import backend from '../../../../src/services/backend';
 import * as toolCalls from './toolCalls.js';
 
 export async function handleToolCall(chunk, currentToolCalls) {
@@ -50,9 +49,6 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
             
             if (typeof toolFunction === 'function') {
                 console.log(`Processing tool call: ${toolCall.function.name}`, args);
-                if(!userConfig?.isCollector) {
-                    await checkToolsCredits(userConfig, toolCall.function.name, auth)
-                }
                 
                 const result = await toolFunction(...Object.values(args), auth);
                 
@@ -108,26 +104,4 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
     global.userConfig = undefined;
     
     return results;
-}
-
-const checkToolsCredits = async (userConfig, tool, auth) => {
-    const adminConfig = await backend.get('/admin-config');
-
-    const toolsCredits = userConfig.toolsActivity.find(u => u.name === tool);
-    
-    const toolsConfig = adminConfig.data.tools.find(m => m.name === tool);
-
-    if(!toolsConfig) {
-        return;
-    }
-
-    if(toolsCredits?.creditsUsed && toolsCredits.creditsUsed >= toolsConfig.credits * userConfig.duration) {
-        throw new Error(`Not enough credits for tool: ${tool}`);
-    }
-
-    await backend.put('/user', {
-        name: tool,
-        creditType: 'Tools',
-        creditsUsed: toolsCredits?.creditsUsed || 0,
-    }, { headers: { Authorization: `Bearer ${auth}` } });
 }
