@@ -125,8 +125,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </code>
               );
             },
+            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[1050px]:text-2xl">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[1050px]:text-xl">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[1050px]:text-lg">{children}</h3>,
             p: ({ children }) => {
-              return <div className="mb-2">{children}</div>;
+              return <div className="mb-2 text-sm min-[1050px]:text-base">{children}</div>;
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -144,9 +147,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </a>
               );
             },
-            h1: ({ children }) => <h1 className="text-2xl font-bold mb-2">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-xl font-bold mb-2">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-lg font-bold mb-2">{children}</h3>,
             ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
             ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
             li: ({ children }) => <li className="mb-1">{children}</li>,
@@ -211,9 +211,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={`max-w-[75%] w-auto p-3 rounded-lg ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        }`}
+        } text-sm min-[1050px]:text-base`}
       >
-        {renderContent()}
+        <div className="prose prose-sm max-w-none min-[1050px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[1050px]:!prose-h1:text-2xl min-[1050px]:!prose-h2:text-xl min-[1050px]:!prose-h3:text-lg min-[1050px]:!prose-p:text-base">
+          {renderContent()}
+        </div>
 
         {!isUser && (
           <AssistantButtonArray
