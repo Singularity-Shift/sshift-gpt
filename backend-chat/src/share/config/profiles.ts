@@ -70,7 +70,7 @@ export const Profiles = {
       expiredTime: process.env.JWT_EXPIRED_TIME,
     },
     openApi: {
-      apiKey: process.env.OPENAPI_API_KEY,
+      apiKey: process.env.OPENAI_API_KEY,
     },
     storage: {
       type: process.env.TYPE,
