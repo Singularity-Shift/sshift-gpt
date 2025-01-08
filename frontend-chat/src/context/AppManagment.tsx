@@ -424,18 +424,60 @@ export const AppManagementProvider = ({
         arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
       });
 
-      toast({
-        title: 'Subscribe',
-        description: (
-          <a
-            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
-            target="_blank"
-          >
-            {tx?.hash}
-          </a>
-        ),
-        variant: 'default',
+      // Wait for transaction to be confirmed
+      const committedTransactionResponse = await aptosClient().waitForTransaction({
+        transactionHash: tx?.hash as string,
       });
+
+      if (committedTransactionResponse.success) {
+        // Check subscription status after successful purchase
+        const hasSubscriptionActiveResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.has_subscription_active({
+            typeArguments: [],
+            functionArguments: [walletAddress as `0x${string}`],
+          });
+
+        const hasSubscriptionActive = hasSubscriptionActiveResult?.[0] as boolean;
+        setIsSubscriptionActive(hasSubscriptionActive);
+
+        if (hasSubscriptionActive) {
+          const subscriptionResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_plan({
+              typeArguments: [],
+              functionArguments: [walletAddress as `0x${string}`],
+            });
+
+          const subscription = subscriptionResult?.[1];
+
+          if (subscription?.[1]) {
+            const expireDate = parseInt(subscription) * 1000;
+            setExpirationDate(
+              new Date(expireDate).toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            );
+          }
+        }
+
+        toast({
+          title: 'Subscribed',
+          description: (
+            <a
+              href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+              target="_blank"
+            >
+              {tx?.hash}
+            </a>
+          ),
+          variant: 'default',
+        });
+      }
     } catch (error) {
       toast({
         title: 'Error subscribing',
