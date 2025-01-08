@@ -1,3 +1,5 @@
+import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
+import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
 import { MultisignAction } from './enums';
 
 export interface IAuth {
@@ -217,4 +219,66 @@ export interface INFTItem {
 export interface ISubscriptionToClaim {
   account: string;
   duration: number;
+}
+
+export interface IImage {
+  prompt: string;
+  url: string;
+}
+
+export interface ISoundEffect {
+  url: string;
+  duration_seconds: string | number;
+  text: string;
+  prompt: string;
+  description: string;
+}
+
+export interface ICollection {
+  id: string;
+  slug: string;
+  title: string;
+  cover_url: string;
+  floor: number;
+  verified: boolean;
+  volume: number;
+}
+
+export interface ICmcInfo {
+  market_cap: number;
+  current_price: number;
+  total_volume: number;
+  circulating_supply: number;
+  total_supply: number;
+  undiluted_market_cap: number;
+  description: string;
+  logo: string;
+  urls: unknown;
+  exchanges: string[];
+}
+
+export interface ISplit {
+  date: Date;
+  split: string;
+}
+
+export interface IDividend {
+  date: Date;
+  dividend: number;
+}
+
+export interface IFinancial {
+  financialData: QuoteSummaryResult['financialData'];
+  incomeStatement: QuoteSummaryResult['incomeStatementHistory'];
+}
+
+export interface ITicker {
+  current_price: number;
+  splits: object;
+  dividends: object;
+  company_info: QuoteSummaryResult['price'] &
+    QuoteSummaryResult['summaryProfile'] &
+    QuoteSummaryResult['summaryDetail'];
+  financials: IFinancial;
+  recommendations: RecommendationsBySymbolResponse;
 }

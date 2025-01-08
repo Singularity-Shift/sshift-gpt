@@ -8,3 +8,9 @@ export enum MultisignAction {
   RemoveCollector = 'RemoveCollector',
   RemoveResourceAccount = 'RemoveResourceAccount',
 }
+
+export enum TrendingOptions {
+  popularity = 'popularity',
+  topGainers = 'top_gainers',
+  marketCap = 'market_cap',
+}

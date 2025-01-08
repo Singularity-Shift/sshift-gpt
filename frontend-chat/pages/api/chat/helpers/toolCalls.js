@@ -1,21 +1,26 @@
-import { fetchWithHandling } from '../utils/fetchWithHandling.js';
+import backend from '../../../../src/services/backend';
 
-export async function generateImage(prompt, size, style) {
+const API_BACKEND_URL = process.env.API_BACKEND_URL;
+
+export async function generateImage(prompt, size, style, auth) {
     try {
         console.log('Generating image with params:', { prompt, size, style });
         
-        const result = await fetchWithHandling('http://localhost:3000/api/tools/generateImage', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ prompt, size, style }),
+        const result = await backend.post(`${API_BACKEND_URL}/tools/generate-image`, {
+            prompt,
+            size,
+            style,
+        }, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            timeout: 60000
         });
 
-        if (!result.url) {
+        if (!result.data.url) {
             throw new Error('No image URL returned from generation');
         }
 
         return {
-            url: result.url,
+            url: result.data.url,
             prompt: result.prompt || prompt
         };
     } catch (error) {
@@ -27,13 +32,15 @@ export async function generateImage(prompt, size, style) {
     }
 }
 
-export async function searchWeb(query) {
+export async function searchWeb(query, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchWeb', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ query }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-web`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            params: { query },
+            timeout: 60000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchWeb:', error);
         return {
@@ -43,13 +50,15 @@ export async function searchWeb(query) {
     }
 }
 
-export async function wikiSearch(action, searchString) {
+export async function wikiSearch(action, searchString, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/wikiSearch', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action, searchString }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/wiki-search`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            params: { action, searchString },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in wikiSearch:', error);
         return {
@@ -59,13 +68,20 @@ export async function wikiSearch(action, searchString) {
     }
 }
 
-export async function getStockInfo(tickers, info_types) {
+export async function getStockInfo(tickers, info_types, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getStockInfo', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ tickers, info_types }),
-        });
+        const result = await backend.post(`${API_BACKEND_URL}/tools/get-stock-info`, {
+             tickers, info_types },
+            {
+                headers: { 
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${auth}` 
+                },
+                timeout: 30000
+            }
+        );
+
+        return result.data;
     } catch (error) {
         console.error('Error in getStockInfo:', error);
         return {
@@ -75,37 +91,35 @@ export async function getStockInfo(tickers, info_types) {
     }
 }
 
-export async function getCryptoInfoFromCMC(token_symbol) {
+export async function getCryptoInfoFromCMC(token_symbol, auth) {
     try {
-        const result = await fetchWithHandling('http://localhost:3000/api/tools/getCryptoInfoFromCMC', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token_symbol }),
+        const result = await backend.get(`${API_BACKEND_URL}/tools/get-crypto-info-from-cmd/${token_symbol}`, {
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            timeout: 30000
         });
         
-        if (result.error) {
-            return {
-                error: false,
-                message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
-            };
-        }
-        
-        return result;
+        return result.data;
     } catch (error) {
         return {
-            error: false,
-            message: `Sorry, ${token_symbol} is not listed on CoinMarketCap.`
+            error: true,
+            message: `Failed to get crypto info from CoinMarketCap: ${error.message}`
         };
     }
 }
 
-export async function queryArxiv(search_query, max_results, sort_by, sort_order) {
+export async function queryArxiv(search_query, max_results, sort_by, sort_order, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchArxiv', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ search_query, max_results, sort_by, sort_order }),
+        const response = await backend.post(`${API_BACKEND_URL}/tools/search-arxiv`,
+        { search_query, max_results, sort_by, sort_order },
+        {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            timeout: 30000
         });
+        
+        return response.data;
     } catch (error) {
         console.error('Error in queryArxiv:', error);
         return {
@@ -115,13 +129,15 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order)
     }
 }
 
-export async function getTrendingCryptos(option, limit = 10) {
+export async function getTrendingCryptos(option, limit = 10, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/getTrendingCryptos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ option, limit }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/get-trending-cryptos/${option}`, {
+            params: { limit },
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in getTrendingCryptos:', error);
         return {
@@ -131,13 +147,17 @@ export async function getTrendingCryptos(option, limit = 10) {
     }
 }
 
-export async function searchNftCollection(collection_name) {
+export async function searchNftCollection(collection_name, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchNftCollection', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ collection_name }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-nft-collection/${collection_name}`, {
+            headers: {
+                Authorization: `Bearer ${auth}`,
+                'Content-Type': 'application/json' 
+            },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchNftCollection:', error);
         return {
@@ -147,13 +167,15 @@ export async function searchNftCollection(collection_name) {
     }
 }
 
-export async function searchTrendingNFT(period, trending_by, limit) {
+export async function searchTrendingNFT(period, trending_by, limit, auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/searchTrendingNFT', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ period, trending_by, limit }),
+        const response = await backend.get(`${API_BACKEND_URL}/tools/search-trending-nft`, {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            params: { period, trending_by, limit },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in searchTrendingNFT:', error);
         return {
@@ -163,22 +185,24 @@ export async function searchTrendingNFT(period, trending_by, limit) {
     }
 }
 
-export async function createSoundEffect(text, duration_seconds, prompt_influence) {
+export async function createSoundEffect(text, duration_seconds, prompt_influence, auth) {
     try {
         console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
         
-        const result = await fetchWithHandling('http://localhost:3000/api/tools/createSoundEffect', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ text, duration_seconds, prompt_influence }),
+        const result = await backend.post(`${API_BACKEND_URL}/tools/create-sound-effect`, {
+            text, duration_seconds, prompt_influence 
+        },
+        {
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
+            timeout: 60000
         });
 
-        if (!result.url) {
+        if (!result.data.url) {
             throw new Error('No sound effect URL returned from generation');
         }
 
         return {
-            content: `[Sound Effect: ${text}](${result.url})`,
+            content: `[Sound Effect: ${text}](${result.data.url})`,
             duration_seconds,
             text
         };
@@ -191,14 +215,17 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     }
 }
 
-export async function fetchUserNFTCollections() {
+export async function fetchUserNFTCollections(auth) {
     try {
-        return await fetchWithHandling('http://localhost:3000/api/tools/fetchUserNFTCollections', {
-            method: 'POST',
+        const response = await backend.post(`${API_BACKEND_URL}/tools/fetch-user-nft-collections`, {}, {
             headers: { 
-                'Content-Type': 'application/json'
-            }
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            timeout: 30000
         });
+
+        return response.data;
     } catch (error) {
         console.error('Error in fetchUserNFTCollections:', error);
         return {
