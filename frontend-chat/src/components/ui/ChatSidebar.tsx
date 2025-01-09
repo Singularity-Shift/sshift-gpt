@@ -58,16 +58,14 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   };
 
   const groupChats = () => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const yesterday = new Date(today);
-    yesterday.setDate(yesterday.getDate() - 1);
-    const previous7Days = new Date(today);
-    previous7Days.setDate(previous7Days.getDate() - 7);
-    const previous30Days = new Date(today);
-    previous30Days.setDate(previous30Days.getDate() - 30);
-    const previous90Days = new Date(today);
-    previous90Days.setDate(previous90Days.getDate() - 90);
+    // Get current timestamp and normalize to start of day
+    const MS_PER_DAY = 86400000; // 24 * 60 * 60 * 1000
+    const now = Date.now();
+    const today = Math.floor(now / MS_PER_DAY) * MS_PER_DAY;
+    const yesterday = today - MS_PER_DAY;
+    const previous7Days = today - (7 * MS_PER_DAY);
+    const previous30Days = today - (30 * MS_PER_DAY);
+    const previous90Days = today - (90 * MS_PER_DAY);
 
     const chatGroups: { [key: string]: Chat[] } = {
       Today: [],
@@ -78,22 +76,31 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       Older: [],
     };
 
-    chats.forEach((chat) => {
-      const lastUpdated = new Date(chat.lastUpdated);
-      lastUpdated.setHours(0, 0, 0, 0);
-      if (lastUpdated.getTime() === today.getTime()) {
+    // Sort chats by lastUpdated in descending order (newest first)
+    const sortedChats = [...chats].sort((a, b) => b.lastUpdated - a.lastUpdated);
+
+    sortedChats.forEach((chat) => {
+      // Normalize chat timestamp to start of day
+      const chatDayStart = Math.floor(chat.lastUpdated / MS_PER_DAY) * MS_PER_DAY;
+
+      if (chatDayStart === today) {
         chatGroups.Today.push(chat);
-      } else if (lastUpdated.getTime() === yesterday.getTime()) {
+      } else if (chatDayStart === yesterday) {
         chatGroups.Yesterday.push(chat);
-      } else if (lastUpdated >= previous7Days) {
+      } else if (chatDayStart > previous7Days && chatDayStart < yesterday) {
         chatGroups['Previous 7 Days'].push(chat);
-      } else if (lastUpdated >= previous30Days) {
+      } else if (chatDayStart > previous30Days && chatDayStart <= previous7Days) {
         chatGroups['Previous 30 Days'].push(chat);
-      } else if (lastUpdated >= previous90Days) {
+      } else if (chatDayStart > previous90Days && chatDayStart <= previous30Days) {
         chatGroups['Previous 90 Days'].push(chat);
       } else {
         chatGroups.Older.push(chat);
       }
+    });
+
+    // Sort each group internally by lastUpdated in descending order
+    Object.values(chatGroups).forEach(group => {
+      group.sort((a, b) => b.lastUpdated - a.lastUpdated);
     });
 
     return chatGroups;
