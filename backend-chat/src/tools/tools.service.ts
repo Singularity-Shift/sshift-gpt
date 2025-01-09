@@ -200,7 +200,7 @@ export class ToolsService {
             switch (infoType) {
               case 'current_price': {
                 const quote = await yahooFinance.quote(ticker);
-                tickerResult.current_price = quote.regularMarketPrice;
+                tickerResult.current_price = quote?.regularMarketPrice;
                 break;
               }
               case 'splits': {
