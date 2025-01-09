@@ -14,12 +14,14 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSendMessage = () => {
     if (inputMessage.trim() || uploadedImages.length > 0) {
       onSendMessage(inputMessage, uploadedImages);
       setInputMessage('');
       setUploadedImages([]);
+      setIsExpanded(false);
     }
   };
 
@@ -67,10 +69,12 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Type your message here... (Ctrl+Enter to send)"
-              className="resize-none min-h-[45px] max-h-[120px]"
+              className="resize-none"
+              isExpanded={isExpanded}
+              onToggleExpand={() => setIsExpanded(!isExpanded)}
             />
           </div>
-          <div className="flex items-center gap-1.5 md:gap-2 flex-shrink-0">
+          <div className="flex items-end self-end gap-1.5 md:gap-2 flex-shrink-0">
             <ImageUploadButton
               onImageSelect={setUploadedImages}
               uploadedImages={uploadedImages}
