@@ -98,11 +98,6 @@ export default function ChatPage() {
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
     }
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === chatId ? { ...chat, lastUpdated: Date.now() } : chat
-      )
-    );
   };
 
   const handleModelChange = (model: string) => {
@@ -335,6 +330,15 @@ export default function ChatPage() {
       // Get all messages up to and including the previous user message
       const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
 
+      // Update the chat to remove the regenerated message and all subsequent messages
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === currentChatId
+            ? { ...chat, messages: messagesUpToLastUser }
+            : chat
+        )
+      );
+
       // Format messages for the API request
       const formattedMessages = messagesUpToLastUser.map(msg => {
         if (msg.role === 'user' && msg.images && msg.images.length > 0) {
@@ -473,7 +477,6 @@ export default function ChatPage() {
         const updatedChats = savedChats.chats.map((chat: Chat) => ({
           ...chat,
           createdAt: chat.createdAt || Date.now(),
-          lastUpdated: chat.lastUpdated || Date.now(),
         }));
         setChats(updatedChats);
         if (updatedChats.length > 0) {
@@ -645,6 +648,7 @@ export default function ChatPage() {
                     ? {
                         ...c,
                         messages: [...messagesUpToEdit, newAssistantMessage],
+                        lastUpdated: Date.now()
                       }
                     : c
                 )
