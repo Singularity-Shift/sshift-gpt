@@ -479,7 +479,12 @@ export default function ChatPage() {
         }));
         setChats(updatedChats);
         if (updatedChats.length > 0) {
-          setCurrentChatId(updatedChats[0].id);
+          // Find the most recent chat based on lastUpdated timestamp
+          const mostRecentChat = updatedChats.reduce((latest: Chat, current: Chat) => 
+            (current.lastUpdated || 0) > (latest.lastUpdated || 0) ? current : latest
+          );
+          setCurrentChatId(mostRecentChat.id);
+          setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
         } else {
           handleNewChat();
         }
