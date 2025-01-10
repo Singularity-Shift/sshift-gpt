@@ -23,7 +23,7 @@ import {
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { GenerateImageDto } from './dto/generate-image.dto';
 import { OpenAI } from 'openai';
-import { BucketService } from './bucket.service';
+import { BucketService } from '../bucket/bucket.service';
 import { CMCService } from './coin-market-cap.service';
 import yahooFinance from 'yahoo-finance2';
 import { ChartOptionsWithReturnObject } from 'yahoo-finance2/dist/esm/src/modules/chart';
@@ -172,9 +172,7 @@ export class ToolsService {
 
     this.logger.log('Image generated successfully:', imageUrl);
 
-    const bucketUrl = (await this.bucketService.uploadImageToBucket(
-      imageUrl
-    )) as Pick<IImage, 'url'>;
+    const bucketUrl = await this.bucketService.uploadImageToBucket(imageUrl);
 
     this.logger.log('Image uploaded to bucket:', bucketUrl);
 

@@ -1,12 +1,10 @@
 import backend from '../../../../src/services/backend';
 
-const API_BACKEND_URL = process.env.API_BACKEND_URL;
-
 export async function generateImage(prompt, size, style, auth) {
     try {
         console.log('Generating image with params:', { prompt, size, style });
         
-        const result = await backend.post(`${API_BACKEND_URL}/tools/generate-image`, {
+        const result = await backend.post('/tools/generate-image', {
             prompt,
             size,
             style,
@@ -34,7 +32,7 @@ export async function generateImage(prompt, size, style, auth) {
 
 export async function searchWeb(query, auth) {
     try {
-        const response = await backend.get(`${API_BACKEND_URL}/tools/search-web`, {
+        const response = await backend.get('/tools/search-web', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
             params: { query },
             timeout: 60000
@@ -52,7 +50,7 @@ export async function searchWeb(query, auth) {
 
 export async function wikiSearch(action, searchString, auth) {
     try {
-        const response = await backend.get(`${API_BACKEND_URL}/tools/wiki-search`, {
+        const response = await backend.get('/tools/wiki-search', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
             params: { action, searchString },
             timeout: 30000
@@ -70,7 +68,7 @@ export async function wikiSearch(action, searchString, auth) {
 
 export async function getStockInfo(tickers, info_types, auth) {
     try {
-        const result = await backend.post(`${API_BACKEND_URL}/tools/get-stock-info`, {
+        const result = await backend.post('/tools/get-stock-info', {
              tickers, info_types },
             {
                 headers: { 
@@ -93,7 +91,7 @@ export async function getStockInfo(tickers, info_types, auth) {
 
 export async function getCryptoInfoFromCMC(token_symbol, auth) {
     try {
-        const result = await backend.get(`${API_BACKEND_URL}/tools/get-crypto-info-from-cmd/${token_symbol}`, {
+        const result = await backend.get(`/tools/get-crypto-info-from-cmd/${token_symbol}`, {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 
@@ -112,7 +110,7 @@ export async function getCryptoInfoFromCMC(token_symbol, auth) {
 
 export async function queryArxiv(search_query, max_results, sort_by, sort_order, auth) {
     try {
-        const response = await backend.post(`${API_BACKEND_URL}/tools/search-arxiv`,
+        const response = await backend.post('/tools/search-arxiv',
         { search_query, max_results, sort_by, sort_order },
         {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
@@ -131,7 +129,7 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order,
 
 export async function getTrendingCryptos(option, limit = 10, auth) {
     try {
-        const response = await backend.get(`${API_BACKEND_URL}/tools/get-trending-cryptos/${option}`, {
+        const response = await backend.get(`/tools/get-trending-cryptos/${option}`, {
             params: { limit },
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
             timeout: 30000
@@ -149,7 +147,7 @@ export async function getTrendingCryptos(option, limit = 10, auth) {
 
 export async function searchNftCollection(collection_name, auth) {
     try {
-        const response = await backend.get(`${API_BACKEND_URL}/tools/search-nft-collection/${collection_name}`, {
+        const response = await backend.get(`/tools/search-nft-collection/${collection_name}`, {
             headers: {
                 Authorization: `Bearer ${auth}`,
                 'Content-Type': 'application/json' 
@@ -169,7 +167,7 @@ export async function searchNftCollection(collection_name, auth) {
 
 export async function searchTrendingNFT(period, trending_by, limit, auth) {
     try {
-        const response = await backend.get(`${API_BACKEND_URL}/tools/search-trending-nft`, {
+        const response = await backend.get('/tools/search-trending-nft', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
             params: { period, trending_by, limit },
             timeout: 30000
@@ -189,7 +187,7 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     try {
         console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
         
-        const result = await backend.post(`${API_BACKEND_URL}/tools/create-sound-effect`, {
+        const result = await backend.post('/tools/create-sound-effect', {
             text, duration_seconds, prompt_influence 
         },
         {
@@ -217,7 +215,7 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
 
 export async function fetchUserNFTCollections(auth) {
     try {
-        const response = await backend.post(`${API_BACKEND_URL}/tools/fetch-user-nft-collections`, {}, {
+        const response = await backend.post('/tools/fetch-user-nft-collections', {}, {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 

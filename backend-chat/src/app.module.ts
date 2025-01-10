@@ -13,6 +13,7 @@ import { UserModule } from './user/user.module';
 import { AdminConfigModule } from './admin-config/admin-config.module';
 import { MultisignModule } from './multisign/multising.module';
 import { ToolsModule } from './tools/tools.module';
+import { BucketModule } from './bucket/bucket.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { ToolsModule } from './tools/tools.module';
     AdminConfigModule,
     MultisignModule,
     ToolsModule,
+    BucketModule,
   ],
   controllers: [],
   providers: [
