@@ -7,6 +7,9 @@ export type ChatHistoryDocument = HydratedDocument<ChatHistory>;
 @Schema({ _id: false })
 export class ChatHistory {
   @Prop({ type: String, required: true })
+  id: string;
+
+  @Prop({ type: String, required: true })
   role: string;
 
   @Prop({ type: String, required: true })
