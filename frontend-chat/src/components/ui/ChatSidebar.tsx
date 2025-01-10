@@ -76,8 +76,8 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       Older: [],
     };
 
-    // Sort chats by lastUpdated in descending order (newest first)
-    const sortedChats = [...chats].sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
+    // Sort chats by lastUpdated in ascending order (oldest first)
+    const sortedChats = [...chats].sort((a, b) => (a.lastUpdated || 0) - (b.lastUpdated || 0));
 
     sortedChats.forEach((chat) => {
       // Normalize chat timestamp to start of day

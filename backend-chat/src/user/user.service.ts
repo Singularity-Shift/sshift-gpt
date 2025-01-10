@@ -92,16 +92,9 @@ export class UserService {
     address: string,
     chats: ChatHistoryDto[]
   ): Promise<UpdateWriteOpResult> {
-    const currentTime = Date.now();
-    const chatsWithTimestamps = chats.map(chat => ({
-      ...chat,
-      createdAt: chat.createdAt,
-      lastUpdated: currentTime
-    }));
-
     return this.userModel.updateOne(
       { address: address.toLowerCase() },
-      { chats: chatsWithTimestamps }
+      { chats }
     );
   }
 }

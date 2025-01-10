@@ -652,7 +652,6 @@ export default function ChatPage() {
                     ? {
                         ...c,
                         messages: [...messagesUpToEdit, newAssistantMessage],
-                        lastUpdated: Date.now()
                       }
                     : c
                 )
