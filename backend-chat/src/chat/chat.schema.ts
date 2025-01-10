@@ -28,7 +28,7 @@ export class Chat {
   @Prop({ type: Number, required: true, default: Date.now })
   createdAt: number;
 
-  @Prop({ type: Number, required: true })
+  @Prop({ type: Number, required: true, default: Date.now })
   lastUpdated: number;
 }
 
