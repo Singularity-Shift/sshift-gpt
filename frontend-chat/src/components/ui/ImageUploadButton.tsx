@@ -1,17 +1,24 @@
 import { useState, useRef } from 'react';
 import { Button } from './button';
 import { Image, Loader2 } from 'lucide-react';
+import backend from '../../services/backend';
 
 interface ImageUploadButtonProps {
   onImageSelect: (imageUrls: string[]) => void;
   uploadedImages: string[];
 }
 
-export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUploadButtonProps) {
+export function ImageUploadButton({
+  onImageSelect,
+  uploadedImages,
+}: ImageUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
 
-  const handleImageUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const auth = localStorage.getItem('jwt');
     const files = event.target.files;
     if (!files) return;
 
@@ -31,19 +38,18 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
       }
 
       const formData = new FormData();
+      formData.append('title', 'Image');
       formData.append('file', file);
 
       try {
-        const response = await fetch('/api/bucket', {
-          method: 'POST',
-          body: formData,
+        const response = await backend.post('/bucket', formData, {
+          headers: {
+            'content-type': 'multipart/form-data',
+            Authorization: `Bearer ${auth}`,
+          },
         });
 
-        if (!response.ok) {
-          throw new Error('Failed to upload image');
-        }
-
-        const data = await response.json();
+        const data = await response.data;
         uploadedUrls.push(data.url);
       } catch (error) {
         console.error('Error uploading image:', error);
@@ -55,7 +61,7 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
     if (uploadedUrls.length > 0) {
       onImageSelect([...uploadedImages, ...uploadedUrls]);
     }
-    
+
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -79,8 +85,8 @@ export function ImageUploadButton({ onImageSelect, uploadedImages }: ImageUpload
         ref={fileInputRef}
         multiple
       />
-      <Button 
-        variant="outline" 
+      <Button
+        variant="outline"
         size="icon-sm"
         onClick={handleButtonClick}
         disabled={isUploading || uploadedImages.length >= 4}

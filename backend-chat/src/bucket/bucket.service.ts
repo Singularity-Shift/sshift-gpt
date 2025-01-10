@@ -2,6 +2,7 @@ import { Storage } from '@google-cloud/storage';
 import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid'; // Import the uuid package
 import fetch from 'node-fetch';
+import { IImage } from '@helpers';
 
 @Injectable()
 export class BucketService {
@@ -9,12 +10,26 @@ export class BucketService {
 
   constructor(private readonly storage: Storage) {}
 
-  async uploadImageToBucket(imageUrl: string) {
-    const response = await fetch(imageUrl);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+  async uploadImageToBucket(
+    imageUrl?: string,
+    bufferFile?: ArrayBuffer
+  ): Promise<Pick<IImage, 'url'>> {
+    let buffer: ArrayBuffer;
+
+    if (!imageUrl && !bufferFile) {
+      this.logger.error('Either imageUrl or bufferFile must be provided');
+      throw new Error('No image URL or buffer file provided');
     }
-    const buffer = await response.arrayBuffer();
+
+    if (imageUrl) {
+      const response = await fetch(imageUrl);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch image: ${response.statusText}`);
+      }
+      buffer = await response.arrayBuffer();
+    } else {
+      buffer = bufferFile;
+    }
 
     const bucketName = 'sshift-gpt-bucket';
     const filename = `images/${uuidv4()}-generated-image.png`;
@@ -29,7 +44,7 @@ export class BucketService {
       },
     });
 
-    const url = await new Promise((resolve, reject) => {
+    const response = (await new Promise((resolve, reject) => {
       blobStream.on('error', (err) => {
         this.logger.error('Upload error:', err);
         reject(err);
@@ -42,8 +57,8 @@ export class BucketService {
       });
 
       blobStream.end(Buffer.from(buffer));
-    });
+    })) as Pick<IImage, 'url'>;
 
-    return url;
+    return response;
   }
 }
