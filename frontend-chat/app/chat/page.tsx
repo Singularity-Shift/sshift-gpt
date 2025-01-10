@@ -50,8 +50,8 @@ interface Chat {
     completion_tokens: number;
     total_tokens: number;
   };
-  createdAt: number;
-  lastUpdated: number;
+  createdAt?: number;
+  lastUpdated?: number;
   model: string;
 }
 
@@ -83,9 +83,9 @@ export default function ChatPage() {
       id: uuidv4(),
       title: `New Chat ${chats.length + 1}`,
       messages: [],
+      model: 'gpt-4o-mini', // Set default model for new chats
       createdAt: currentTime,
       lastUpdated: currentTime,
-      model: 'gpt-4o-mini', // Set default model for new chats
     };
     setChats([...chats, newChat]);
     setCurrentChatId(newChat.id);
@@ -476,7 +476,6 @@ export default function ChatPage() {
       if (savedChats) {
         const updatedChats = savedChats.chats.map((chat: Chat) => ({
           ...chat,
-          createdAt: chat.createdAt || Date.now(),
         }));
         setChats(updatedChats);
         if (updatedChats.length > 0) {
