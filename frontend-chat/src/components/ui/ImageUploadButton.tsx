@@ -99,7 +99,6 @@ export function ImageUploadButton({
         const resizedFile = new File([resizedBlob], file.name, { type: file.type });
 
         const formData = new FormData();
-        formData.append('title', 'Image');
         formData.append('file', resizedFile);
 
         const response = await backend.post('/bucket', formData, {
