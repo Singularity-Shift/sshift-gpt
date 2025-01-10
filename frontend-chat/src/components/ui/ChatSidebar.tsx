@@ -9,7 +9,7 @@ interface Chat {
   id: string;
   title: string;
   messages: any[];
-  lastUpdated: number;
+  lastUpdated?: number;
 }
 
 interface ChatSidebarProps {
@@ -76,12 +76,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       Older: [],
     };
 
-    // Sort chats by lastUpdated in descending order (newest first)
-    const sortedChats = [...chats].sort((a, b) => b.lastUpdated - a.lastUpdated);
+    // Sort chats by lastUpdated in ascending order (oldest first)
+    const sortedChats = [...chats].sort((a, b) => (a.lastUpdated || 0) - (b.lastUpdated || 0));
 
     sortedChats.forEach((chat) => {
       // Normalize chat timestamp to start of day
-      const chatDayStart = Math.floor(chat.lastUpdated / MS_PER_DAY) * MS_PER_DAY;
+      const chatDayStart = Math.floor((chat.lastUpdated || 0) / MS_PER_DAY) * MS_PER_DAY;
 
       if (chatDayStart === today) {
         chatGroups.Today.push(chat);
@@ -100,7 +100,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
 
     // Sort each group internally by lastUpdated in descending order
     Object.values(chatGroups).forEach(group => {
-      group.sort((a, b) => b.lastUpdated - a.lastUpdated);
+      group.sort((a, b) => (b.lastUpdated || 0) - (a.lastUpdated || 0));
     });
 
     return chatGroups;

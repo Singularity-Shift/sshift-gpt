@@ -50,8 +50,8 @@ interface Chat {
     completion_tokens: number;
     total_tokens: number;
   };
-  createdAt: number;
-  lastUpdated: number;
+  createdAt?: number;
+  lastUpdated?: number;
   model: string;
 }
 
@@ -83,9 +83,9 @@ export default function ChatPage() {
       id: uuidv4(),
       title: `New Chat ${chats.length + 1}`,
       messages: [],
+      model: 'gpt-4o-mini', // Set default model for new chats
       createdAt: currentTime,
       lastUpdated: currentTime,
-      model: 'gpt-4o-mini', // Set default model for new chats
     };
     setChats([...chats, newChat]);
     setCurrentChatId(newChat.id);
@@ -98,11 +98,6 @@ export default function ChatPage() {
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
     }
-    setChats((prevChats) =>
-      prevChats.map((chat) =>
-        chat.id === chatId ? { ...chat, lastUpdated: Date.now() } : chat
-      )
-    );
   };
 
   const handleModelChange = (model: string) => {
@@ -335,6 +330,15 @@ export default function ChatPage() {
       // Get all messages up to and including the previous user message
       const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
 
+      // Update the chat to remove the regenerated message and all subsequent messages
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === currentChatId
+            ? { ...chat, messages: messagesUpToLastUser }
+            : chat
+        )
+      );
+
       // Format messages for the API request
       const formattedMessages = messagesUpToLastUser.map(msg => {
         if (msg.role === 'user' && msg.images && msg.images.length > 0) {
@@ -442,7 +446,6 @@ export default function ChatPage() {
             return {
               ...chat,
               messages: [...updatedMessages, newAssistantMessage],
-              lastUpdated: Date.now()
             };
           }
           return chat;
@@ -472,12 +475,15 @@ export default function ChatPage() {
       if (savedChats) {
         const updatedChats = savedChats.chats.map((chat: Chat) => ({
           ...chat,
-          createdAt: chat.createdAt || Date.now(),
-          lastUpdated: chat.lastUpdated || Date.now(),
         }));
         setChats(updatedChats);
         if (updatedChats.length > 0) {
-          setCurrentChatId(updatedChats[0].id);
+          // Find the most recent chat based on lastUpdated timestamp
+          const mostRecentChat = updatedChats.reduce((latest: Chat, current: Chat) => 
+            (current.lastUpdated || 0) > (latest.lastUpdated || 0) ? current : latest
+          );
+          setCurrentChatId(mostRecentChat.id);
+          setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
         } else {
           handleNewChat();
         }

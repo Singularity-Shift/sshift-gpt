@@ -3,6 +3,13 @@ import { IsOptional, IsString } from 'class-validator';
 
 export class ChatMessagesDto {
   @ApiProperty({
+    description: 'Unique identifier for the message',
+    example: '1704926547123',
+  })
+  @IsString()
+  id: string;
+
+  @ApiProperty({
     description: 'Role of the chat entity',
     example: 'system',
   })

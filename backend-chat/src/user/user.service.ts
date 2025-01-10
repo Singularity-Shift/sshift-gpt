@@ -90,17 +90,11 @@ export class UserService {
 
   async updateUser(
     address: string,
-    updatechatsDto: ChatHistoryDto[]
+    chats: ChatHistoryDto[]
   ): Promise<UpdateWriteOpResult> {
-    const user = await this.userModel.updateOne(
-      {
-        address,
-      },
-      {
-        chats: updatechatsDto,
-      }
+    return this.userModel.updateOne(
+      { address: address.toLowerCase() },
+      { chats: [...chats.map((c) => ({ ...c, lastUpdated: Date.now() }))] }
     );
-
-    return user;
   }
 }

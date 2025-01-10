@@ -1,12 +1,73 @@
 import { useState, useRef } from 'react';
 import { Button } from './button';
-import { Image, Loader2 } from 'lucide-react';
+import { Image as LucideImage, Loader2 } from 'lucide-react';
 import backend from '../../services/backend';
 
 interface ImageUploadButtonProps {
   onImageSelect: (imageUrls: string[]) => void;
   uploadedImages: string[];
 }
+
+// Function to resize image if needed
+const resizeImageIfNeeded = async (file: File): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new window.Image();
+    img.src = URL.createObjectURL(file);
+    
+    img.onload = () => {
+      URL.revokeObjectURL(img.src);
+      
+      let { width, height } = img;
+      const MAX_SIZE = 1024;
+      
+      // Check if resizing is needed
+      if (width <= MAX_SIZE && height <= MAX_SIZE) {
+        resolve(file);
+        return;
+      }
+      
+      // Calculate new dimensions
+      if (width > height) {
+        height = Math.round((height * MAX_SIZE) / width);
+        width = MAX_SIZE;
+      } else {
+        width = Math.round((width * MAX_SIZE) / height);
+        height = MAX_SIZE;
+      }
+      
+      // Create canvas and resize
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not get canvas context'));
+        return;
+      }
+      
+      ctx.drawImage(img, 0, 0, width, height);
+      
+      // Convert to blob
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error('Could not convert canvas to blob'));
+          }
+        },
+        file.type,
+        0.9
+      );
+    };
+    
+    img.onerror = () => {
+      URL.revokeObjectURL(img.src);
+      reject(new Error('Failed to load image'));
+    };
+  });
+};
 
 export function ImageUploadButton({
   onImageSelect,
@@ -32,16 +93,14 @@ export function ImageUploadButton({
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i];
-      if (file.size > 4 * 1024 * 1024) {
-        alert(`File ${file.name} exceeds 4MB.`);
-        continue;
-      }
-
-      const formData = new FormData();
-      formData.append('title', 'Image');
-      formData.append('file', file);
-
       try {
+        // Resize image if needed
+        const resizedBlob = await resizeImageIfNeeded(file);
+        const resizedFile = new File([resizedBlob], file.name, { type: file.type });
+
+        const formData = new FormData();
+        formData.append('file', resizedFile);
+
         const response = await backend.post('/bucket', formData, {
           headers: {
             'content-type': 'multipart/form-data',
@@ -52,8 +111,8 @@ export function ImageUploadButton({
         const data = await response.data;
         uploadedUrls.push(data.url);
       } catch (error) {
-        console.error('Error uploading image:', error);
-        alert(`Failed to upload image: ${file.name}`);
+        console.error('Error processing/uploading image:', error);
+        alert(`Failed to process/upload image: ${file.name}`);
       }
     }
 
@@ -95,7 +154,7 @@ export function ImageUploadButton({
         {isUploading ? (
           <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin" />
         ) : (
-          <Image className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <LucideImage className="h-3.5 w-3.5 md:h-4 md:w-4" />
         )}
       </Button>
     </>
