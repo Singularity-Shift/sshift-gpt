@@ -95,8 +95,8 @@ export class UserService {
     const currentTime = Date.now();
     const chatsWithTimestamps = chats.map(chat => ({
       ...chat,
-      createdAt: chat.createdAt || currentTime,
-      lastUpdated: chat.lastUpdated || currentTime
+      createdAt: chat.createdAt,
+      lastUpdated: currentTime
     }));
 
     return this.userModel.updateOne(
