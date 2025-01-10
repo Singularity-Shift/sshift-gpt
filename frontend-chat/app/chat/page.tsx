@@ -446,7 +446,6 @@ export default function ChatPage() {
             return {
               ...chat,
               messages: [...updatedMessages, newAssistantMessage],
-              lastUpdated: Date.now()
             };
           }
           return chat;
@@ -652,7 +651,6 @@ export default function ChatPage() {
                     ? {
                         ...c,
                         messages: [...messagesUpToEdit, newAssistantMessage],
-                        lastUpdated: Date.now()
                       }
                     : c
                 )
