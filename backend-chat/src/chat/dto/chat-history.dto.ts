@@ -47,4 +47,16 @@ export class ChatHistoryDto {
   })
   @ValidateNested()
   usage: ChatUsageDto;
+
+  @ApiProperty({
+    description: 'Timestamp when the chat was created',
+    example: 1707123456789,
+  })
+  createdAt: number;
+
+  @ApiProperty({
+    description: 'Timestamp when the chat was last updated',
+    example: 1707123456789,
+  })
+  lastUpdated: number;
 }

@@ -24,6 +24,12 @@ export class Chat {
 
   @Prop({ type: ChatUsage })
   usage: ChatUsage;
+
+  @Prop({ type: Number, required: true })
+  createdAt: number;
+
+  @Prop({ type: Number, required: true })
+  lastUpdated: number;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);
