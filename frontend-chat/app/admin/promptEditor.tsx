@@ -1,59 +1,74 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import systemPrompt from '../../config/systemPrompt.json';
 
 interface PromptEditorProps {
   isOpen: boolean;
   onClose: () => void;
-  onSave: (newPrompt: string) => void;
 }
 
-export const PromptEditor = ({ isOpen, onClose, onSave }: PromptEditorProps) => {
-  const [editedContent, setEditedContent] = useState('');
+const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
+  const [promptContent, setPromptContent] = useState(systemPrompt.content);
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
 
   useEffect(() => {
-    // Initialize the editor with the current system prompt
-    if (isOpen) {
-      setEditedContent(systemPrompt.content);
-    }
-  }, [isOpen]);
+    const updateDimensions = () => {
+      const maxHeight = window.innerHeight * 0.9; // 90% of viewport height
+      const maxWidth = window.innerWidth * 0.9; // 90% of viewport width
+      
+      // Use a wider ratio (16:10) for better readability
+      const width = maxWidth;
+      const height = maxHeight;
+      
+      setDimensions({ width, height });
+    };
+
+    window.addEventListener('resize', updateDimensions);
+    updateDimensions();
+
+    return () => window.removeEventListener('resize', updateDimensions);
+  }, []);
 
   if (!isOpen) return null;
 
-  const handleSave = () => {
-    onSave(editedContent);
-    onClose();
-  };
-
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg w-[595px] h-[842px] flex flex-col"> {/* A4 size in pixels */}
-        <div className="p-4 border-b border-gray-200">
-          <h2 className="text-xl font-bold">Edit System Prompt</h2>
+      <div 
+        style={{ 
+          width: `${dimensions.width}px`, 
+          height: `${dimensions.height}px`,
+        }}
+        className="bg-white rounded-lg shadow-xl flex flex-col"
+      >
+        {/* Header */}
+        <div className="p-4 border-b">
+          <h2 className="text-2xl font-bold">Edit System Prompt</h2>
         </div>
-        
-        <div className="flex-1 p-4 overflow-auto">
+
+        {/* Content */}
+        <div className="flex-1 p-6 overflow-auto">
           <textarea
-            value={editedContent}
-            onChange={(e) => setEditedContent(e.target.value)}
-            className="w-full h-full p-4 border border-gray-300 rounded-md resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={promptContent}
+            onChange={(e) => setPromptContent(e.target.value)}
+            className="w-full h-full p-4 border rounded-lg resize-none font-mono text-sm"
             style={{ 
-              fontFamily: 'monospace',
-              fontSize: '14px',
-              lineHeight: '1.5'
+              minHeight: '100%',
+              lineHeight: '1.6',
+              fontSize: '14px'
             }}
           />
         </div>
 
-        <div className="p-4 border-t border-gray-200 flex justify-end space-x-4">
+        {/* Footer */}
+        <div className="p-4 border-t flex justify-end space-x-4">
           <button
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800 font-medium rounded-md hover:bg-gray-100"
+            className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg"
           >
             Discard Changes
           </button>
           <button
-            onClick={handleSave}
-            className="px-4 py-2 bg-green-600 text-white font-medium rounded-md hover:bg-green-700"
+            onClick={onClose}
+            className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg"
           >
             Accept Changes
           </button>
@@ -61,4 +76,6 @@ export const PromptEditor = ({ isOpen, onClose, onSave }: PromptEditorProps) => 
       </div>
     </div>
   );
-}; 
+};
+
+export default PromptEditor; 

@@ -11,22 +11,11 @@ import { Features } from './features';
 import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
-import { PromptEditor } from '../../src/components/ui/PromptEditor';
-import { updateSystemPrompt } from '../../src/lib/systemPrompt';
+import PromptEditor from './promptEditor';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
   const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
-
-  const handleSavePrompt = async (newPrompt: string) => {
-    const success = await updateSystemPrompt(newPrompt);
-    if (success) {
-      // You might want to show a success message here
-      setIsPromptEditorOpen(false);
-    } else {
-      // You might want to show an error message here
-    }
-  };
 
   return (
     <div>
@@ -83,7 +72,6 @@ const AdminPage = () => {
         <PromptEditor 
           isOpen={isPromptEditorOpen}
           onClose={() => setIsPromptEditorOpen(false)}
-          onSave={handleSavePrompt}
         />
 
         {isAdmin && (
