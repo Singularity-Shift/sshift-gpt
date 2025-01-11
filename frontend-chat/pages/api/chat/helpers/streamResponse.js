@@ -44,7 +44,7 @@ export async function streamResponse(res, model, messages, temperature, userConf
 
     // Add system prompt at the beginning of the messages array
     const messagesWithSystemPrompt = [
-        { role: 'system', content: systemPrompt || 'You are a helpful assistant.' },
+        { role: 'developer', content: systemPrompt || 'You are a helpful assistant.' },
         ...formattedMessages
     ];
 
