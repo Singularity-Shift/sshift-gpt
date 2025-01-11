@@ -4,7 +4,7 @@ import { ValidateNested } from 'class-validator';
 import { FeatureDto } from './feature.dto';
 
 export class AdminConfigDto {
-  static fromJson(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string = ''): AdminConfigDto {
+  static fromJson(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string): AdminConfigDto {
     return new AdminConfigDto(models, tools, systemPrompt);
   }
 
@@ -30,7 +30,7 @@ export class AdminConfigDto {
   })
   systemPrompt: string;
 
-  constructor(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string = '') {
+  constructor(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string) {
     this.models = models;
     this.tools = tools;
     this.systemPrompt = systemPrompt;

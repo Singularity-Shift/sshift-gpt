@@ -11,37 +11,32 @@ const defaultPrompt = require('./defaultPrompt.json');
 export class AdminConfigService {
   constructor(
     @InjectModel(AdminConfig.name)
-    private adminConfigModel: Model<AdminConfigDocument>,
+    private adminConfigModel: Model<AdminConfig>,
   ) {}
 
   async findAdminConfig(): Promise<AdminConfig> {
-    const adminConfig = await this.adminConfigModel.findOne().exec();
-    if (!adminConfig) {
-      // Create default config if none exists
-      const defaultConfig = new this.adminConfigModel({
-        models: [],
-        tools: [],
-        systemPrompt: defaultPrompt.content
-      });
-      return defaultConfig.save();
-    }
-    return adminConfig;
+    return await this.adminConfigModel.findOneAndUpdate(
+      {},
+      {
+        $setOnInsert: {
+          models: [],
+          tools: [],
+          systemPrompt: defaultPrompt.content
+        }
+      },
+      { upsert: true, new: true }
+    ).exec();
   }
 
   async updateAdmin(adminConfigDto: AdminConfigDto): Promise<AdminConfig> {
-    const adminConfig = await this.adminConfigModel.findOne().exec();
-    if (!adminConfig) {
-      const newAdminConfig = new this.adminConfigModel({
-        ...adminConfigDto,
+    return await this.adminConfigModel.findOneAndUpdate(
+      {},
+      {
+        models: adminConfigDto.models,
+        tools: adminConfigDto.tools,
         systemPrompt: adminConfigDto.systemPrompt || defaultPrompt.content
-      });
-      return newAdminConfig.save();
-    }
-    
-    adminConfig.models = adminConfigDto.models;
-    adminConfig.tools = adminConfigDto.tools;
-    adminConfig.systemPrompt = adminConfigDto.systemPrompt || defaultPrompt.content;
-    
-    return adminConfig.save();
+      },
+      { upsert: true, new: true }
+    ).exec();
   }
 }
