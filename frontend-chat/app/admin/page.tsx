@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
@@ -10,9 +11,22 @@ import { Features } from './features';
 import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
+import { PromptEditor } from '../../src/components/ui/PromptEditor';
+import { updateSystemPrompt } from '../../src/lib/systemPrompt';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
+  const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
+
+  const handleSavePrompt = async (newPrompt: string) => {
+    const success = await updateSystemPrompt(newPrompt);
+    if (success) {
+      // You might want to show a success message here
+      setIsPromptEditorOpen(false);
+    } else {
+      // You might want to show an error message here
+    }
+  };
 
   return (
     <div>
@@ -55,13 +69,22 @@ const AdminPage = () => {
                 <h2 className="text-2xl font-bold text-gray-900 mb-4">
                   Prompt Management
                 </h2>
-                <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                <button 
+                  onClick={() => setIsPromptEditorOpen(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                >
                   Edit System
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        <PromptEditor 
+          isOpen={isPromptEditorOpen}
+          onClose={() => setIsPromptEditorOpen(false)}
+          onSave={handleSavePrompt}
+        />
 
         {isAdmin && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
