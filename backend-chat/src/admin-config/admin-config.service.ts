@@ -1,38 +1,47 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { AdminConfig } from './admin-config.schema';
 import { Model } from 'mongoose';
+import { AdminConfig, AdminConfigDocument } from './admin-config.schema';
 import { AdminConfigDto } from './dto/adming-config.dto';
+
+// Use require for JSON file since TypeScript needs special config for JSON imports
+const defaultPrompt = require('./defaultPrompt.json');
 
 @Injectable()
 export class AdminConfigService {
   constructor(
-    @InjectModel(AdminConfig.name) private adminConfigModel: Model<AdminConfig>
+    @InjectModel(AdminConfig.name)
+    private adminConfigModel: Model<AdminConfigDocument>,
   ) {}
 
   async findAdminConfig(): Promise<AdminConfig> {
-    return this.adminConfigModel.findOne();
+    const adminConfig = await this.adminConfigModel.findOne().exec();
+    if (!adminConfig) {
+      // Create default config if none exists
+      const defaultConfig = new this.adminConfigModel({
+        models: [],
+        tools: [],
+        systemPrompt: defaultPrompt.content
+      });
+      return defaultConfig.save();
+    }
+    return adminConfig;
   }
 
   async updateAdmin(adminConfigDto: AdminConfigDto): Promise<AdminConfig> {
-    let adminConfig: AdminConfig;
-    const response = await this.adminConfigModel.findOne();
-
-    if (response) {
-      adminConfig = await this.adminConfigModel.findOneAndUpdate(
-        {
-          _id: response._id,
-        },
-        {
-          ...adminConfigDto,
-        }
-      );
-    } else {
-      adminConfig = await this.adminConfigModel.create({
+    const adminConfig = await this.adminConfigModel.findOne().exec();
+    if (!adminConfig) {
+      const newAdminConfig = new this.adminConfigModel({
         ...adminConfigDto,
+        systemPrompt: adminConfigDto.systemPrompt || defaultPrompt.content
       });
+      return newAdminConfig.save();
     }
-
-    return adminConfig;
+    
+    adminConfig.models = adminConfigDto.models;
+    adminConfig.tools = adminConfigDto.tools;
+    adminConfig.systemPrompt = adminConfigDto.systemPrompt || defaultPrompt.content;
+    
+    return adminConfig.save();
   }
 }

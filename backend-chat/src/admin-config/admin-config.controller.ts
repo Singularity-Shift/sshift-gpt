@@ -87,7 +87,8 @@ export class AdminConfigController {
 
     return AdminConfigDto.fromJson(
       adminConfig?.models?.map((m) => FeatureDto.fromJson(m)) || [],
-      adminConfig?.tools?.map((t) => FeatureDto.fromJson(t)) || []
+      adminConfig?.tools?.map((t) => FeatureDto.fromJson(t)) || [],
+      adminConfig?.systemPrompt || ''
     );
   }
 }
