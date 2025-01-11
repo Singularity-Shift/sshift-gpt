@@ -6,6 +6,24 @@ interface PromptEditorProps {
   onClose: () => void;
 }
 
+// Format the prompt for display by replacing escaped characters
+const formatForDisplay = (prompt: string): string => {
+  return prompt
+    .replace(/\\n/g, '\n')  // Replace \n with actual newlines
+    .replace(/\\"/g, '"')   // Replace \" with "
+    .replace(/\\'/g, "'")   // Replace \' with '
+    .replace(/\\\\/g, '\\'); // Replace \\ with \
+};
+
+// Restore the prompt to its original format for saving
+const formatForSaving = (prompt: string): string => {
+  return prompt
+    .replace(/\\/g, '\\\\')  // Replace \ with \\
+    .replace(/"/g, '\\"')    // Replace " with \"
+    .replace(/'/g, "\\'")    // Replace ' with \'
+    .replace(/\n/g, '\\n');  // Replace newlines with \n
+};
+
 const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
   const [promptContent, setPromptContent] = useState('');
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
@@ -16,7 +34,7 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
     const fetchSystemPrompt = async () => {
       try {
         const response = await backend.get('/admin-config');
-        setPromptContent(response.data.systemPrompt || '');
+        setPromptContent(formatForDisplay(response.data.systemPrompt || ''));
       } catch (error) {
         console.error('Error fetching system prompt:', error);
       } finally {
@@ -31,13 +49,10 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
 
   useEffect(() => {
     const updateDimensions = () => {
-      const maxHeight = window.innerHeight * 0.9; // 90% of viewport height
-      const maxWidth = window.innerWidth * 0.9; // 90% of viewport width
-      
-      // Use a wider ratio (16:10) for better readability
+      const maxHeight = window.innerHeight * 0.9;
+      const maxWidth = window.innerWidth * 0.9;
       const width = maxWidth;
       const height = maxHeight;
-      
       setDimensions({ width, height });
     };
 
@@ -56,7 +71,7 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
       await backend.put('/admin-config', 
         {
           ...currentConfig,
-          systemPrompt: promptContent
+          systemPrompt: formatForSaving(promptContent)
         },
         {
           headers: {
@@ -85,12 +100,10 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
         }}
         className="bg-white rounded-lg shadow-xl flex flex-col"
       >
-        {/* Header */}
         <div className="p-4 border-b">
           <h2 className="text-2xl font-bold">Edit System Prompt</h2>
         </div>
 
-        {/* Content */}
         <div className="flex-1 p-6 overflow-auto">
           {isLoading ? (
             <div className="flex items-center justify-center h-full">
@@ -104,14 +117,20 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
               style={{ 
                 minHeight: '100%',
                 lineHeight: '1.6',
-                fontSize: '14px'
+                fontSize: '14px',
+                whiteSpace: 'pre-wrap',
+                tabSize: '2',
+                overflowY: 'auto',
+                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                backgroundColor: '#f8f9fa',
+                color: '#1a1a1a'
               }}
+              spellCheck="false"
               disabled={isSaving}
             />
           )}
         </div>
 
-        {/* Footer */}
         <div className="p-4 border-t flex justify-end space-x-4">
           <button
             onClick={onClose}
