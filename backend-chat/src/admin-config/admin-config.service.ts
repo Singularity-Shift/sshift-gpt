@@ -1,35 +1,36 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { AdminConfig, AdminConfigDocument } from './admin-config.schema';
 import { AdminConfigDto } from './dto/adming-config.dto';
+import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 // Use require for JSON file since TypeScript needs special config for JSON imports
 const defaultPrompt = require('./defaultPrompt.json');
 
 @Injectable()
 export class AdminConfigService {
-  private cachedConfig: AdminConfig | null = null;
-  private cacheTimestamp: number = 0;
-  private readonly CACHE_DURATION = 3600000; // 1 hour in milliseconds
+  private readonly CACHE_KEY = 'admin_config';
+  private readonly CACHE_TTL = 3600; // 1 hour in seconds
 
   constructor(
     @InjectModel(AdminConfig.name)
     private adminConfigModel: Model<AdminConfig>,
+    @Inject(CACHE_MANAGER) private cacheManager: Cache,
   ) {}
 
   async findAdminConfig(): Promise<AdminConfig> {
     // Check cache
-    if (this.cachedConfig && (Date.now() - this.cacheTimestamp) < this.CACHE_DURATION) {
-      return this.cachedConfig;
+    const cached = await this.cacheManager.get<AdminConfig>(this.CACHE_KEY);
+    if (cached) {
+      return cached;
     }
 
     // First try to find existing config
     const existingConfig = await this.adminConfigModel.findOne({}).exec();
     
     if (existingConfig) {
-      this.cachedConfig = existingConfig;
-      this.cacheTimestamp = Date.now();
+      await this.cacheManager.set(this.CACHE_KEY, existingConfig, this.CACHE_TTL);
       return existingConfig;
     }
     
@@ -40,8 +41,7 @@ export class AdminConfigService {
       systemPrompt: defaultPrompt.content
     });
 
-    this.cachedConfig = newConfig;
-    this.cacheTimestamp = Date.now();
+    await this.cacheManager.set(this.CACHE_KEY, newConfig, this.CACHE_TTL);
     return newConfig;
   }
 
@@ -56,9 +56,8 @@ export class AdminConfigService {
       { upsert: true, new: true }
     ).exec();
 
-    // Update cache after changes
-    this.cachedConfig = updated;
-    this.cacheTimestamp = Date.now();
+    // Update cache
+    await this.cacheManager.set(this.CACHE_KEY, updated, this.CACHE_TTL);
     return updated;
   }
 }
