@@ -4,8 +4,8 @@ import { ValidateNested } from 'class-validator';
 import { FeatureDto } from './feature.dto';
 
 export class AdminConfigDto {
-  static fromJson(models: FeatureDto[], tools: FeatureDto[]): AdminConfigDto {
-    return new AdminConfigDto(models, tools);
+  static fromJson(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string): AdminConfigDto {
+    return new AdminConfigDto(models, tools, systemPrompt);
   }
 
   @ApiProperty({
@@ -24,8 +24,15 @@ export class AdminConfigDto {
   @ValidateNested({ each: true })
   tools: FeatureDto[];
 
-  constructor(models: FeatureDto[], tools: FeatureDto[]) {
+  @ApiProperty({
+    description: 'System prompt for the chat',
+    type: String,
+  })
+  systemPrompt: string;
+
+  constructor(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string) {
     this.models = models;
     this.tools = tools;
+    this.systemPrompt = systemPrompt;
   }
 }

@@ -1,13 +1,12 @@
 import { OpenAI } from 'openai';
 import { handleToolCall, writeResponseChunk, processToolCalls } from './chunkHandlers.js';
 import toolSchema from '../../tool_schemas/tool_schema.json';
-import systemPrompt from '../../../../config/systemPrompt.json';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function streamResponse(res, model, messages, temperature, userConfig, auth) {
+export async function streamResponse(res, model, messages, temperature, userConfig, auth, systemPrompt) {
     let currentToolCalls = [];
     let assistantMessage = { content: '', images: [] };
     
@@ -45,7 +44,7 @@ export async function streamResponse(res, model, messages, temperature, userConf
 
     // Add system prompt at the beginning of the messages array
     const messagesWithSystemPrompt = [
-        systemPrompt,
+        { role: 'developer', content: systemPrompt || 'You are a helpful assistant.' },
         ...formattedMessages
     ];
 
@@ -53,7 +52,7 @@ export async function streamResponse(res, model, messages, temperature, userConf
         const stream = await openai.chat.completions.create({
             model: model || 'gpt-4o-mini',
             messages: messagesWithSystemPrompt,
-            max_tokens: 16384,
+            max_completion_tokens: 16384,
             temperature,
             stream: true,
             tools: toolSchema,
