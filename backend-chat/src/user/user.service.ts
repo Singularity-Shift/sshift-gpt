@@ -94,7 +94,7 @@ export class UserService {
   ): Promise<UpdateWriteOpResult> {
     return this.userModel.updateOne(
       { address: address.toLowerCase() },
-      { chats: [...chats.map((c) => ({ ...c, lastUpdated: Date.now() }))] }
+      { chats: [...chats.map((c) => ({ ...c, lastUpdated: c.messages.length > 0 ? Date.now() : c.lastUpdated }))] }
     );
   }
 }
