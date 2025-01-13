@@ -1,6 +1,6 @@
 import backend from '../../../../src/services/backend';
 
-export async function generateImage(prompt, size, style, auth) {
+export async function generateImage(prompt, size, style, auth, signal) {
     try {
         console.log('Generating image with params:', { prompt, size, style });
         
@@ -10,7 +10,8 @@ export async function generateImage(prompt, size, style, auth) {
             style,
         }, {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
-            timeout: 60000
+            timeout: 60000,
+            signal,
         });
 
         if (!result.data.url) {
@@ -30,12 +31,13 @@ export async function generateImage(prompt, size, style, auth) {
     }
 }
 
-export async function searchWeb(query, auth) {
+export async function searchWeb(query, auth, signal) {
     try {
         const response = await backend.get('/tools/search-web', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
             params: { query },
-            timeout: 60000
+            timeout: 60000,
+            signal
         });
 
         return response.data;
@@ -48,12 +50,13 @@ export async function searchWeb(query, auth) {
     }
 }
 
-export async function wikiSearch(action, searchString, auth) {
+export async function wikiSearch(action, searchString, auth, signal) {
     try {
         const response = await backend.get('/tools/wiki-search', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
             params: { action, searchString },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
 
         return response.data;
@@ -66,7 +69,7 @@ export async function wikiSearch(action, searchString, auth) {
     }
 }
 
-export async function getStockInfo(tickers, info_types, auth) {
+export async function getStockInfo(tickers, info_types, auth, signal) {
     try {
         const result = await backend.post('/tools/get-stock-info', {
              tickers, info_types },
@@ -75,7 +78,8 @@ export async function getStockInfo(tickers, info_types, auth) {
                     'Content-Type': 'application/json',
                     Authorization: `Bearer ${auth}` 
                 },
-                timeout: 30000
+                timeout: 30000,
+                signal
             }
         );
 
@@ -89,14 +93,15 @@ export async function getStockInfo(tickers, info_types, auth) {
     }
 }
 
-export async function getCryptoInfoFromCMC(token_symbol, auth) {
+export async function getCryptoInfoFromCMC(token_symbol, auth, signal) {
     try {
         const result = await backend.get(`/tools/get-crypto-info-from-cmd/${token_symbol}`, {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 
             },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
         
         return result.data;
@@ -108,13 +113,14 @@ export async function getCryptoInfoFromCMC(token_symbol, auth) {
     }
 }
 
-export async function queryArxiv(search_query, max_results, sort_by, sort_order, auth) {
+export async function queryArxiv(search_query, max_results, sort_by, sort_order, auth, signal) {
     try {
         const response = await backend.post('/tools/search-arxiv',
         { search_query, max_results, sort_by, sort_order },
         {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
         
         return response.data;
@@ -127,12 +133,13 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order,
     }
 }
 
-export async function getTrendingCryptos(option, limit = 10, auth) {
+export async function getTrendingCryptos(option, limit = 10, auth, signal) {
     try {
         const response = await backend.get(`/tools/get-trending-cryptos/${option}`, {
             params: { limit },
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
 
         return response.data;
@@ -145,14 +152,15 @@ export async function getTrendingCryptos(option, limit = 10, auth) {
     }
 }
 
-export async function searchNftCollection(collection_name, auth) {
+export async function searchNftCollection(collection_name, auth, signal) {
     try {
         const response = await backend.get(`/tools/search-nft-collection/${collection_name}`, {
             headers: {
                 Authorization: `Bearer ${auth}`,
                 'Content-Type': 'application/json' 
             },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
 
         return response.data;
@@ -165,12 +173,13 @@ export async function searchNftCollection(collection_name, auth) {
     }
 }
 
-export async function searchTrendingNFT(period, trending_by, limit, auth) {
+export async function searchTrendingNFT(period, trending_by, limit, auth, signal) {
     try {
         const response = await backend.get('/tools/search-trending-nft', {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
             params: { period, trending_by, limit },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
 
         return response.data;
@@ -183,7 +192,7 @@ export async function searchTrendingNFT(period, trending_by, limit, auth) {
     }
 }
 
-export async function createSoundEffect(text, duration_seconds, prompt_influence, auth) {
+export async function createSoundEffect(text, duration_seconds, prompt_influence, auth, signal) {
     try {
         console.log('Creating sound effect with params:', { text, duration_seconds, prompt_influence });
         
@@ -192,7 +201,8 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
         },
         {
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
-            timeout: 60000
+            timeout: 60000,
+            signal
         });
 
         if (!result.data.url) {
@@ -213,14 +223,15 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
     }
 }
 
-export async function fetchUserNFTCollections(auth) {
+export async function fetchUserNFTCollections(auth, signal) {
     try {
         const response = await backend.post('/tools/fetch-user-nft-collections', {}, {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 
             },
-            timeout: 30000
+            timeout: 30000,
+            signal
         });
 
         return response.data;
