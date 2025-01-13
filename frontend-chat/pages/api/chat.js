@@ -4,11 +4,13 @@ import backend from '../../src/services/backend';
 dotenv.config();
 
 let shouldStopStream = false;
+let controller = new AbortController();
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         shouldStopStream = false; // Reset the flag at the start of a new stream
         const { messages, auth, model, temperature = 0.2 } = req.body;
+        controller = new AbortController();
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
@@ -49,7 +51,8 @@ export default async function handler(req, res) {
                 userConfig, 
                 auth, 
                 adminConfig.systemPrompt,
-                () => shouldStopStream
+                () => shouldStopStream,
+                controller.signal,
             );
         } catch (error) {
             console.error('Error in handler:', error.response?.data?.message || error.message);
@@ -59,6 +62,8 @@ export default async function handler(req, res) {
         }
     } else if (req.method === 'DELETE') {
         shouldStopStream = true;
+        console.log('Stream stopping initiated');
+        controller.abort();
         res.status(200).json({ message: 'Stream stopping initiated' });
     } else {
         res.setHeader('Allow', ['POST', 'DELETE']);
