@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Button } from './button';
 import { ScrollArea } from './scrollarea';
 import { Input } from './input';
-import { Pencil, Trash2, Trash, X } from 'lucide-react';
+import { Pencil, Trash2, Trash, X, ChevronRight } from 'lucide-react';
 import { ConfirmationModal } from './ConfirmationModal';
 
 interface Chat {
@@ -36,6 +36,19 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [newChatTitle, setNewChatTitle] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+
+  const toggleCategory = (category: string) => {
+    setCollapsedCategories(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(category)) {
+        newSet.delete(category);
+      } else {
+        newSet.add(category);
+      }
+      return newSet;
+    });
+  };
 
   const handleRenameClick = (chatId: string) => {
     setRenamingChatId(chatId);
@@ -153,73 +166,88 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 ([group, groupChats]) =>
                   groupChats.length > 0 && (
                     <div key={group}>
-                      <h3 className="text-sm font-semibold mb-2 text-gray-600">
+                      <button 
+                        onClick={() => toggleCategory(group)}
+                        className="flex items-center w-full text-base font-semibold mb-2 text-gray-700 hover:text-gray-900"
+                      >
+                        <ChevronRight 
+                          className={`h-5 w-5 mr-1.5 transition-transform duration-200 ${
+                            !collapsedCategories.has(group) ? 'rotate-90' : ''
+                          }`}
+                        />
                         {group}
-                      </h3>
-                      {groupChats.map((chat) => (
-                        <div key={chat.id} className="relative group mb-1">
-                          {renamingChatId === chat.id ? (
-                            <form
-                              onSubmit={(e) => {
-                                e.preventDefault();
-                                handleRenameSubmit(chat.id);
-                              }}
-                              className="flex"
-                            >
-                              <Input
-                                value={newChatTitle}
-                                onChange={(e) => setNewChatTitle(e.target.value)}
-                                className="w-full pr-16 text-sm"
-                                autoFocus
-                              />
-                              <Button
-                                type="submit"
-                                variant="ghost"
-                                size="sm"
-                                className="absolute right-8 top-1/2 -translate-y-1/2 text-sm"
-                              >
-                                Save
-                              </Button>
-                            </form>
-                          ) : (
-                            <div className="flex items-center justify-between w-full">
-                              <Button
-                                variant={
-                                  currentChatId === chat.id ? 'secondary' : 'ghost'
-                                }
-                                className="w-full justify-start text-left truncate pr-16 text-sm"
-                                onClick={() => onChatSelect(chat.id)}
-                              >
-                                {chat.title}
-                              </Button>
-                              <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6 mr-1"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleRenameClick(chat.id);
+                        <span className="ml-2 text-sm text-gray-400">
+                          ({groupChats.length})
+                        </span>
+                      </button>
+                      {!collapsedCategories.has(group) && (
+                        <div className="space-y-1">
+                          {groupChats.map((chat) => (
+                            <div key={chat.id} className="relative group mb-1">
+                              {renamingChatId === chat.id ? (
+                                <form
+                                  onSubmit={(e) => {
+                                    e.preventDefault();
+                                    handleRenameSubmit(chat.id);
                                   }}
+                                  className="flex"
                                 >
-                                  <Pencil className="h-3 w-3" />
-                                </Button>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    onDeleteChat(chat.id);
-                                  }}
-                                >
-                                  <Trash2 className="h-3 w-3" />
-                                </Button>
-                              </div>
+                                  <Input
+                                    value={newChatTitle}
+                                    onChange={(e) => setNewChatTitle(e.target.value)}
+                                    className="w-full pr-16 text-sm"
+                                    autoFocus
+                                  />
+                                  <Button
+                                    type="submit"
+                                    variant="ghost"
+                                    size="sm"
+                                    className="absolute right-8 top-1/2 -translate-y-1/2 text-sm"
+                                  >
+                                    Save
+                                  </Button>
+                                </form>
+                              ) : (
+                                <div className="flex items-center justify-between w-full">
+                                  <Button
+                                    variant={
+                                      currentChatId === chat.id ? 'secondary' : 'ghost'
+                                    }
+                                    className="w-full justify-start text-left truncate pr-16 text-sm"
+                                    onClick={() => onChatSelect(chat.id)}
+                                  >
+                                    {chat.title}
+                                  </Button>
+                                  <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6 mr-1"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRenameClick(chat.id);
+                                      }}
+                                    >
+                                      <Pencil className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        onDeleteChat(chat.id);
+                                      }}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )}
                             </div>
-                          )}
+                          ))}
                         </div>
-                      ))}
+                      )}
                     </div>
                   )
               )}
