@@ -36,8 +36,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
     setUploadedImages(uploadedImages.filter((_, index) => index !== indexToRemove));
   };
 
-  const handleStop = () => {
-    console.log('Stop button clicked');
+  const handleStop = async () => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'DELETE',
+      });
+      if (!response.ok) {
+        console.error('Failed to stop the stream:', response.statusText);
+      }
+    } catch (error) {
+      console.error('Error stopping the stream:', error);
+    }
   };
 
   return (

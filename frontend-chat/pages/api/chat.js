@@ -7,6 +7,7 @@ let shouldStopStream = false;
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
+        shouldStopStream = false; // Reset the flag at the start of a new stream
         const { messages, auth, model, temperature = 0.2 } = req.body;
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
@@ -30,8 +31,6 @@ export default async function handler(req, res) {
             const userConfig = responseUserConfig.data;
             const adminConfig = responseAdminConfig.data;
 
-            console.log('User config:', userConfig);
-
             if (!userConfig.active && !userConfig.isCollector) {
                 console.log('User is not active or collector');
                 return res.status(403).json({ error: 'User is not subscribed' });
@@ -41,8 +40,17 @@ export default async function handler(req, res) {
                 await checkModelCredits(userConfig, model, auth);
             }
             
-            // Start streaming the response with the system prompt from admin config
-            await streamResponse(res, model, messages, temperature, userConfig, auth, adminConfig.systemPrompt);
+            // Pass shouldStopStream to streamResponse
+            await streamResponse(
+                res, 
+                model, 
+                messages, 
+                temperature, 
+                userConfig, 
+                auth, 
+                adminConfig.systemPrompt,
+                () => shouldStopStream
+            );
         } catch (error) {
             console.error('Error in handler:', error.response?.data?.message || error.message);
             if (!res.writableEnded) {
