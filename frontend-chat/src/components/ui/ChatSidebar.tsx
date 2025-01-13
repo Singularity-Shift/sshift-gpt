@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from './button';
 import { ScrollArea } from './scrollarea';
 import { Input } from './input';
@@ -23,6 +23,8 @@ interface ChatSidebarProps {
   onClose?: () => void;
 }
 
+const COLLAPSED_CATEGORIES_KEY = 'collapsedCategories';
+
 export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   chats,
   currentChatId,
@@ -37,6 +39,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [newChatTitle, setNewChatTitle] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    const savedCollapsedCategories = localStorage.getItem(COLLAPSED_CATEGORIES_KEY);
+    if (savedCollapsedCategories) {
+      setCollapsedCategories(new Set(JSON.parse(savedCollapsedCategories)));
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(COLLAPSED_CATEGORIES_KEY, JSON.stringify(Array.from(collapsedCategories)));
+  }, [collapsedCategories]);
 
   const toggleCategory = (category: string) => {
     setCollapsedCategories(prev => {
