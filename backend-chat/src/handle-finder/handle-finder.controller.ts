@@ -8,7 +8,8 @@ import {
 } from '@nestjs/swagger';
 import { TopicDto } from './dto/topic.dto';
 import { TokenDto } from './dto/token.dto';
-import { CategoryDto } from './dto/category.dto';
+import { GetCategoryDto } from './dto/get-category.dto';
+import { PublicationDto } from './dto/publication.dto';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
@@ -49,12 +50,51 @@ export class HandleFinderController {
   @ApiOperation({ summary: 'Get category topic counts' })
   @ApiResponse({
     description: 'Category topic counts',
-    type: [TopicDto],
+    type: [GetCategoryDto],
     status: 200,
   })
   async findCategoryTopicCounts(
     @Query('date') date: string
-  ): Promise<CategoryDto[]> {
-    return this.handleFinderService.findCategoryTopicCounts(new Date(date));
+  ): Promise<GetCategoryDto[]> {
+    const response = await this.handleFinderService.findCategoryTopicCounts(
+      date
+    );
+
+    return response.map(GetCategoryDto.fromJson);
+  }
+
+  @Get('categories/publications')
+  @ApiQuery({
+    name: 'category',
+    type: String,
+    required: true,
+    example: 'Blockchain',
+  })
+  @ApiQuery({
+    name: 'date',
+    type: String,
+    required: true,
+    example: '2022-01-01',
+  })
+  @ApiQuery({ name: 'limit', type: 'number', required: false, example: 15 })
+  @ApiQuery({ name: 'page', type: 'number', required: false, example: 1 })
+  @ApiOperation({ summary: 'Get publications by category' })
+  @ApiResponse({
+    description: 'Publications by category',
+    type: [PublicationDto],
+    status: 200,
+  })
+  async findPublicationsByCategory(
+    @Query('category') category: string,
+    @Query('date') date: string,
+    @Query('limit') limit = 15,
+    @Query('page') page = 1
+  ): Promise<PublicationDto[]> {
+    return this.handleFinderService.findPublicationsByCategory(
+      category,
+      date,
+      limit,
+      page
+    );
   }
 }

@@ -13,7 +13,7 @@ export class TokenDto {
   token: string;
   @ApiProperty({
     description: 'Date of token mentioned',
-    example: new Date(),
+    example: '2025-01-10',
   })
   date: Date;
   @ApiProperty({

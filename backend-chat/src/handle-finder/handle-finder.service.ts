@@ -5,6 +5,7 @@ import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '../share/config/config.service';
 import { TokenDto } from './dto/token.dto';
 import { CategoryDto } from './dto/category.dto';
+import { PublicationDto } from './dto/publication.dto';
 
 @Injectable()
 export class HandleFinderService {
@@ -50,7 +51,7 @@ export class HandleFinderService {
     return response.data;
   }
 
-  async findCategoryTopicCounts(date: Date): Promise<CategoryDto[]> {
+  async findCategoryTopicCounts(date: string): Promise<CategoryDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<CategoryDto[]>(`${this.url}/llm/categories`, {
         headers: {
@@ -61,6 +62,33 @@ export class HandleFinderService {
           date,
         },
       })
+    );
+
+    return response.data;
+  }
+
+  async findPublicationsByCategory(
+    category: string,
+    date: string,
+    limit: number,
+    page: number
+  ): Promise<PublicationDto[]> {
+    const response = await firstValueFrom(
+      await this.httpService.get<PublicationDto[]>(
+        `${this.url}/llm/categories/publications`,
+        {
+          headers: {
+            ApiKey: this.apiKey,
+            Address: this.address,
+          },
+          params: {
+            category,
+            date,
+            take: limit,
+            page,
+          },
+        }
+      )
     );
 
     return response.data;

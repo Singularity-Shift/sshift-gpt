@@ -287,9 +287,9 @@ export async function getTokensMentioned(limit, page, auth, signal) {
     }
 }
 
-export async function findCategoryTopicCounts(date, auth, signal) {
+export async function findCategoryCounts(date, auth, signal) {
     try {
-        const response = await backend.get('/handle-finder/category', {
+        const response = await backend.get('/handle-finder/categories', {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: `Bearer ${auth}` 
@@ -305,6 +305,28 @@ export async function findCategoryTopicCounts(date, auth, signal) {
         return {
             error: true,
             message: 'Failed to fetch category topic counts'
+        };
+    }
+}
+
+export async function getPublicationsByCategory(category, date, limit, page, auth, signal) {
+    try {
+        const response = await backend.get('/handle-finder/categories/publications', {
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            params: { category, date, limit, page },
+            timeout: 30000,
+            signal
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error in getPublicationsByCategory:', error);
+        return {
+            error: true,
+            message: 'Failed to fetch publications by category'
         };
     }
 }
