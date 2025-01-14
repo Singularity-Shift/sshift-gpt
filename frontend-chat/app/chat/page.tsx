@@ -545,12 +545,12 @@ export default function ChatPage() {
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
-      setIsAssistantResponding(true); // Add this line
+      setIsAssistantResponding(true);
       regenerateConversation(updatedMessages).finally(() => {
         setIsWaiting(false);
         setIsTyping(false);
         setStatus('thinking');
-        setIsAssistantResponding(false); // Add this line
+        setIsAssistantResponding(false);
       });
     }
   };
@@ -610,6 +610,9 @@ export default function ChatPage() {
         content: '',
       };
 
+      setIsWaiting(false);
+      setIsTyping(true);
+
       while (!done) {
         const { value, done: doneReading } = await reader.read();
         done = doneReading;
@@ -632,6 +635,7 @@ export default function ChatPage() {
               console.log('Parsed data for regeneration:', parsedData);
               if (parsedData.content) {
                 newAssistantMessage.content += parsedData.content;
+                setStatus('typing');
               } else if (parsedData.tool_response) {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.images = [
