@@ -56,13 +56,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           ))}
           {isAssistantResponding && (
             <div className="flex items-start space-x-2" ref={lastMessageRef}>
-              {status === 'thinking' && (
+              {status === 'thinking' && (!messages.length || messages[messages.length - 1]?.role === 'user') && (
                 <Avatar className="w-6 h-6 md:w-8 md:h-8 mr-2 flex-shrink-0">
                   <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
                   <AvatarFallback>AI</AvatarFallback>
                 </Avatar>
               )}
-              <StatusIndicator status={status} className={status === 'thinking' ? "mt-1 md:mt-2" : ""} />
+              <StatusIndicator status={status} className={status === 'thinking' && (!messages.length || messages[messages.length - 1]?.role === 'user') ? "mt-1 md:mt-2" : ""} />
             </div>
           )}
         </div>
