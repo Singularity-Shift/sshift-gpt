@@ -51,12 +51,14 @@ export class ToolsService {
   async createSoundEffect(
     createSoundEffectDto: CreateSoundEffectDto
   ): Promise<ISoundEffect> {
-    const {
-      text,
-      duration_seconds = null,
-      prompt_influence = 1.0,
-    } = createSoundEffectDto;
+    const { text, prompt_influence = 1.0 } = createSoundEffectDto;
     this.logger.log('Generating sound effect with prompt:', text);
+
+    let { duration_seconds } = createSoundEffectDto;
+
+    if (!duration_seconds || duration_seconds < 0.5 || duration_seconds > 22) {
+      duration_seconds = 15;
+    }
 
     // Generate sound effect
     const audioBuffer = await this.elevenLabsService.generateSoundEffect(

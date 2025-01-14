@@ -1,4 +1,5 @@
 'use client';
+import { useState } from 'react';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
@@ -10,9 +11,11 @@ import { Features } from './features';
 import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
+import PromptEditor from './promptEditor';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
+  const [isPromptEditorOpen, setIsPromptEditorOpen] = useState(false);
 
   return (
     <div>
@@ -48,6 +51,29 @@ const AdminPage = () => {
           </div>
         )}
 
+        {(isPendingAdmin || isAdmin) && (
+          <div className="flex justify-center mb-8">
+            <div className="w-[500px] bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300">
+              <div className="text-center">
+                <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                  Prompt Management
+                </h2>
+                <button 
+                  onClick={() => setIsPromptEditorOpen(true)}
+                  className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
+                >
+                  Edit System
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        <PromptEditor 
+          isOpen={isPromptEditorOpen}
+          onClose={() => setIsPromptEditorOpen(false)}
+        />
+
         {isAdmin && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
             {/* Subscription Panel */}
@@ -69,6 +95,19 @@ const AdminPage = () => {
               </div>
               <Fees />
             </div>
+
+            {/* Prompt Management Panel */}
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Prompt Management
+                </h2>
+                <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                  Edit System
+                </button>
+              </div>
+            </div>
+
             {/* Features Panel */}
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
               <div className="text-center mb-6">

@@ -1,13 +1,12 @@
 import { OpenAI } from 'openai';
 import { handleToolCall, writeResponseChunk, processToolCalls } from './chunkHandlers.js';
 import toolSchema from '../../tool_schemas/tool_schema.json';
-import systemPrompt from '../../../../config/systemPrompt.json';
 
 const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY,
 });
 
-export async function streamResponse(res, model, messages, temperature, userConfig, auth) {
+export async function streamResponse(res, model, messages, temperature, userConfig, auth, systemPrompt, shouldStopStream, signal) {
     let currentToolCalls = [];
     let assistantMessage = { content: '', images: [] };
     
@@ -45,15 +44,22 @@ export async function streamResponse(res, model, messages, temperature, userConf
 
     // Add system prompt at the beginning of the messages array
     const messagesWithSystemPrompt = [
-        systemPrompt,
+        { role: 'developer', content: systemPrompt || 'You are a helpful assistant.' },
         ...formattedMessages
     ];
+
+    // Set up response headers
+    res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive',
+    });
 
     try {
         const stream = await openai.chat.completions.create({
             model: model || 'gpt-4o-mini',
             messages: messagesWithSystemPrompt,
-            max_tokens: 16384,
+            max_completion_tokens: 16384,
             temperature,
             stream: true,
             tools: toolSchema,
@@ -61,13 +67,21 @@ export async function streamResponse(res, model, messages, temperature, userConf
             parallel_tool_calls: true,
         });
 
-        res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive',
-        });
-
         for await (const chunk of stream) {
+            // Check if we should stop the stream
+            if (shouldStopStream()) {
+                // Send final message and end stream
+                res.write(`data: ${JSON.stringify({ 
+                    final_message: {
+                        content: assistantMessage.content,
+                        images: assistantMessage.images
+                    }
+                })}\n\n`);
+                res.write('data: [DONE]\n\n');
+                res.end();
+                return;
+            }
+
             if (chunk.choices[0]?.delta?.content) {
                 assistantMessage.content += chunk.choices[0].delta.content;
                 writeResponseChunk(chunk, res);
@@ -97,7 +111,7 @@ export async function streamResponse(res, model, messages, temperature, userConf
                 messagesWithSystemPrompt.push(assistantToolMessage);
 
                 // Process tool calls and add their results to the history
-                const toolResults = await processToolCalls(currentToolCalls, userConfig, auth);
+                const toolResults = await processToolCalls(currentToolCalls, userConfig, auth, signal);
                 messagesWithSystemPrompt.push(...toolResults);
 
                 // Create continuation with the updated message history
@@ -110,6 +124,19 @@ export async function streamResponse(res, model, messages, temperature, userConf
                 });
 
                 for await (const continuationChunk of continuationResponse) {
+                    // Check if we should stop during continuation
+                    if (shouldStopStream()) {
+                        res.write(`data: ${JSON.stringify({ 
+                            final_message: {
+                                content: assistantMessage.content,
+                                images: assistantMessage.images
+                            }
+                        })}\n\n`);
+                        res.write('data: [DONE]\n\n');
+                        res.end();
+                        return;
+                    }
+
                     if (continuationChunk.choices[0]?.delta?.content) {
                         assistantMessage.content += continuationChunk.choices[0].delta.content;
                         writeResponseChunk(continuationChunk, res);
@@ -139,15 +166,8 @@ export async function streamResponse(res, model, messages, temperature, userConf
             }
         }
 
-        // Ensure we always send a final message
+        // Normal stream completion
         if (!res.writableEnded) {
-            if (assistantMessage.content) {
-                messagesWithSystemPrompt.push({
-                    role: 'assistant',
-                    content: assistantMessage.content
-                });
-            }
-
             res.write(`data: ${JSON.stringify({ 
                 final_message: {
                     content: assistantMessage.content,
@@ -160,7 +180,6 @@ export async function streamResponse(res, model, messages, temperature, userConf
 
     } catch (error) {
         console.error('Error in stream response:', error);
-        console.error('Current message history:', JSON.stringify(messagesWithSystemPrompt, null, 2));
         if (!res.writableEnded) {
             res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
             res.write('data: [DONE]\n\n');

@@ -11,6 +11,9 @@ export class AdminConfig {
 
   @Prop({ type: [Feature] })
   tools: Feature[];
+
+  @Prop({ type: String, default: '' })
+  systemPrompt: string;
 }
 
 export const AdminConfigSchema = SchemaFactory.createForClass(AdminConfig);

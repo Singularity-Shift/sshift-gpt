@@ -36,7 +36,7 @@ export function writeResponseChunk(chunk, res) {
     }
 }
 
-export async function processToolCalls(currentToolCalls, userConfig, auth) {
+export async function processToolCalls(currentToolCalls, userConfig, auth, signal) {
     const results = [];
     
     // Set global userConfig for tool calls
@@ -50,7 +50,7 @@ export async function processToolCalls(currentToolCalls, userConfig, auth) {
             if (typeof toolFunction === 'function') {
                 console.log(`Processing tool call: ${toolCall.function.name}`, args);
                 
-                const result = await toolFunction(...Object.values(args), auth);
+                const result = await toolFunction(...Object.values(args), auth, signal);
                 
                 if (result.error) {
                     console.error(`Tool call error for ${toolCall.function.name}:`, result.error);

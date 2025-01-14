@@ -1,14 +1,16 @@
 import dotenv from 'dotenv';
-// import messageInjection from '../../config/messageInjection.json';
 import { streamResponse } from './chat/helpers/streamResponse.js';
 import backend from '../../src/services/backend';
 dotenv.config();
 
 let shouldStopStream = false;
+let controller = new AbortController();
 
 export default async function handler(req, res) {
     if (req.method === 'POST') {
+        shouldStopStream = false; // Reset the flag at the start of a new stream
         const { messages, auth, model, temperature = 0.2 } = req.body;
+        controller = new AbortController();
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
@@ -17,7 +19,11 @@ export default async function handler(req, res) {
         }
 
         try {
-            const responseUserConfig = await backend.get('/user', { headers: { Authorization: `Bearer ${auth}` } });
+            // Fetch user config and admin config in parallel
+            const [responseUserConfig, responseAdminConfig] = await Promise.all([
+                backend.get('/user', { headers: { Authorization: `Bearer ${auth}` } }),
+                backend.get('/admin-config')
+            ]);
 
             if (!responseUserConfig?.data) {
                 console.error('Error fetching user config:', responseUserConfig.error);
@@ -25,8 +31,7 @@ export default async function handler(req, res) {
             }
 
             const userConfig = responseUserConfig.data;
-
-            console.log('User config:', userConfig);
+            const adminConfig = responseAdminConfig.data;
 
             if (!userConfig.active && !userConfig.isCollector) {
                 console.log('User is not active or collector');
@@ -37,16 +42,28 @@ export default async function handler(req, res) {
                 await checkModelCredits(userConfig, model, auth);
             }
             
-            // Start streaming the response
-            await streamResponse(res, model, messages, temperature, userConfig, auth);
+            // Pass shouldStopStream to streamResponse
+            await streamResponse(
+                res, 
+                model, 
+                messages, 
+                temperature, 
+                userConfig, 
+                auth, 
+                adminConfig.systemPrompt,
+                () => shouldStopStream,
+                controller.signal,
+            );
         } catch (error) {
-            console.error('Error in handler:', JSON.stringify(error.response.data.message));
+            console.error('Error in handler:', error.response?.data?.message || error.message);
             if (!res.writableEnded) {
                 res.status(error.status || 500).json({ error: error.message || 'Internal Server Error' });
             }
         }
     } else if (req.method === 'DELETE') {
         shouldStopStream = true;
+        console.log('Stream stopping initiated');
+        controller.abort();
         res.status(200).json({ message: 'Stream stopping initiated' });
     } else {
         res.setHeader('Allow', ['POST', 'DELETE']);
