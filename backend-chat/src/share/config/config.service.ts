@@ -63,6 +63,11 @@ const DOTENV_SCHEMA = Joi.object({
   arxiv: Joi.object({
     url: Joi.string().required(),
   }),
+  handleFinder: Joi.object({
+    apiKey: Joi.string().required(),
+    baseUrl: Joi.string().required(),
+    address: Joi.string().required(),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -92,7 +97,10 @@ type DotenvSchemaKeys =
   | 'wiki.url'
   | 'perplexity.apiKey'
   | 'perplexity.baseUrl'
-  | 'arxiv.url';
+  | 'arxiv.url'
+  | 'handleFinder.apiKey'
+  | 'handleFinder.baseUrl'
+  | 'handleFinder.address';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

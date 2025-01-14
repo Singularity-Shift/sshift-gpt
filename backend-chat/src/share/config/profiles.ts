@@ -51,6 +51,11 @@ export const Profiles = {
     arxiv: {
       url: process.env.ARXIV_URL,
     },
+    handleFinder: {
+      apiKey: process.env.HANDLE_FINDER_API_KEY,
+      baseUrl: process.env.HANDLE_FINDER_BASE_URL,
+      address: process.env.HANDLE_FINDER_ADDRESS,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,
@@ -103,6 +108,11 @@ export const Profiles = {
     },
     arxiv: {
       url: process.env.ARXIV_URL,
+    },
+    handleFinder: {
+      apiKey: process.env.HANDLE_FINDER_API_KEY,
+      baseUrl: process.env.HANDLE_FINDER_BASE_URL,
+      address: process.env.HANDLE_FINDER_ADDRESS,
     },
   },
 };

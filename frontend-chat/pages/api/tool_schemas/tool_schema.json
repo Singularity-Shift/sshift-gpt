@@ -263,5 +263,92 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getAllTopics",
+      "description": "Fetches all available topics from blockchain social network.",
+      "parameters": {
+        "type": "object",
+        "properties": {},
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTokensMentioned",
+      "description": "Fetches tokens more mentioned.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "enum": [5, 10, 15, 25, 50],
+            "description": "The number of results to return."
+          },
+          "page": {
+            "type": "integer",
+            "description": "The page number for pagination."
+          }
+        },
+        "required": ["limit", "page"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  }, {
+    "type": "function",
+    "function": {
+      "name": "findCategoryCounts",
+      "description": "Find categories and post counts for a specific date.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The date for which to find category post counts."
+          }
+        },
+        "required": ["date"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getPublicationsByCategory",
+      "description": "Fetches publications in a specific category.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "category": {
+            "type": "string",
+            "description": "The category for which to fetch posts."
+          },
+          "date": {
+            "type": "string",
+            "description": "The date for which to fetch posts."
+          },
+          "limit": {
+            "type": "integer",
+            "enum": [5, 10, 20, 50, 100],
+            "description": "The number of results to return."
+          },
+          "page": {
+            "type": "integer",
+            "description": "The page number for pagination."
+          }
+        },
+        "required": ["category", "date", "limit", "page"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
   }
 ]
