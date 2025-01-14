@@ -14,6 +14,7 @@ import { AdminConfigModule } from './admin-config/admin-config.module';
 import { MultisignModule } from './multisign/multising.module';
 import { ToolsModule } from './tools/tools.module';
 import { BucketModule } from './bucket/bucket.module';
+import { HandleFinderModule } from './handle-finder/handle-finder.module';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { BucketModule } from './bucket/bucket.module';
     MultisignModule,
     ToolsModule,
     BucketModule,
+    HandleFinderModule,
   ],
   controllers: [],
   providers: [

@@ -243,3 +243,68 @@ export async function fetchUserNFTCollections(auth, signal) {
         };
     }
 }
+
+export async function getAllTopics(auth, signal) {
+    try {
+        const response = await backend.get('/handle-finder/topics', {
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            timeout: 30000,
+            signal
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error in getAllTopics:', error);
+        return {
+            error: true,
+            message: 'Failed to fetch all topics'
+        };
+    }
+}
+
+export async function getTokensMentioned(limit, page, auth, signal) {
+    try {
+        const response = await backend.get('/handle-finder/tokens/mentions', {
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            params: { limit, page },
+            timeout: 30000,
+            signal
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error in getTokensMentioned:', error);
+        return {
+            error: true,
+            message: 'Failed to fetch tokens mentioned'
+        };
+    }
+}
+
+export async function findCategoryTopicCounts(date, auth, signal) {
+    try {
+        const response = await backend.get('/handle-finder/category', {
+            headers: { 
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${auth}` 
+            },
+            params: { date },
+            timeout: 30000,
+            signal
+        });
+
+        return response.data;
+    } catch (error) {
+        console.error('Error in findCategoryTopicCounts:', error);
+        return {
+            error: true,
+            message: 'Failed to fetch category topic counts'
+        };
+    }
+}

@@ -3,6 +3,8 @@ import { Injectable } from '@nestjs/common';
 import { TopicDto } from './dto/topic.dto';
 import { firstValueFrom } from 'rxjs';
 import { ConfigService } from '../share/config/config.service';
+import { TokenDto } from './dto/token.dto';
+import { CategoryDto } from './dto/category.dto';
 
 @Injectable()
 export class HandleFinderService {
@@ -25,6 +27,38 @@ export class HandleFinderService {
         headers: {
           ApiKey: this.apiKey,
           Address: this.address,
+        },
+      })
+    );
+
+    return response.data;
+  }
+
+  async findTokensMentioned(limit: number, page: number): Promise<TokenDto[]> {
+    const response = await firstValueFrom(
+      await this.httpService.get<TokenDto[]>(
+        `${this.url}/llm/tokens/mentions?limit=${limit}&page=${page}`,
+        {
+          headers: {
+            ApiKey: this.apiKey,
+            Address: this.address,
+          },
+        }
+      )
+    );
+
+    return response.data;
+  }
+
+  async findCategoryTopicCounts(date: Date): Promise<CategoryDto[]> {
+    const response = await firstValueFrom(
+      await this.httpService.get<CategoryDto[]>(`${this.url}/llm/categories`, {
+        headers: {
+          ApiKey: this.apiKey,
+          Address: this.address,
+        },
+        params: {
+          date,
         },
       })
     );
