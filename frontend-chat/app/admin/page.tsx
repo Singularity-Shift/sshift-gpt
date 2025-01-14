@@ -77,7 +77,7 @@ const AdminPage = () => {
         {isAdmin && (
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-8 mb-8">
             {/* Subscription Panel */}
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Subscription Settings
@@ -87,7 +87,7 @@ const AdminPage = () => {
             </div>
 
             {/* Fees Management Panel */}
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Fees Management
@@ -97,7 +97,7 @@ const AdminPage = () => {
             </div>
 
             {/* Features Panel */}
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Features Config
@@ -105,7 +105,9 @@ const AdminPage = () => {
               </div>
               <Features />
             </div>
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+
+            {/* Actions Panel */}
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
                   Action Config
@@ -132,7 +134,7 @@ const AdminPage = () => {
         )}
 
         {isAdmin && (
-          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center mb-10">
+          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto mb-10">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Pending actions
@@ -143,7 +145,7 @@ const AdminPage = () => {
         )}
 
         {isAdmin && (
-          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center mb-10">
+          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto mb-10">
             <div className="text-center mb-6">
               <h2 className="text-2xl font-bold text-gray-900">
                 Grant Subscription
