@@ -106,7 +106,7 @@ export const GrantSubscriptions = () => {
               {truncateAddress(grantedAddress)} with the given duration {days}.
               <br />
               <br />
-              Are you agree with this action?
+              Do you agree with this action?
             </p>
           }
         />

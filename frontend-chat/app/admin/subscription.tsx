@@ -362,7 +362,7 @@ export const Subscription = () => {
           disabled={disableSubmitCoinfigButton}
           confirmMessage={
             <p>
-              This are the new settings:
+              These are the new settings:
               <br />
               Collections for Discount:
               <br />
@@ -382,7 +382,7 @@ export const Subscription = () => {
               <br />
               Token property version: {subscription.token_property_version}
               <br />
-              Are you agree?
+              Do you agree?
             </p>
           }
         />

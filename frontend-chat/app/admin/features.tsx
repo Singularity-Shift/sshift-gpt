@@ -144,37 +144,53 @@ export const Features = () => {
   }, []);
 
   return (
-    <div className="space-x-4">
-      <h2>Models</h2>
-      {adminConfig.models.map((model, index) => (
-        <AddFeature
-          featureType={FeatureType.Models}
-          index={index}
-          name={model.name}
-          credits={model.credits}
-          isUpdating={isLoading}
-          key={`model-${index}`}
-          onAdd={onAddModel}
-          onRemove={() => onRemoveModel(index)}
-          onChangeCredits={onChangeModelCredits}
-          onChangeName={onChangeModelName}
-        />
-      ))}
-      <h2>Tools</h2>
-      {adminConfig.tools.map((tool, index) => (
-        <AddFeature
-          featureType={FeatureType.Tools}
-          index={index}
-          name={tool.name}
-          credits={tool.credits}
-          isUpdating={isLoading}
-          key={`tool-${index}`}
-          onAdd={onAddTool}
-          onRemove={() => onRemoveTool(index)}
-          onChangeCredits={onChangeToolCredits}
-          onChangeName={onChangeToolName}
-        />
-      ))}
+    <div className="space-y-8">
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-gray-900">Models Configuration</h2>
+        <div className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center">
+          <div className="font-medium text-sm text-gray-700">Model Name</div>
+          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div></div>
+        </div>
+        {adminConfig.models.map((model, index) => (
+          <AddFeature
+            featureType={FeatureType.Models}
+            index={index}
+            name={model.name}
+            credits={model.credits}
+            isUpdating={isLoading}
+            key={`model-${index}`}
+            onAdd={onAddModel}
+            onRemove={() => onRemoveModel(index)}
+            onChangeCredits={onChangeModelCredits}
+            onChangeName={onChangeModelName}
+          />
+        ))}
+      </div>
+
+      <div className="space-y-4">
+        <h2 className="text-xl font-semibold text-gray-900">Tools Configuration</h2>
+        <div className="grid grid-cols-[1fr,1fr,auto,auto] gap-4 items-center">
+          <div className="font-medium text-sm text-gray-700">Tool Name</div>
+          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div></div>
+          <div></div>
+        </div>
+        {adminConfig.tools.map((tool, index) => (
+          <AddFeature
+            featureType={FeatureType.Tools}
+            index={index}
+            name={tool.name}
+            credits={tool.credits}
+            isUpdating={isLoading}
+            key={`tool-${index}`}
+            onAdd={onAddTool}
+            onRemove={() => onRemoveTool(index)}
+            onChangeCredits={onChangeToolCredits}
+            onChangeName={onChangeToolName}
+          />
+        ))}
+      </div>
 
       <div className="pt-4">
         <ConfirmButton
@@ -185,7 +201,7 @@ export const Features = () => {
           confirmMessage={
             <p>
               This action will create, update or delete models or tools in the
-              admin configuration. Are you agree?
+              admin configuration. Do you agree?
             </p>
           }
         />

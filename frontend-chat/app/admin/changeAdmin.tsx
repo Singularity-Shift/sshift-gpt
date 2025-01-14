@@ -38,7 +38,7 @@ export const ChangeAdmin = () => {
       setIsAdmin(true);
     } catch (error) {
       toast({
-        title: 'Error submot',
+        title: 'Error submitting',
         description: `${error}`,
         variant: 'destructive',
       });
