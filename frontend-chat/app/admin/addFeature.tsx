@@ -28,11 +28,11 @@ export const AddFeature = (props: AddFeaturesProps) => {
   } = props;
 
   return (
-    <div className="flex flex-wrap items-end space-x-4">
-      <div className="flex-1">
+    <div className="grid grid-cols-[1fr,1fr,auto,auto] gap-4 items-center">
+      <div>
         <LabeledInput
           id={`feature-${featureType}-${index}`}
-          label="Name"
+          label=""
           tooltip="Model or tool name to be added"
           required={index === 0}
           value={name}
@@ -41,11 +41,11 @@ export const AddFeature = (props: AddFeaturesProps) => {
           type="text"
         />
       </div>
-      <div className="flex-1">
+      <div>
         <LabeledInput
           id={`feature-credits-${featureType}-${index}`}
-          label="Credits"
-          tooltip="Model or tool credits to be added"
+          label=""
+          tooltip="Credits cost per use"
           required={index === 0}
           value={credits}
           disabled={isUpdating}
@@ -53,19 +53,25 @@ export const AddFeature = (props: AddFeaturesProps) => {
           type="number"
         />
       </div>
-      <div className="w-auto">
-        <Button variant="default" onClick={onAdd}>
-          Add
-        </Button>
-      </div>
-
+      <Button 
+        variant="outline" 
+        size="sm"
+        onClick={onAdd}
+        className="whitespace-nowrap"
+      >
+        Add New
+      </Button>
       {index !== 0 && (
-        <div className="w-auto">
-          <Button variant="destructive" onClick={onRemove}>
-            Remove
-          </Button>
-        </div>
+        <Button 
+          variant="destructive" 
+          size="sm"
+          onClick={onRemove}
+          className="whitespace-nowrap"
+        >
+          Remove
+        </Button>
       )}
+      {index === 0 && <div />}
     </div>
   );
 };

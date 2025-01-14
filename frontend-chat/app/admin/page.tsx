@@ -96,18 +96,6 @@ const AdminPage = () => {
               <Fees />
             </div>
 
-            {/* Prompt Management Panel */}
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
-              <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Prompt Management
-                </h2>
-                <button className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
-                  Edit System
-                </button>
-              </div>
-            </div>
-
             {/* Features Panel */}
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
               <div className="text-center mb-6">

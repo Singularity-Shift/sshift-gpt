@@ -24,10 +24,12 @@ export const LabeledInput: FC<{
   readOnly,
 }) => {
   return (
-    <div className="flex flex-col item-center space-y-4">
-      <Label htmlFor={id}>
-        {label} {required ? '' : '(optional)'}
-      </Label>
+    <div className="flex flex-col item-center space-y-2">
+      {label && (
+        <Label htmlFor={id}>
+          {label} {required ? '' : '(optional)'}
+        </Label>
+      )}
       <Input
         disabled={disabled}
         type={type}
@@ -35,6 +37,7 @@ export const LabeledInput: FC<{
         value={value}
         onChange={onChange}
         readOnly={readOnly}
+        placeholder={tooltip}
       />
     </div>
   );
