@@ -185,7 +185,7 @@ export const Features = () => {
           confirmMessage={
             <p>
               This action will create, update or delete models or tools in the
-              admin configuration. Are you agree?
+              admin configuration. Do you agree?
             </p>
           }
         />
