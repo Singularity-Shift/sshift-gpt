@@ -350,5 +350,38 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTrendingUsers",
+      "description": "Fetches trending users based on specified query",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer",
+            "description": "The page number for pagination."
+          },
+          "limit": {
+            "type": "integer",
+            "description": "The number of results to return."
+          },
+          "ratio": {
+            "type": "string",
+            "enum": ["Likes", "Followers"],
+            "description": "The ratio of posts to followers."
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["Lens"]
+          }
+        },
+        "additionalProperties": false,
+        "required": ["page", "limit", "ratio", "protocol"]
+        
+      },
+      "strict": true
+    }
   }
 ]

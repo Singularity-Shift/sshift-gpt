@@ -6,6 +6,8 @@ import { ConfigService } from '../share/config/config.service';
 import { TokenDto } from './dto/token.dto';
 import { CategoryDto } from './dto/category.dto';
 import { PublicationDto } from './dto/publication.dto';
+import { UserTrendingDto } from './dto/user-trending.dto';
+import { GetTrendingDto } from './dto/get-trending.dto';
 
 @Injectable()
 export class HandleFinderService {
@@ -86,6 +88,25 @@ export class HandleFinderService {
             date,
             take: limit,
             page,
+          },
+        }
+      )
+    );
+
+    return response.data;
+  }
+
+  async findTrendingUsers(
+    userTrendingDto: UserTrendingDto
+  ): Promise<GetTrendingDto> {
+    const response = await firstValueFrom(
+      await this.httpService.post<GetTrendingDto>(
+        `${this.url}/trending/find`,
+        userTrendingDto,
+        {
+          headers: {
+            ApiKey: this.apiKey,
+            Address: this.address,
           },
         }
       )
