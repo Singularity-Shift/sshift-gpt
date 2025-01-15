@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query } from '@nestjs/common';
 import { HandleFinderService } from './handle-finder.service';
 import {
   ApiBearerAuth,
@@ -10,6 +10,9 @@ import { TopicDto } from './dto/topic.dto';
 import { TokenDto } from './dto/token.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { PublicationDto } from './dto/publication.dto';
+import { UserTrendingDto } from './dto/user-trending.dto';
+import { GetTrendingDto } from './dto/get-trending.dto';
+import { TrendingDto } from './dto/trending.dto';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
@@ -96,5 +99,27 @@ export class HandleFinderController {
       limit,
       page
     );
+  }
+
+  @Post('trending/users')
+  @ApiOperation({ summary: 'Get trending users' })
+  @ApiResponse({
+    description: 'Trending users',
+    status: 201,
+    type: GetTrendingDto,
+  })
+  async findTrendingUsers(
+    @Body() userTrendingDto: UserTrendingDto
+  ): Promise<GetTrendingDto> {
+    const response = await this.handleFinderService.findTrendingUsers(
+      userTrendingDto
+    );
+
+    return {
+      ...response,
+      users: response.users.map((user) =>
+        TrendingDto.fromJson(user, userTrendingDto.protocol)
+      ),
+    };
   }
 }
