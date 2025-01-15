@@ -125,11 +125,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </code>
               );
             },
-            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[1050px]:text-2xl">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[1050px]:text-xl">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[1050px]:text-lg">{children}</h3>,
+            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
             p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[1050px]:text-base">{children}</div>;
+              return <div className="mb-2 text-sm min-[768px]:text-base">{children}</div>;
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -211,9 +211,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={`max-w-[75%] w-auto p-3 rounded-lg ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        } text-sm min-[1050px]:text-base`}
+        } text-sm min-[768px]:text-base`}
       >
-        <div className="prose prose-sm max-w-none min-[1050px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[1050px]:!prose-h1:text-2xl min-[1050px]:!prose-h2:text-xl min-[1050px]:!prose-h3:text-lg min-[1050px]:!prose-p:text-base">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base">
           {renderContent()}
         </div>
 
