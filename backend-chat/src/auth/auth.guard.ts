@@ -65,14 +65,6 @@ export class AuthGuard implements CanActivate {
   private async getUserConfig(address: `0x${string}`): Promise<IUserConfig> {
     let subscriptionDuration: number[];
 
-    const userConfigCache = await this.cacheManager.get<IUserConfig>(
-      `${address}_config`
-    );
-
-    if (userConfigCache) {
-      return userConfigCache;
-    }
-
     const currentAdminResult = await abis.useABI(FeesABI).view.get_admin({
       typeArguments: [],
       functionArguments: [],
@@ -143,8 +135,6 @@ export class AuthGuard implements CanActivate {
       isReviewer,
       isCollector,
     };
-
-    await this.cacheManager.set(`${address}_config`, userConfig);
 
     return userConfig;
   }
