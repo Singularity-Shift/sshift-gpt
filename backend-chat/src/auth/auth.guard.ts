@@ -1,7 +1,6 @@
 import {
   CanActivate,
   ExecutionContext,
-  Inject,
   Injectable,
   Logger,
   UnauthorizedException,
@@ -10,7 +9,6 @@ import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '../share/config/config.service';
 import { Request } from 'express';
-import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 import { IUserConfig } from '@helpers';
 import { abis, FeesABI, SubscriptionABI } from '@aptos';
 import { UserService } from '../user/user.service';
@@ -19,7 +17,6 @@ import { UserService } from '../user/user.service';
 export class AuthGuard implements CanActivate {
   logger = new Logger(AuthGuard.name);
   constructor(
-    @Inject(CACHE_MANAGER) private cacheManager: Cache,
     private reflector: Reflector,
     private configService: ConfigService,
     private userService: UserService
