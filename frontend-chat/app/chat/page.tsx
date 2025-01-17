@@ -136,16 +136,16 @@ export default function ChatPage() {
 
       // Prepare the content array for the API request
       const contentArray = [
-        ...selectedImages.map(imageUrl => ({
+        ...selectedImages.map((imageUrl) => ({
           type: 'image_url',
-          image_url: { url: imageUrl, detail: 'high' }
+          image_url: { url: imageUrl, detail: 'high' },
         })),
-        { type: 'text', text: inputMessage }
+        { type: 'text', text: inputMessage },
       ];
 
       const formattedMessage = {
         role: 'user',
-        content: contentArray
+        content: contentArray,
       };
 
       setChats((prevChats) => {
@@ -175,26 +175,28 @@ export default function ChatPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
           },
           body: JSON.stringify({
-            auth: localStorage.getItem('jwt') as string,
             messages: [
-              ...(chats.find((chat) => chat.id === currentChatId)?.messages || []).map(msg => {
+              ...(
+                chats.find((chat) => chat.id === currentChatId)?.messages || []
+              ).map((msg) => {
                 if (msg.role === 'user' && msg.images) {
                   return {
                     role: msg.role,
                     content: [
-                      ...msg.images.map(imageUrl => ({
+                      ...msg.images.map((imageUrl) => ({
                         type: 'image_url',
-                        image_url: { url: imageUrl, detail: 'high' }
+                        image_url: { url: imageUrl, detail: 'high' },
                       })),
-                      { type: 'text', text: msg.content }
-                    ]
+                      { type: 'text', text: msg.content },
+                    ],
                   };
                 }
                 return {
                   role: msg.role,
-                  content: msg.content
+                  content: msg.content,
                 };
               }),
               formattedMessage,
@@ -246,7 +248,7 @@ export default function ChatPage() {
                   if (parsedData.tool_response.name === 'generateImage') {
                     assistantMessage.images = [
                       ...(assistantMessage.images || []),
-                      parsedData.tool_response.result.image_url
+                      parsedData.tool_response.result.image_url,
                     ];
                     updateChat(assistantMessage);
                   } else if (parsedData.tool_response.name === 'searchWeb') {
@@ -258,7 +260,9 @@ export default function ChatPage() {
                   assistantMessage = {
                     ...assistantMessage,
                     content: parsedData.final_message.content,
-                    images: parsedData.final_message.images || assistantMessage.images
+                    images:
+                      parsedData.final_message.images ||
+                      assistantMessage.images,
                   };
                   updateChat(assistantMessage);
                 }
@@ -317,7 +321,7 @@ export default function ChatPage() {
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true);
-      
+
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
@@ -340,22 +344,22 @@ export default function ChatPage() {
       );
 
       // Format messages for the API request
-      const formattedMessages = messagesUpToLastUser.map(msg => {
+      const formattedMessages = messagesUpToLastUser.map((msg) => {
         if (msg.role === 'user' && msg.images && msg.images.length > 0) {
           return {
             role: msg.role,
             content: [
-              ...msg.images.map(imageUrl => ({
+              ...msg.images.map((imageUrl) => ({
                 type: 'image_url',
-                image_url: { url: imageUrl, detail: 'high' }
+                image_url: { url: imageUrl, detail: 'high' },
               })),
-              { type: 'text', text: msg.content }
-            ]
+              { type: 'text', text: msg.content },
+            ],
           };
         }
         return {
           role: msg.role,
-          content: msg.content
+          content: msg.content,
         };
       });
 
@@ -364,9 +368,9 @@ export default function ChatPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('jwt') as string}`,
         },
         body: JSON.stringify({
-          auth: localStorage.getItem('jwt') as string,
           messages: formattedMessages,
           model: selectedModel,
         }),
@@ -394,7 +398,7 @@ export default function ChatPage() {
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -415,7 +419,7 @@ export default function ChatPage() {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.images = [
                     ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url
+                    parsedData.tool_response.result.image_url,
                   ];
                   updateChat(newAssistantMessage);
                 } else if (parsedData.tool_response.name === 'searchWeb') {
@@ -427,7 +431,9 @@ export default function ChatPage() {
                 newAssistantMessage = {
                   ...newAssistantMessage,
                   content: parsedData.final_message.content,
-                  images: parsedData.final_message.images || newAssistantMessage.images
+                  images:
+                    parsedData.final_message.images ||
+                    newAssistantMessage.images,
                 };
                 updateChat(newAssistantMessage);
               }
@@ -439,8 +445,8 @@ export default function ChatPage() {
       }
 
       // Update the chat with the regenerated message
-      setChats(prevChats =>
-        prevChats.map(chat => {
+      setChats((prevChats) =>
+        prevChats.map((chat) => {
           if (chat.id === currentChatId) {
             const updatedMessages = chat.messages.slice(0, messageIndex);
             return {
@@ -480,8 +486,11 @@ export default function ChatPage() {
         setChats(updatedChats);
         if (updatedChats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
-          const mostRecentChat = updatedChats.reduce((latest: Chat, current: Chat) => 
-            (current.lastUpdated || 0) > (latest.lastUpdated || 0) ? current : latest
+          const mostRecentChat = updatedChats.reduce(
+            (latest: Chat, current: Chat) =>
+              (current.lastUpdated || 0) > (latest.lastUpdated || 0)
+                ? current
+                : latest
           );
           setCurrentChatId(mostRecentChat.id);
           setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
@@ -569,25 +578,25 @@ export default function ChatPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
         },
         body: JSON.stringify({
-          auth: localStorage.getItem('jwt') as string,
-          messages: messagesUpToEdit.map(msg => {
+          messages: messagesUpToEdit.map((msg) => {
             if (msg.role === 'user' && msg.images) {
               return {
                 role: msg.role,
                 content: [
-                  ...msg.images.map(imageUrl => ({
+                  ...msg.images.map((imageUrl) => ({
                     type: 'image_url',
-                    image_url: { url: imageUrl, detail: 'high' }
+                    image_url: { url: imageUrl, detail: 'high' },
                   })),
-                  { type: 'text', text: msg.content }
-                ]
+                  { type: 'text', text: msg.content },
+                ],
               };
             }
             return {
               role: msg.role,
-              content: msg.content
+              content: msg.content,
             };
           }),
           model: selectedModel,
@@ -600,7 +609,7 @@ export default function ChatPage() {
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body reader');
-      
+
       const decoder = new TextDecoder();
       let done = false;
 
@@ -640,7 +649,7 @@ export default function ChatPage() {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.images = [
                     ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url
+                    parsedData.tool_response.result.image_url,
                   ];
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response.name === 'searchWeb') {

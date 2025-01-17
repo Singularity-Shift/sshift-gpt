@@ -9,8 +9,11 @@ let controller = new AbortController();
 export default async function handler(req, res) {
     if (req.method === 'POST') {
         shouldStopStream = false; // Reset the flag at the start of a new stream
-        const { messages, auth, model, temperature = 0.2 } = req.body;
+        const { messages, model, temperature = 0.2 } = req.body;
+
+        const { authorization } = req.headers;
         controller = new AbortController();
+
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
@@ -21,7 +24,7 @@ export default async function handler(req, res) {
         try {
             // Fetch user config and admin config in parallel
             const [responseUserConfig, responseAdminConfig] = await Promise.all([
-                backend.get('/user', { headers: { Authorization: `Bearer ${auth}` } }),
+                backend.get('/user', { headers: { Authorization: authorization } }),
                 backend.get('/admin-config')
             ]);
 
@@ -39,7 +42,7 @@ export default async function handler(req, res) {
             }
 
             if(!userConfig.isCollector) {
-                await checkModelCredits(userConfig, model, auth);
+                await checkModelCredits(userConfig, model, authorization);
             }
             
             // Pass shouldStopStream to streamResponse
@@ -49,7 +52,7 @@ export default async function handler(req, res) {
                 messages, 
                 temperature, 
                 userConfig, 
-                auth, 
+                authorization, 
                 adminConfig.systemPrompt,
                 () => shouldStopStream,
                 controller.signal,

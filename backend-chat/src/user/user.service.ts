@@ -93,21 +93,32 @@ export class UserService {
     chats: ChatHistoryDto[]
   ): Promise<UpdateWriteOpResult> {
     // First get the current user to compare message counts
-    const currentUser = await this.userModel.findOne({ address: address.toLowerCase() });
+    const currentUser = await this.userModel.findOne({
+      address: address.toLowerCase(),
+    });
     const currentChats = currentUser?.chats || [];
 
     return this.userModel.updateOne(
-      { address: address.toLowerCase() },
       {
-        chats: [...chats.map((newChat) => {
-          const existingChat = currentChats.find(c => c.id === newChat.id);
-          const hasNewMessages = existingChat ? newChat.messages.length > existingChat.messages.length : true;
-          
-          return {
-            ...newChat,
-            lastUpdated: hasNewMessages ? Date.now() : (newChat.lastUpdated || Date.now())
-          };
-        })]
+        _id: currentUser._id,
+        address: address.toLowerCase(),
+      },
+      {
+        chats: [
+          ...chats.map((newChat) => {
+            const existingChat = currentChats.find((c) => c.id === newChat.id);
+            const hasNewMessages = existingChat
+              ? newChat.messages.length > existingChat.messages.length
+              : true;
+
+            return {
+              ...newChat,
+              lastUpdated: hasNewMessages
+                ? Date.now()
+                : newChat.lastUpdated || Date.now(),
+            };
+          }),
+        ],
       }
     );
   }

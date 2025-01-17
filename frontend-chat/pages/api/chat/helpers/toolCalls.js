@@ -9,7 +9,7 @@ export async function generateImage(prompt, size, style, auth, signal) {
             size,
             style,
         }, {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             timeout: 60000,
             signal,
         });
@@ -34,7 +34,7 @@ export async function generateImage(prompt, size, style, auth, signal) {
 export async function searchWeb(query, auth, signal) {
     try {
         const response = await backend.get('/tools/search-web', {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             params: { query },
             timeout: 60000,
             signal
@@ -53,7 +53,7 @@ export async function searchWeb(query, auth, signal) {
 export async function wikiSearch(action, searchString, auth, signal) {
     try {
         const response = await backend.get('/tools/wiki-search', {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             params: { action, searchString },
             timeout: 30000,
             signal
@@ -76,7 +76,7 @@ export async function getStockInfo(tickers, info_types, auth, signal) {
             {
                 headers: { 
                     'Content-Type': 'application/json',
-                    Authorization: `Bearer ${auth}` 
+                    Authorization: auth 
                 },
                 timeout: 30000,
                 signal
@@ -98,7 +98,7 @@ export async function getCryptoInfoFromCMC(token_symbol, auth, signal) {
         const result = await backend.get(`/tools/get-crypto-info-from-cmd/${token_symbol}`, {
             headers: { 
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth}` 
+                Authorization: auth 
             },
             timeout: 30000,
             signal
@@ -118,7 +118,7 @@ export async function queryArxiv(search_query, max_results, sort_by, sort_order,
         const response = await backend.post('/tools/search-arxiv',
         { search_query, max_results, sort_by, sort_order },
         {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`  },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             timeout: 30000,
             signal
         });
@@ -137,7 +137,7 @@ export async function getTrendingCryptos(option, limit = 10, auth, signal) {
     try {
         const response = await backend.get(`/tools/get-trending-cryptos/${option}`, {
             params: { limit },
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             timeout: 30000,
             signal
         });
@@ -156,7 +156,7 @@ export async function searchNftCollection(collection_name, auth, signal) {
     try {
         const response = await backend.get(`/tools/search-nft-collection/${collection_name}`, {
             headers: {
-                Authorization: `Bearer ${auth}`,
+                Authorization: auth,
                 'Content-Type': 'application/json' 
             },
             timeout: 30000,
@@ -176,7 +176,7 @@ export async function searchNftCollection(collection_name, auth, signal) {
 export async function searchTrendingNFT(period, trending_by, limit, auth, signal) {
     try {
         const response = await backend.get('/tools/search-trending-nft', {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}` },
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             params: { period, trending_by, limit },
             timeout: 30000,
             signal
@@ -200,7 +200,7 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
             text, duration_seconds, prompt_influence 
         },
         {
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${auth}`},
+            headers: { 'Content-Type': 'application/json', Authorization: auth },
             timeout: 60000,
             signal
         });
@@ -228,7 +228,7 @@ export async function fetchUserNFTCollections(auth, signal) {
         const response = await backend.post('/tools/fetch-user-nft-collections', {}, {
             headers: { 
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth}` 
+                Authorization: auth 
             },
             timeout: 30000,
             signal
@@ -249,7 +249,7 @@ export async function getAllTopics(auth, signal) {
         const response = await backend.get('/handle-finder/topics', {
             headers: { 
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth}` 
+                Authorization: auth 
             },
             timeout: 30000,
             signal
@@ -270,7 +270,7 @@ export async function getTokensMentioned(limit, page, auth, signal) {
         const response = await backend.get('/handle-finder/tokens/mentions', {
             headers: { 
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth}` 
+                Authorization: auth 
             },
             params: { limit, page },
             timeout: 30000,
@@ -294,7 +294,7 @@ export async function getTrendingUsers(page, limit, ratio, protocol, auth, signa
         const response = await backend.post('/handle-finder/trending/users', query, {
             headers: { 
                 'Content-Type': 'application/json',
-                Authorization: `Bearer ${auth}` 
+                Authorization: auth 
             },
             timeout: 30000,
             signal
