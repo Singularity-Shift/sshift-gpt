@@ -14,7 +14,6 @@ export default async function handler(req, res) {
         const { authorization } = req.headers;
         controller = new AbortController();
 
-
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
         if (!Array.isArray(messages) || messages.length === 0) {
@@ -93,5 +92,5 @@ const checkModelCredits = async (userConfig, model, auth) => {
         name: model,
         creditType: 'Models',
         creditsUsed: modelCredits?.creditsUsed || 0,
-    }, { headers: { Authorization: `Bearer ${auth}` } });
+    }, { headers: { Authorization: auth } });
 }
