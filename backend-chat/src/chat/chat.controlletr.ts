@@ -5,8 +5,11 @@ import {
   NotFoundException,
   Get,
   Put,
+  Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
 import { GetUserDto } from '../user/dto/get-user.dto';
 import { UserAuth } from '../auth/auth.decorator';
@@ -40,12 +43,12 @@ export class ChatController {
 
     if (!user) {
       throw new NotFoundException(
-        `User with address ${userAuth.address} does not exits`
+        `User with address ${userAuth.address} does not exist`
       );
     }
 
     await this.userService.updateUser(
-      userAuth.address.toLocaleLowerCase(),
+      userAuth.address.toLowerCase(),
       chats
     );
 
@@ -58,7 +61,7 @@ export class ChatController {
   @Get()
   @ApiBearerAuth('Authorization')
   @ApiOperation({
-    description: 'Get user chat history',
+    description: 'Get user chat history with pagination',
   })
   @ApiResponse({
     status: 200,
@@ -69,9 +72,35 @@ export class ChatController {
     status: 401,
     description: 'Unauthorized access',
   })
-  async getUserChatHistory(@UserAuth() userAuth: IUserAuth) {
-    const user = await this.userService.findUserByAddress(userAuth.address);
+  @ApiQuery({ 
+    name: 'page', 
+    required: false, 
+    type: Number,
+    description: 'Page number (default: 1, min: 1)'
+  })
+  @ApiQuery({ 
+    name: 'limit', 
+    required: false, 
+    type: Number,
+    description: 'Number of items per page (default: 10, min: 1, max: 100)'
+  })
+  async getUserChatHistory(
+    @UserAuth() userAuth: IUserAuth,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+  ) {
+    const result = await this.userService.getUserChatsWithPagination(
+      userAuth.address,
+      page,
+      limit
+    );
 
-    return GetUserDto.fromJson(user);
+    if (!result) {
+      throw new NotFoundException(
+        `User with address ${userAuth.address} does not exist`
+      );
+    }
+
+    return result;
   }
 }
