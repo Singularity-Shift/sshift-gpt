@@ -24,6 +24,39 @@ export class UserService {
     return user;
   }
 
+  async getUserChatsWithPagination(address: string, page: number = 1, limit: number = 10) {
+    // Ensure page is at least 1
+    page = Math.max(1, page);
+    // Ensure limit is between 1 and 100
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const user = await this.userModel.findOne(
+      { address },
+      {
+        chats: { $slice: [(page - 1) * limit, limit] },
+        address: 1,
+      }
+    );
+
+    if (!user) {
+      return null;
+    }
+
+    // Get total count in a separate query
+    const totalCount = await this.userModel.aggregate([
+      { $match: { address } },
+      { $project: { count: { $size: "$chats" } } }
+    ]).then(result => result[0]?.count || 0);
+
+    return {
+      chats: user.chats || [],
+      total: totalCount,
+      page,
+      limit,
+      totalPages: Math.ceil(totalCount / limit),
+    };
+  }
+
   async addUser(address: string): Promise<User> {
     const activityModel = await new this.activityModel({
       models: [],

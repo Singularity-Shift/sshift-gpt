@@ -6,6 +6,8 @@ import {
   Get,
   Put,
   Query,
+  DefaultValuePipe,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
@@ -59,7 +61,7 @@ export class ChatController {
   @Get()
   @ApiBearerAuth('Authorization')
   @ApiOperation({
-    description: 'Get user chat history with optional pagination',
+    description: 'Get user chat history with pagination',
   })
   @ApiResponse({
     status: 200,
@@ -70,37 +72,35 @@ export class ChatController {
     status: 401,
     description: 'Unauthorized access',
   })
-  @ApiQuery({ name: 'page', required: false, type: Number })
-  @ApiQuery({ name: 'limit', required: false, type: Number })
+  @ApiQuery({ 
+    name: 'page', 
+    required: false, 
+    type: Number,
+    description: 'Page number (default: 1, min: 1)'
+  })
+  @ApiQuery({ 
+    name: 'limit', 
+    required: false, 
+    type: Number,
+    description: 'Number of items per page (default: 10, min: 1, max: 100)'
+  })
   async getUserChatHistory(
     @UserAuth() userAuth: IUserAuth,
-    @Query('page') page?: number,
-    @Query('limit') limit?: number,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
   ) {
-    const user = await this.userService.findUserByAddress(userAuth.address);
+    const result = await this.userService.getUserChatsWithPagination(
+      userAuth.address,
+      page,
+      limit
+    );
 
-    if (!user) {
+    if (!result) {
       throw new NotFoundException(
         `User with address ${userAuth.address} does not exist`
       );
     }
 
-    // If pagination parameters are provided, paginate the results
-    if (page !== undefined && limit !== undefined) {
-      const startIndex = (page - 1) * limit;
-      const endIndex = page * limit;
-      const paginatedChats = user.chats.slice(startIndex, endIndex);
-      
-      return {
-        chats: paginatedChats,
-        total: user.chats.length,
-        page,
-        limit,
-        totalPages: Math.ceil(user.chats.length / limit),
-      };
-    }
-
-    // Return full chat history if no pagination parameters
-    return GetUserDto.fromJson(user);
+    return result;
   }
 }
