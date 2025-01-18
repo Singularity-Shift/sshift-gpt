@@ -14,7 +14,7 @@ export default async function handler(req, res) {
         const { authorization } = req.headers;
         controller = new AbortController();
 
-        // console.log('Received messages:', JSON.stringify(messages, null, 2));
+        console.log('Received messages:', JSON.stringify(messages, null, 2));
 
         if (!Array.isArray(messages) || messages.length === 0) {
             return res.status(400).json({ error: 'Invalid messages format' });
