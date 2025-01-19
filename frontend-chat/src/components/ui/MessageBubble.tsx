@@ -120,16 +120,18 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   onCopy={onCopy}
                 />
               ) : (
-                <code className={className} {...props}>
+                <code className={`${className} break-all whitespace-pre-wrap`} {...props}>
                   {children}
                 </code>
               );
             },
-            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
+            pre: ({ children }) => (
+              <pre className="whitespace-pre-wrap break-words overflow-x-auto max-w-full">
+                {children}
+              </pre>
+            ),
             p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[768px]:text-base">{children}</div>;
+              return <div className="mb-2 text-sm min-[768px]:text-base whitespace-pre-wrap break-words">{children}</div>;
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -163,7 +165,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               />
             ),
           }}
-          className="prose max-w-none"
+          className="prose max-w-none break-words whitespace-pre-wrap"
         >
           {parsedContent.text}
         </ReactMarkdown>
@@ -211,9 +213,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       <div
         className={`max-w-[85%] min-[500px]:max-w-[75%] w-auto p-3 rounded-lg ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        } text-sm min-[768px]:text-base overflow-hidden`}
+        } text-sm min-[768px]:text-base overflow-hidden break-words whitespace-pre-wrap`}
       >
-        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base overflow-hidden">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base overflow-hidden break-words">
           {renderContent()}
         </div>
 
