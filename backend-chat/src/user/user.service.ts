@@ -36,7 +36,7 @@ export class UserService {
         chats: { $slice: [(page - 1) * limit, limit] },
         address: 1,
       }
-    );
+    ).sort({ "chats.timestamp": -1 });
 
     if (!user) {
       return null;
