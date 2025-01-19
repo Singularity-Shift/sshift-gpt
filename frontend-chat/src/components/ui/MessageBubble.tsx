@@ -107,73 +107,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
-    // For user messages, use standard ReactMarkdown without code block detection
-    if (isUser) {
-      return (
-        <ReactMarkdown
-          components={{
-            code: ({ node, inline, className, children, ...props }: any) => {
-              const match = /language-(\w+)/.exec(className || '');
-              return !inline && match ? (
-                <div className="max-w-full overflow-x-auto">
-                  <CodeBlock
-                    language={match[1]}
-                    value={String(children).replace(/\n$/, '')}
-                    onCopy={onCopy}
-                  />
-                </div>
-              ) : (
-                <code className={`${className} break-all whitespace-pre-wrap`} {...props}>
-                  {children}
-                </code>
-              );
-            },
-            pre: ({ children }) => (
-              <pre className="max-w-full overflow-x-auto whitespace-pre-wrap break-all">
-                {children}
-              </pre>
-            ),
-            p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[768px]:text-base break-words whitespace-pre-wrap">{children}</div>;
-            },
-            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
-            a: ({ href, children }) => {
-              // Handle audio files by rendering the AudioPlayer component
-              if (href && href.endsWith('.mp3')) {
-                return <AudioPlayer src={href} />;
-              }
-              return (
-                <a
-                  href={href}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-blue-800 hover:underline"
-                >
-                  {children}
-                </a>
-              );
-            },
-            ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
-            li: ({ children }) => <li className="mb-1">{children}</li>,
-            img: ({ src, alt }) => (
-              <ImageThumbnail
-                src={src || ''}
-                onClick={() => setExpandedImage(src || '')}
-                isExpanded={false}
-                isAssistantMessage={false}
-              />
-            ),
-          }}
-          className="prose max-w-none"
-        >
-          {parsedContent.text}
-        </ReactMarkdown>
-      );
-    }
-
     return (
       <>
         <ReactMarkdown
@@ -268,7 +201,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full`}>
       {!isUser && (
         <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
           <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
@@ -276,11 +209,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </Avatar>
       )}
       <div
-        className={`max-w-[75%] w-auto p-3 rounded-lg ${
+        className={`max-w-[85%] min-[500px]:max-w-[75%] w-auto p-3 rounded-lg ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        } text-sm min-[768px]:text-base overflow-hidden break-words`}
+        } text-sm min-[768px]:text-base overflow-hidden`}
       >
-        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base [&_code]:break-words [&_code]:whitespace-pre-wrap [&_p]:break-words [&_p]:whitespace-pre-wrap [&_pre]:max-w-full [&_pre]:overflow-x-auto">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base overflow-hidden">
           {renderContent()}
         </div>
 
