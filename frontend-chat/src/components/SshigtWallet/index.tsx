@@ -44,8 +44,7 @@ import {
 import { useToast } from '../ui/use-toast';
 import { FaWallet } from 'react-icons/fa';
 import { Button } from '../ui/button';
-import { useAppManagment } from '../../context/AppManagment';
-import { useRouter } from 'next/navigation';
+import { useAuth } from '../../context/AuthProvider';
 
 export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
@@ -66,10 +65,10 @@ export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
 };
 
 export const SshiftWalletDisconnect = () => {
-  const { account, disconnect, wallet, connected } = useWallet();
+  const { account, wallet } = useWallet();
   const { toast } = useToast();
-  const { walletAddress } = useAppManagment();
-  const router = useRouter();
+  const { walletAddress } = useAuth();
+  const { handleDisconnect } = useAuth();
 
   const copyAddress = useCallback(async () => {
     if (!walletAddress) return;
@@ -88,12 +87,6 @@ export const SshiftWalletDisconnect = () => {
     }
   }, [walletAddress, toast]);
 
-  const onDisconnect = async () => {
-    localStorage.removeItem('jwt');
-    if (connected) await disconnect();
-    router.push('/');
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -104,8 +97,14 @@ export const SshiftWalletDisconnect = () => {
           <Wallet className="h-4 w-4 min-[800px]:hidden" />
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" className="w-[200px] bg-white shadow-lg border border-gray-200">
-        <DropdownMenuItem onSelect={copyAddress} className="gap-2 hover:bg-gray-100">
+      <DropdownMenuContent
+        align="end"
+        className="w-[200px] bg-white shadow-lg border border-gray-200"
+      >
+        <DropdownMenuItem
+          onSelect={copyAddress}
+          className="gap-2 hover:bg-gray-100"
+        >
           <Copy className="h-4 w-4" /> Copy address
         </DropdownMenuItem>
         {wallet && isAptosConnectWallet(wallet) && (
@@ -120,7 +119,10 @@ export const SshiftWalletDisconnect = () => {
             </a>
           </DropdownMenuItem>
         )}
-        <DropdownMenuItem onSelect={onDisconnect} className="gap-2 hover:bg-gray-100">
+        <DropdownMenuItem
+          onSelect={handleDisconnect}
+          className="gap-2 hover:bg-gray-100"
+        >
           <LogOut className="h-4 w-4" /> Disconnect
         </DropdownMenuItem>
       </DropdownMenuContent>

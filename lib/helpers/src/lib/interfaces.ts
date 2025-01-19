@@ -282,3 +282,8 @@ export interface ITicker {
   financials: IFinancial;
   recommendations: RecommendationsBySymbolResponse;
 }
+
+export interface IJWTUser {
+  account: string;
+  token: string;
+}

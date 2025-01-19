@@ -6,26 +6,14 @@ import { v4 as uuidv4 } from 'uuid';
 import { Menu } from 'lucide-react';
 
 // Core Layout Components
-import { ChatSidebar } from '@fn-chat/components/ui/ChatSidebar';
-import { ChatHeader } from '@fn-chat/components/ui/ChatHeader';
-import { ChatWindow } from '@fn-chat/components/ui/ChatWindow';
-import { ChatInput } from '@fn-chat/components/ui/ChatInput';
-import { Button } from '@fn-chat/components/ui/button';
+import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
+import { ChatHeader } from '../../src/components/ui/ChatHeader';
+import { ChatWindow } from '../../src/components/ui/ChatWindow';
+import { ChatInput } from '../../src/components/ui/ChatInput';
+import { Button } from '../../src/components/ui/button';
 
-// Message Components
-import { MessageBubble } from '@fn-chat/components/ui/MessageBubble';
-import { CodeBlock } from '@fn-chat/components/ui/CodeBlock';
-import { ImageThumbnail } from '@fn-chat/components/ui/ImageThumbnail';
-import { AudioPlayer } from '@fn-chat/components/ui/AudioPlayer';
-
-// Button Components
-import { AssistantButtonArray } from '@fn-chat/components/ui/assistantButtonArray';
-import { UserButtonArray } from '@fn-chat/components/ui/userButtonArray';
-import { ImageUploadButton } from '@fn-chat/components/ui/ImageUploadButton';
-import { StopButton } from '@fn-chat/components/ui/StopButton';
-import { SendButton } from '@fn-chat/components/ui/SendButton';
-
-import backend from '@fn-chat/services/backend';
+import backend from '../../src/services/backend';
+import { useAuth } from '../../src/context/AuthProvider';
 
 // Types
 export interface Message {
@@ -60,14 +48,15 @@ export default function ChatPage() {
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [isWaiting, setIsWaiting] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [, setIsWaiting] = useState(false);
+  const [, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
   const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>(
     'thinking'
   );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { jwt } = useAuth();
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -122,8 +111,6 @@ export default function ChatPage() {
     }
 
     setStatus('thinking');
-    setIsWaiting(true);
-    setIsTyping(false);
     setIsAssistantResponding(true);
 
     if (inputMessage.trim() || selectedImages.length > 0) {
@@ -175,7 +162,7 @@ export default function ChatPage() {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+            Authorization: `Bearer ${jwt}`,
           },
           body: JSON.stringify({
             messages: [
@@ -368,7 +355,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt') as string}`,
+          Authorization: `Bearer ${jwt as string}`,
         },
         body: JSON.stringify({
           messages: formattedMessages,
@@ -389,9 +376,6 @@ export default function ChatPage() {
         role: 'assistant',
         content: '',
       };
-
-      setIsWaiting(false);
-      setIsTyping(true);
 
       while (true) {
         const { done, value } = await reader.read();
@@ -471,10 +455,12 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
+    if (!jwt) return;
+
     (async () => {
       const chatResponse = await backend.get('/history', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${jwt}`,
         },
       });
 
@@ -501,16 +487,16 @@ export default function ChatPage() {
         handleNewChat();
       }
     })();
-  }, []);
+  }, [jwt]);
 
   useEffect(() => {
-    if (!chats?.length) return;
+    if (!chats?.length || !jwt) return;
 
     const syncChats = async () => {
       try {
         await backend.put('/history', [...chats], {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+            Authorization: `Bearer ${jwt}`,
           },
         });
       } catch (error) {
@@ -522,7 +508,7 @@ export default function ChatPage() {
     const timeoutId = setTimeout(syncChats, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [chats]);
+  }, [chats, jwt]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
@@ -578,7 +564,7 @@ export default function ChatPage() {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${jwt}`,
         },
         body: JSON.stringify({
           messages: messagesUpToEdit.map((msg) => {
@@ -618,9 +604,6 @@ export default function ChatPage() {
         role: 'assistant',
         content: '',
       };
-
-      setIsWaiting(false);
-      setIsTyping(true);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -697,7 +680,7 @@ export default function ChatPage() {
       // Clear chats from the database
       await backend.put('/history', [], {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${jwt}`,
         },
       });
       console.log('All chats cleared from database');

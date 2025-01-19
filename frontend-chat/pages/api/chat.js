@@ -12,7 +12,7 @@ export default async function handler(req, res) {
         const { messages, model, temperature = 0.2 } = req.body;
 
         const { authorization } = req.headers;
-        controller = new AbortController();
+        controller = new AbortController(); 
 
         console.log('Received messages:', JSON.stringify(messages, null, 2));
 
