@@ -107,6 +107,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
+    // For user messages, use simple text rendering with media support
+    if (isUser) {
+      return (
+        <>
+          <div className="whitespace-pre-wrap break-all text-sm min-[768px]:text-base overflow-x-auto max-w-full">
+            {parsedContent.text}
+          </div>
+
+          {message.images && message.images.length > 0 && (
+            <div className="mt-2 flex gap-2 overflow-x-auto">
+              {message.images.map((imageUrl, index) => (
+                <ImageThumbnail
+                  key={`${imageUrl}-${index}`}
+                  src={imageUrl}
+                  onClick={() => setExpandedImage(imageUrl)}
+                  isExpanded={false}
+                  isAssistantMessage={false}
+                />
+              ))}
+            </div>
+          )}
+
+          {expandedImage && (
+            <div className="mt-4">
+              <img
+                src={expandedImage}
+                alt="Expanded view"
+                className="w-full h-auto rounded cursor-pointer"
+                onClick={() => setExpandedImage(null)}
+              />
+            </div>
+          )}
+
+          {audioUrls.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {audioUrls.map((url, index) => (
+                <AudioPlayer key={`${url}-${index}`} src={url} />
+              ))}
+            </div>
+          )}
+        </>
+      );
+    }
+
     return (
       <>
         <ReactMarkdown
@@ -120,18 +164,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                   onCopy={onCopy}
                 />
               ) : (
-                <code className={`${className} break-all whitespace-pre-wrap`} {...props}>
+                <code className={className} {...props}>
                   {children}
                 </code>
               );
             },
-            pre: ({ children }) => (
-              <pre className="whitespace-pre-wrap break-words overflow-x-auto max-w-full">
-                {children}
-              </pre>
-            ),
+            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
             p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[768px]:text-base whitespace-pre-wrap break-words">{children}</div>;
+              return <div className="mb-2 text-sm min-[768px]:text-base">{children}</div>;
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -165,7 +207,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
               />
             ),
           }}
-          className="prose max-w-none break-words whitespace-pre-wrap"
+          className="prose max-w-none"
         >
           {parsedContent.text}
         </ReactMarkdown>
@@ -203,7 +245,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   };
 
   return (
-    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4 w-full`}>
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}>
       {!isUser && (
         <Avatar className="w-8 h-8 mr-2 flex-shrink-0">
           <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
@@ -211,11 +253,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </Avatar>
       )}
       <div
-        className={`max-w-[85%] min-[500px]:max-w-[75%] w-auto p-3 rounded-lg ${
+        className={`max-w-[75%] w-auto p-3 rounded-lg ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        } text-sm min-[768px]:text-base overflow-hidden break-words whitespace-pre-wrap`}
+        } text-sm min-[768px]:text-base overflow-hidden overflow-x-auto`}
       >
-        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base overflow-hidden break-words">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base [&_code]:break-all [&_code]:whitespace-pre-wrap [&_p]:break-all [&_p]:whitespace-pre-wrap">
           {renderContent()}
         </div>
 
