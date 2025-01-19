@@ -82,7 +82,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       window.localStorage.setItem(
         'jwt',
-        JSON.stringify([...(storedValues as IJWTUser[]), jwtUser])
+        JSON.stringify(
+          storedValues?.length
+            ? [...(storedValues as IJWTUser[]), jwtUser]
+            : [jwtUser]
+        )
       );
     } else {
       setJwt(jwtAuth?.token);
