@@ -24,7 +24,7 @@ export class UserService {
     return user;
   }
 
-  async getUserChatsWithPagination(address: string, page: number = 1, limit: number = 10) {
+  async getUserChatsWithPagination(address: string, page = 1, limit = 10) {
     // Ensure page is at least 1
     page = Math.max(1, page);
     // Ensure limit is between 1 and 100
@@ -43,10 +43,12 @@ export class UserService {
     }
 
     // Get total count in a separate query
-    const totalCount = await this.userModel.aggregate([
-      { $match: { address } },
-      { $project: { count: { $size: "$chats" } } }
-    ]).then(result => result[0]?.count || 0);
+    const totalCount = await this.userModel
+      .aggregate([
+        { $match: { address } },
+        { $project: { count: { $size: '$chats' } } },
+      ])
+      .then((result) => result[0]?.count || 0);
 
     return {
       chats: user.chats || [],

@@ -283,7 +283,7 @@ export interface ITicker {
   recommendations: RecommendationsBySymbolResponse;
 }
 
-export interface IJWT {
+export interface IJWTUser {
   account: string;
   token: string;
 }

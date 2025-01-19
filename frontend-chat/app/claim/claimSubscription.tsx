@@ -7,11 +7,13 @@ import { useEffect, useState } from 'react';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { ISubscriptionToClaim } from '@helpers';
 import { truncateAddress } from '@aptos-labs/wallet-adapter-core';
+import { useAuth } from '../../src/context/AuthProvider';
 
 export const ClaimSubscripton = () => {
   const { client } = useWalletClient();
   const { abi } = useAbiClient();
-  const { setHasSubscriptionToClaim, walletAddress } = useAppManagment();
+  const { setHasSubscriptionToClaim } = useAppManagment();
+  const { walletAddress } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
   const [subscriptionToClaim, setSubscriptionToClaim] =
     useState<ISubscriptionToClaim>({

@@ -1,21 +1,11 @@
 'use client';
-import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import backend from '../services/backend';
-import {
-  IAction,
-  IAdminConfig,
-  IAuth,
-  IJWT,
-  IJwt,
-  MultisignAction,
-} from '@helpers';
+import { IAction, IAdminConfig, MultisignAction } from '@helpers';
 import { createContext, ReactNode, useContext } from 'react';
 import { useToast } from '../components/ui/use-toast';
-import { DataProtection } from '../content/DataProtection';
-import { useLocalStorage } from '../hooks/useLocalStorage';
+import { useAuth } from './AuthProvider';
 
 export type BackendContextProp = {
-  sigIn: () => Promise<IJwt | undefined>;
   submitAdminConfig: (
     config: IAdminConfig
   ) => Promise<IAdminConfig | undefined>;
@@ -42,38 +32,13 @@ const BackendContext = createContext<BackendContextProp>(
 );
 
 export const BackendProvider = ({ children }: { children: ReactNode }) => {
-  const { signMessage, account, connected } = useWallet();
-  const [jwt, setJwt] = useLocalStorage<IJWT[]>('jwt', []);
+  const { jwt } = useAuth();
   const { toast } = useToast();
-
-  const sigIn = async (): Promise<IJwt | undefined> => {
-    if (!connected) return;
-
-    const message = DataProtection;
-
-    const messageResp = await signMessage({
-      message,
-      nonce: Math.random().toString(),
-    });
-
-    const payload: IAuth = {
-      message: messageResp.fullMessage,
-      signature: `${messageResp.signature}`,
-      address: account?.address as string,
-      publicKey: account?.publicKey as string,
-    };
-
-    const response = await backend.post('/auth/login', { ...payload });
-
-    return response.data;
-  };
 
   const submitAdminConfig = async (
     config: IAdminConfig
   ): Promise<IAdminConfig | undefined> => {
     try {
-      const auth = jwt.find((j) => j.account === account?.address);
-
       const body = {
         ...config,
         models: config.models.filter((m) => Boolean(m.name)),
@@ -82,7 +47,7 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
 
       const response = await backend.put('/admin-config', body, {
         headers: {
-          Authorization: `Bearer ${auth?.token || ''}`,
+          Authorization: `Bearer ${jwt}`,
         },
       });
 
@@ -119,21 +84,17 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
       targetAddress,
     };
 
-    const auth = jwt.find((j) => j.account === account?.address);
-
     await backend.post('/multisign', payload, {
       headers: {
-        Authorization: `Bearer ${auth?.account}`,
+        Authorization: `Bearer ${jwt}`,
       },
     });
   };
 
   const getActions = async (): Promise<IAction[]> => {
-    const auth = jwt.find((j) => j.account === account?.address);
-
     const response = await backend.get('/multisign', {
       headers: {
-        Authorization: `Bearer ${auth?.token || ''}`,
+        Authorization: `Bearer ${jwt}`,
       },
     });
 
@@ -150,11 +111,9 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
       targetAddress,
       signature,
     };
-    const auth = jwt.find((j) => j.account === account?.address);
-
     await backend.put(`/multisign`, payload, {
       headers: {
-        Authorization: `Bearer ${auth?.token}`,
+        Authorization: `Bearer ${jwt}`,
       },
     });
   };
@@ -163,17 +122,14 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
     action: MultisignAction,
     targetAddress: string
   ) => {
-    const auth = jwt.find((j) => j.account === account?.address);
-
     await backend.delete(`/multisign/${action}/${targetAddress}`, {
       headers: {
-        Authorization: `Bearer ${auth?.token || ''}`,
+        Authorization: `Bearer ${jwt}`,
       },
     });
   };
 
   const values: BackendContextProp = {
-    sigIn,
     submitAdminConfig,
     fetchAdminConfig,
     addAction,

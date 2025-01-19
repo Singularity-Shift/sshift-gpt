@@ -7,6 +7,7 @@ import { WalletProvider } from '../src/context/WalletProvider';
 import { BackendProvider } from '../src/context/BackendProvider';
 import { AppManagementProvider } from '../src/context/AppManagment';
 import { AbiProvider } from '../src/context/AbiProvider';
+import { AuthProvider } from '../src/context/AuthProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -30,11 +31,13 @@ export default function RootLayout({
           disableTransitionOnChange
         >
           <WalletProvider>
-            <BackendProvider>
-              <AbiProvider>
-                <AppManagementProvider>{children}</AppManagementProvider>
-              </AbiProvider>
-            </BackendProvider>
+            <AuthProvider>
+              <BackendProvider>
+                <AbiProvider>
+                  <AppManagementProvider>{children}</AppManagementProvider>
+                </AbiProvider>
+              </BackendProvider>
+            </AuthProvider>
           </WalletProvider>
         </ThemeProvider>
         <Toaster />
