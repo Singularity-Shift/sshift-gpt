@@ -1,17 +1,18 @@
 'use client';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import backend from '../services/backend';
-import { IAction, IAdminConfig, IAuth, IJwt, MultisignAction } from '@helpers';
 import {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from 'react';
+  IAction,
+  IAdminConfig,
+  IAuth,
+  IJWT,
+  IJwt,
+  MultisignAction,
+} from '@helpers';
+import { createContext, ReactNode, useContext } from 'react';
 import { useToast } from '../components/ui/use-toast';
-import { AccountAuthenticator } from '@aptos-labs/ts-sdk';
 import { DataProtection } from '../content/DataProtection';
+import { useLocalStorage } from '../hooks/useLocalStorage';
 
 export type BackendContextProp = {
   sigIn: () => Promise<IJwt | undefined>;
@@ -42,6 +43,7 @@ const BackendContext = createContext<BackendContextProp>(
 
 export const BackendProvider = ({ children }: { children: ReactNode }) => {
   const { signMessage, account, connected } = useWallet();
+  const [jwt, setJwt] = useLocalStorage<IJWT[]>('jwt', []);
   const { toast } = useToast();
 
   const sigIn = async (): Promise<IJwt | undefined> => {
@@ -70,17 +72,17 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
     config: IAdminConfig
   ): Promise<IAdminConfig | undefined> => {
     try {
+      const auth = jwt.find((j) => j.account === account?.address);
+
       const body = {
         ...config,
         models: config.models.filter((m) => Boolean(m.name)),
         tools: config.tools.filter((t) => Boolean(t.name)),
       };
 
-      const jwt = localStorage.getItem('jwt');
-
       const response = await backend.put('/admin-config', body, {
         headers: {
-          Authorization: `Bearer ${jwt}`,
+          Authorization: `Bearer ${auth?.token || ''}`,
         },
       });
 
@@ -117,21 +119,21 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
       targetAddress,
     };
 
-    const jwt = localStorage.getItem('jwt');
+    const auth = jwt.find((j) => j.account === account?.address);
 
     await backend.post('/multisign', payload, {
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        Authorization: `Bearer ${auth?.account}`,
       },
     });
   };
 
   const getActions = async (): Promise<IAction[]> => {
-    const jwt = localStorage.getItem('jwt');
+    const auth = jwt.find((j) => j.account === account?.address);
 
     const response = await backend.get('/multisign', {
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        Authorization: `Bearer ${auth?.token || ''}`,
       },
     });
 
@@ -148,12 +150,11 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
       targetAddress,
       signature,
     };
-
-    const jwt = localStorage.getItem('jwt');
+    const auth = jwt.find((j) => j.account === account?.address);
 
     await backend.put(`/multisign`, payload, {
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        Authorization: `Bearer ${auth?.token}`,
       },
     });
   };
@@ -162,11 +163,11 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
     action: MultisignAction,
     targetAddress: string
   ) => {
-    const jwt = localStorage.getItem('jwt');
+    const auth = jwt.find((j) => j.account === account?.address);
 
     await backend.delete(`/multisign/${action}/${targetAddress}`, {
       headers: {
-        Authorization: `Bearer ${jwt}`,
+        Authorization: `Bearer ${auth?.token || ''}`,
       },
     });
   };

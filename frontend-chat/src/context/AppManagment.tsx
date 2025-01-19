@@ -11,7 +11,7 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { IAction, IMoveBotFields, ISubscription } from '@helpers';
+import { IAction, IJWT, IMoveBotFields, ISubscription } from '@helpers';
 import { aptosClient } from '../lib/utils';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
@@ -19,6 +19,7 @@ import { FeesABI, SubscriptionABI } from '@aptos';
 import { useBackend } from './BackendProvider';
 import * as jwtoken from 'jsonwebtoken';
 import { usePathname, useRouter } from 'next/navigation';
+import { useLocalStorage } from '@fn-chat/hooks/useLocalStorage';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -85,26 +86,38 @@ export const AppManagementProvider = ({
   const aptos = aptosClient();
   const { client } = useWalletClient();
   const { sigIn } = useBackend();
+  const [jwt, setJwt] = useLocalStorage<IJWT[]>('jwt', []);
 
   const handleConnectWallet = async (address?: string) => {
-    let jwt = localStorage.getItem('jwt');
-
-    if (!jwt) {
+    const auth = jwt.find(
+      (u) => u.account === address || account?.address === address
+    );
+    if (!auth) {
       const authObj = await sigIn();
 
-      jwt = authObj?.authToken || null;
-
-      if (!jwt) {
-        console.error('Error signing in user');
+      if (!authObj) {
+        toast({
+          title: 'Error Jwt',
+          description: 'Failed to sign in',
+          variant: 'destructive',
+        });
 
         return;
       }
 
-      localStorage.setItem('jwt', jwt);
+      setJwt([
+        ...jwt,
+        {
+          account: account?.address as string,
+          token: authObj?.authToken || '',
+        },
+      ]);
     }
 
     if (address) {
-      const payload = jwtoken.decode(jwt as string) as { address: string };
+      const payload = jwtoken.decode(jwt[walletAddress] as string) as {
+        address: string;
+      };
 
       if (payload && payload.address === address && wallet) {
         setWalletAddress(address);
@@ -425,9 +438,10 @@ export const AppManagementProvider = ({
       });
 
       // Wait for transaction to be confirmed
-      const committedTransactionResponse = await aptosClient().waitForTransaction({
-        transactionHash: tx?.hash as string,
-      });
+      const committedTransactionResponse =
+        await aptosClient().waitForTransaction({
+          transactionHash: tx?.hash as string,
+        });
 
       if (committedTransactionResponse.success) {
         // Check subscription status after successful purchase
@@ -438,7 +452,8 @@ export const AppManagementProvider = ({
             functionArguments: [walletAddress as `0x${string}`],
           });
 
-        const hasSubscriptionActive = hasSubscriptionActiveResult?.[0] as boolean;
+        const hasSubscriptionActive =
+          hasSubscriptionActiveResult?.[0] as boolean;
         setIsSubscriptionActive(hasSubscriptionActive);
 
         if (hasSubscriptionActive) {
