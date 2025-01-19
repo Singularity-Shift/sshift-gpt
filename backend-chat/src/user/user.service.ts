@@ -30,23 +30,13 @@ export class UserService {
     // Ensure limit is between 1 and 100
     limit = Math.min(Math.max(1, limit), 100);
 
-    const user = await this.userModel.aggregate([
-      { $match: { address } },
-      { $project: {
-          address: 1,
-          chats: {
-            $slice: [
-              { $sortArray: { 
-                input: "$chats", 
-                sortBy: { timestamp: -1 } 
-              }},
-              (page - 1) * limit,
-              limit
-            ]
-          }
-        }
+    const user = await this.userModel.findOne(
+      { address },
+      {
+        chats: { $slice: [(page - 1) * limit, limit] },
+        address: 1,
       }
-    ]).then(results => results[0]);
+    ).sort({ "chats.timestamp": -1 });
 
     if (!user) {
       return null;
