@@ -12,7 +12,7 @@ import { AuthProvider } from '../src/context/AuthProvider';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'Sshift GPT',
+  title: 'SShift GPT',
   description: 'New AI generation platform base in Aptos blockchain',
 };
 
