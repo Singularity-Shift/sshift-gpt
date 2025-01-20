@@ -157,4 +157,44 @@ export class UserService {
       }
     );
   }
+
+  async getChatMessagesWithPagination(address: string, chatId: string, page = 1, limit = 50) {
+    // Ensure page is at least 1
+    page = Math.max(1, page);
+    // Ensure limit is between 1 and 100
+    limit = Math.min(Math.max(1, limit), 100);
+
+    const user = await this.userModel.findOne(
+      { 
+        address,
+        'chats.id': chatId 
+      },
+      {
+        'chats.$': 1
+      }
+    );
+
+    if (!user || !user.chats || user.chats.length === 0) {
+      return null;
+    }
+
+    const chat = user.chats[0];
+    const totalMessages = chat.messages.length;
+    
+    // Calculate start and end indices for pagination
+    const startIdx = Math.max(0, totalMessages - (page * limit));
+    const endIdx = Math.max(0, totalMessages - ((page - 1) * limit));
+    
+    // Get the paginated messages in reverse order (newest first)
+    const paginatedMessages = chat.messages.slice(startIdx, endIdx).reverse();
+
+    return {
+      chatId: chat.id,
+      messages: paginatedMessages,
+      total: totalMessages,
+      page,
+      limit,
+      totalPages: Math.ceil(totalMessages / limit),
+    };
+  }
 }
