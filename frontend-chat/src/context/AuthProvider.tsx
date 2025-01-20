@@ -128,13 +128,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getJwt = () => {
-    const item = window.localStorage.getItem('jwt');
+    try {
+      const item = window.localStorage.getItem('jwt');
 
-    if (item) {
-      return JSON.parse(item) as IJWTUser[];
+      if (item) {
+        return JSON.parse(item) as IJWTUser[];
+      }
+
+      return;
+    } catch (error) {
+      window.localStorage.removeItem('jwt');
+      return;
     }
-
-    return;
   };
 
   useEffect(() => {
