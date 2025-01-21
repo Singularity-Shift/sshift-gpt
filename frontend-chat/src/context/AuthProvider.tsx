@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (!authObj?.authToken) {
           console.warn('Error signing in');
 
-          handleDisconnect();
+          await handleDisconnect();
           return;
         }
 
@@ -119,7 +119,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           router.push('/dashboard');
         }
       } else {
-        handleDisconnect();
+        await handleDisconnect();
       }
     } catch (error) {
       console.log('Error handling wallet connection:', error);
