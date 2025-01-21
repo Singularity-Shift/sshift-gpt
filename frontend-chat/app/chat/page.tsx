@@ -60,6 +60,7 @@ export default function ChatPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
+  const [isPaginating, setIsPaginating] = useState(false);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -551,7 +552,7 @@ export default function ChatPage() {
   }, [jwt]);
 
   useEffect(() => {
-    if (!chats?.length || !jwt) return;
+    if (!chats?.length || !jwt || isPaginating) return;
 
     const syncChats = async () => {
       try {
@@ -569,7 +570,7 @@ export default function ChatPage() {
     const timeoutId = setTimeout(syncChats, 1000);
 
     return () => clearTimeout(timeoutId);
-  }, [chats, jwt]);
+  }, [chats, jwt, isPaginating]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
@@ -759,9 +760,9 @@ export default function ChatPage() {
     
     console.log('[LoadMore] Starting load - page:', page, 'currentChatId:', currentChatId);
     setIsLoadingMore(true);
+    setIsPaginating(true);
     try {
-      // page from InfiniteScroll starts at 0, but we want to start at page 2 for loading more
-      const nextPage = page + 1;
+      const nextPage = currentPage + 1;
       console.log('[LoadMore] Requesting page:', nextPage);
       
       const currentChat = chats.find(chat => chat.id === currentChatId);
@@ -790,7 +791,7 @@ export default function ChatPage() {
         return;
       }
 
-      const { messages: olderMessages } = response.data;
+      const { messages: olderMessages, total, totalPages } = response.data;
       
       if (olderMessages && olderMessages.length > 0) {
         console.log(`[LoadMore] Loaded ${olderMessages.length} messages from page ${nextPage}`);
@@ -812,11 +813,8 @@ export default function ChatPage() {
           })
         );
         
-        // Only set hasMore to false if we got less than a full page
-        const shouldHaveMore = olderMessages.length === 10;
-        console.log('[LoadMore] Setting hasMore:', shouldHaveMore);
-        setHasMore(shouldHaveMore);
         setCurrentPage(nextPage);
+        setHasMore(nextPage < totalPages);
       } else {
         console.log('[LoadMore] No more messages to load');
         setHasMore(false);
@@ -826,6 +824,7 @@ export default function ChatPage() {
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);
+      setIsPaginating(false);
     }
   };
 

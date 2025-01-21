@@ -36,14 +36,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const [initialLoad, setInitialLoad] = useState(true);
+  const [shouldEnableInfiniteScroll, setShouldEnableInfiniteScroll] = useState(false);
 
+  // Initial scroll to bottom
   useEffect(() => {
-    if (initialLoad && messages.length > 0) {
-      scrollToBottom();
+    if (scrollContainerRef.current && initialLoad && messages.length > 0) {
+      const container = scrollContainerRef.current;
+      container.scrollTop = container.scrollHeight;
       setInitialLoad(false);
+      // Enable infinite scroll after a short delay to prevent immediate loading
+      setTimeout(() => setShouldEnableInfiniteScroll(true), 500);
     }
   }, [messages, initialLoad]);
 
+  // Handle subsequent scrolls to bottom
   useEffect(() => {
     if (!initialLoad && (status !== 'thinking' || isAssistantResponding)) {
       scrollToBottom();
@@ -62,13 +68,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       messagesCount: messages.length,
       hasMore,
       isLoadingMore,
-      currentChatId
+      currentChatId,
+      shouldEnableInfiniteScroll
     });
-  }, [messages.length, hasMore, isLoadingMore, currentChatId]);
+  }, [messages.length, hasMore, isLoadingMore, currentChatId, shouldEnableInfiniteScroll]);
 
   const handleLoadMore = async (page: number) => {
     console.log('handleLoadMore called with page:', page);
-    if (!isLoadingMore && hasMore) {
+    if (!isLoadingMore && hasMore && shouldEnableInfiniteScroll) {
       await onLoadMore(page);
     }
   };
@@ -81,9 +88,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         style={{ height: 'calc(100vh - 180px)' }}
       >
         <InfiniteScroll
-          pageStart={0}
+          pageStart={1}
           loadMore={handleLoadMore}
-          hasMore={hasMore}
+          hasMore={hasMore && shouldEnableInfiniteScroll}
           loader={
             <div className="flex justify-center items-center py-4" key={0}>
               <Loader2 className="h-6 w-6 animate-spin text-primary" />
@@ -93,7 +100,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           getScrollParent={() => scrollContainerRef.current}
           isReverse={true}
           threshold={100}
-          initialLoad={true}
+          initialLoad={false}
         >
           <div className="w-full px-2 py-2 md:px-4 md:py-8 space-y-3 md:space-y-4">
             {messages.map((message, index) => (

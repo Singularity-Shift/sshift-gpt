@@ -127,35 +127,84 @@ export class UserService {
     address: string,
     chats: ChatHistoryDto[]
   ): Promise<UpdateWriteOpResult> {
-    // First get the current user to compare message counts
     const currentUser = await this.userModel.findOne({
       address: address.toLowerCase(),
     });
-    const currentChats = currentUser?.chats || [];
 
-    return this.userModel.updateOne(
-      {
-        _id: currentUser._id,
-        address: address.toLowerCase(),
-      },
-      {
-        chats: [
-          ...chats.map((newChat) => {
-            const existingChat = currentChats.find((c) => c.id === newChat.id);
-            const hasNewMessages = existingChat
-              ? newChat.messages.length > existingChat.messages.length
-              : true;
+    if (!currentUser) {
+      throw new Error(`User with address ${address} not found`);
+    }
 
-            return {
-              ...newChat,
-              lastUpdated: hasNewMessages
-                ? Date.now()
-                : newChat.lastUpdated || Date.now(),
-            };
-          }),
-        ],
+    // Process each chat one at a time
+    for (const newChat of chats) {
+      // First, try to update existing chat if it exists
+      const updateResult = await this.userModel.updateOne(
+        {
+          _id: currentUser._id,
+          'chats.id': newChat.id
+        },
+        {
+          $set: {
+            'chats.$.title': newChat.title,
+            'chats.$.model': newChat.model,
+            'chats.$.lastUpdated': Date.now()
+          }
+        }
+      );
+
+      // If chat doesn't exist, add it as a new chat
+      if (updateResult.matchedCount === 0) {
+        await this.userModel.updateOne(
+          { _id: currentUser._id },
+          {
+            $push: {
+              chats: {
+                ...newChat,
+                lastUpdated: Date.now()
+              }
+            }
+          }
+        );
       }
-    );
+
+      // Now handle messages for this chat
+      const existingChat = await this.userModel.findOne(
+        {
+          _id: currentUser._id,
+          'chats.id': newChat.id
+        },
+        { 'chats.$': 1 }
+      );
+
+      if (existingChat && existingChat.chats[0]) {
+        const existingMessages = existingChat.chats[0].messages || [];
+        const newMessages = newChat.messages || [];
+
+        // Find messages that are in newMessages but not in existingMessages
+        const messagesToAdd = newMessages.filter(
+          newMsg => !existingMessages.some(existingMsg => existingMsg.id === newMsg.id)
+        );
+
+        if (messagesToAdd.length > 0) {
+          // Add only new messages to the chat
+          await this.userModel.updateOne(
+            {
+              _id: currentUser._id,
+              'chats.id': newChat.id
+            },
+            {
+              $push: {
+                'chats.$.messages': {
+                  $each: messagesToAdd
+                }
+              }
+            }
+          );
+        }
+      }
+    }
+
+    return { acknowledged: true, modifiedCount: 1, matchedCount: 1, upsertedCount: 0, upsertedId: null };
   }
 
   async getChatMessagesWithPagination(address: string, chatId: string, page = 1, limit = 50) {
