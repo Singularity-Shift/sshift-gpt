@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Button } from './button';
 import { Image as LucideImage, Loader2 } from 'lucide-react';
 import backend from '../../services/backend';
+import { useAuth } from '../../context/AuthProvider';
 
 interface ImageUploadButtonProps {
   onImageSelect: (imageUrls: string[]) => void;
@@ -13,19 +14,19 @@ const resizeImageIfNeeded = async (file: File): Promise<Blob> => {
   return new Promise((resolve, reject) => {
     const img = new window.Image();
     img.src = URL.createObjectURL(file);
-    
+
     img.onload = () => {
       URL.revokeObjectURL(img.src);
-      
+
       let { width, height } = img;
       const MAX_SIZE = 1024;
-      
+
       // Check if resizing is needed
       if (width <= MAX_SIZE && height <= MAX_SIZE) {
         resolve(file);
         return;
       }
-      
+
       // Calculate new dimensions
       if (width > height) {
         height = Math.round((height * MAX_SIZE) / width);
@@ -34,20 +35,20 @@ const resizeImageIfNeeded = async (file: File): Promise<Blob> => {
         width = Math.round((width * MAX_SIZE) / height);
         height = MAX_SIZE;
       }
-      
+
       // Create canvas and resize
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
-      
+
       const ctx = canvas.getContext('2d');
       if (!ctx) {
         reject(new Error('Could not get canvas context'));
         return;
       }
-      
+
       ctx.drawImage(img, 0, 0, width, height);
-      
+
       // Convert to blob
       canvas.toBlob(
         (blob) => {
@@ -61,7 +62,7 @@ const resizeImageIfNeeded = async (file: File): Promise<Blob> => {
         0.9
       );
     };
-    
+
     img.onerror = () => {
       URL.revokeObjectURL(img.src);
       reject(new Error('Failed to load image'));
@@ -75,11 +76,11 @@ export function ImageUploadButton({
 }: ImageUploadButtonProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const { jwt } = useAuth();
 
   const handleImageUpload = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
-    const auth = localStorage.getItem('jwt');
     const files = event.target.files;
     if (!files) return;
 
@@ -96,7 +97,9 @@ export function ImageUploadButton({
       try {
         // Resize image if needed
         const resizedBlob = await resizeImageIfNeeded(file);
-        const resizedFile = new File([resizedBlob], file.name, { type: file.type });
+        const resizedFile = new File([resizedBlob], file.name, {
+          type: file.type,
+        });
 
         const formData = new FormData();
         formData.append('file', resizedFile);
@@ -104,7 +107,7 @@ export function ImageUploadButton({
         const response = await backend.post('/bucket', formData, {
           headers: {
             'content-type': 'multipart/form-data',
-            Authorization: `Bearer ${auth}`,
+            Authorization: `Bearer ${jwt}`,
           },
         });
 
