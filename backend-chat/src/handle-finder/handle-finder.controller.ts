@@ -28,13 +28,14 @@ export class HandleFinderController {
     type: [TopicDto],
     status: 200,
   })
-  async findAllTopics(): Promise<TopicDto[]> {
-    return this.handleFinderService.findAllTopics();
+  async findAllTopics(@Query('date') date: string): Promise<TopicDto[]> {
+    return this.handleFinderService.findAllTopics(date);
   }
 
   @Get('tokens/mentions')
   @ApiQuery({ name: 'limit', type: 'number', required: false, example: 15 })
   @ApiQuery({ name: 'page', type: 'number', required: false, example: 1 })
+  @ApiQuery({ name: 'date', type: Date, required: true })
   @ApiOperation({ summary: 'Get token' })
   @ApiResponse({
     description: 'find tokens mentioned',
@@ -43,9 +44,10 @@ export class HandleFinderController {
   })
   async findTokensMentioned(
     @Query('limit') limit = 15,
-    @Query('page') page = 1
+    @Query('page') page = 1,
+    @Query('date') date: string
   ): Promise<TokenDto[]> {
-    return this.handleFinderService.findTokensMentioned(limit, page);
+    return this.handleFinderService.findTokensMentioned(limit, page, date);
   }
 
   @Get('categories')

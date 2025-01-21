@@ -10,7 +10,7 @@ export async function generateImage(prompt, size, style, auth, signal) {
             style,
         }, {
             headers: { 'Content-Type': 'application/json', Authorization: auth },
-            timeout: 60000,
+            timeout: 120000,
             signal,
         });
 
@@ -201,7 +201,7 @@ export async function createSoundEffect(text, duration_seconds, prompt_influence
         },
         {
             headers: { 'Content-Type': 'application/json', Authorization: auth },
-            timeout: 60000,
+            timeout: 120000,
             signal
         });
 
@@ -244,13 +244,14 @@ export async function fetchUserNFTCollections(auth, signal) {
     }
 }
 
-export async function getAllTopics(auth, signal) {
+export async function getAllTopics(date, auth, signal) {
     try {
         const response = await backend.get('/handle-finder/topics', {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: auth 
             },
+            params: { date },
             timeout: 30000,
             signal
         });
@@ -265,14 +266,14 @@ export async function getAllTopics(auth, signal) {
     }
 }
 
-export async function getTokensMentioned(limit, page, auth, signal) {
+export async function getTokensMentioned(limit, page, date, auth, signal) {
     try {
         const response = await backend.get('/handle-finder/tokens/mentions', {
             headers: { 
                 'Content-Type': 'application/json',
                 Authorization: auth 
             },
-            params: { limit, page },
+            params: { limit, page, date },
             timeout: 30000,
             signal
         });

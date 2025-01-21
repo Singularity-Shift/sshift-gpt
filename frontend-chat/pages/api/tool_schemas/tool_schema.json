@@ -271,8 +271,14 @@
       "description": "Fetches all available topics from blockchain social network.",
       "parameters": {
         "type": "object",
-        "properties": {},
-        "additionalProperties": false
+        "properties": {
+          "date": {
+            "type": "string",
+            "description": "The date to fetch topics with format YYYY-MM-DD."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["date"]
       },
       "strict": true
     }
@@ -293,9 +299,13 @@
           "page": {
             "type": "integer",
             "description": "The page number for pagination."
+          },
+          "date": {
+            "type": "string",
+            "description": "The date to fetch tokens mentions with format YYYY-MM-DD."
           }
         },
-        "required": ["limit", "page"],
+        "required": ["limit", "page", "date"],
         "additionalProperties": false
       },
       "strict": true
