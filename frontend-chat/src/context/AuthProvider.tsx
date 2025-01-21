@@ -28,6 +28,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const pathname = usePathname();
 
+  const getJwt = () => {
+    try {
+      const item = window.localStorage.getItem('jwt');
+
+      if (item) {
+        return JSON.parse(item) as IJWTUser[];
+      }
+
+      return;
+    } catch (error) {
+      window.localStorage.removeItem('jwt');
+      return;
+    }
+  };
+
   const sigIn = async (): Promise<IJwt | undefined> => {
     if (!connected) return;
 
@@ -50,7 +65,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       return response.data;
     } catch (error) {
-      handleDisconnect();
       throw new Error(`Error signing in: ${error}`);
     }
   };
@@ -59,52 +73,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     storedValues: IJWTUser[] | undefined,
     address: string
   ) => {
-    const jwtAuth = storedValues?.find((s) => s.account === address);
+    try {
+      const jwtAuth = storedValues?.find((s) => s.account === address);
 
-    let authObj: IJwt | undefined;
+      let authObj: IJwt | undefined;
 
-    if (!jwtAuth) {
-      authObj = await sigIn();
+      if (!jwtAuth) {
+        authObj = await sigIn();
 
-      if (!authObj?.authToken) {
-        console.warn('Error signing in');
+        if (!authObj?.authToken) {
+          console.warn('Error signing in');
 
-        handleDisconnect();
-        return;
+          handleDisconnect();
+          return;
+        }
+
+        setJwt(authObj.authToken);
+
+        const jwtUser: IJWTUser = {
+          account: account?.address || '',
+          token: authObj.authToken,
+        };
+
+        window.localStorage.setItem(
+          'jwt',
+          JSON.stringify(
+            storedValues?.length
+              ? [...(storedValues as IJWTUser[]), jwtUser]
+              : [jwtUser]
+          )
+        );
+      } else {
+        setJwt(jwtAuth?.token);
       }
 
-      setJwt(authObj.authToken);
-
-      const jwtUser: IJWTUser = {
-        account: account?.address || '',
-        token: authObj.authToken,
+      const payload = jwtoken.decode(
+        jwtAuth?.token || (authObj?.authToken as string)
+      ) as {
+        address: string;
       };
 
-      window.localStorage.setItem(
-        'jwt',
-        JSON.stringify(
-          storedValues?.length
-            ? [...(storedValues as IJWTUser[]), jwtUser]
-            : [jwtUser]
-        )
-      );
-    } else {
-      setJwt(jwtAuth?.token);
-    }
-
-    const payload = jwtoken.decode(
-      jwtAuth?.token || (authObj?.authToken as string)
-    ) as {
-      address: string;
-    };
-
-    if (payload && payload.address === address && wallet) {
-      setWalletAddress(address);
-      if (pathname === '/') {
-        router.push('/dashboard');
+      if (payload && payload.address === address && wallet) {
+        setWalletAddress(address);
+        if (pathname === '/') {
+          router.push('/dashboard');
+        }
+      } else {
+        handleDisconnect();
       }
-    } else {
-      handleDisconnect();
+    } catch (error) {
+      console.log('Error handling wallet connection:', error);
+      await handleDisconnect();
     }
   };
 
@@ -117,29 +136,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    localStorage.setItem(
-      'jwt',
-      JSON.stringify(
-        storedValue?.filter((s) => s.account !== walletAddress) as IJWTUser[]
-      )
-    );
-    if (connected) await disconnect();
-    router.push('/');
-  };
+    if (storedValue?.some((s) => s.account === account?.address)) {
+      localStorage.setItem(
+        'jwt',
+        JSON.stringify(
+          storedValue?.filter((s) => s.account !== walletAddress) as IJWTUser[]
+        )
+      );
 
-  const getJwt = () => {
-    try {
-      const item = window.localStorage.getItem('jwt');
-
-      if (item) {
-        return JSON.parse(item) as IJWTUser[];
-      }
-
-      return;
-    } catch (error) {
-      window.localStorage.removeItem('jwt');
-      return;
+      if (connected) await disconnect();
     }
+
+    router.push('/');
   };
 
   useEffect(() => {

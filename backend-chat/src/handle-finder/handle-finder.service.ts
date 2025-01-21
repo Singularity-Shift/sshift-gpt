@@ -24,12 +24,15 @@ export class HandleFinderService {
     this.apiKey = this.configService.get('handleFinder.apiKey');
   }
 
-  async findAllTopics(): Promise<TopicDto[]> {
+  async findAllTopics(date: string): Promise<TopicDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<TopicDto[]>(`${this.url}/llm/topics`, {
         headers: {
           ApiKey: this.apiKey,
           Address: this.address,
+        },
+        params: {
+          date,
         },
       })
     );
@@ -37,14 +40,23 @@ export class HandleFinderService {
     return response.data;
   }
 
-  async findTokensMentioned(limit: number, page: number): Promise<TokenDto[]> {
+  async findTokensMentioned(
+    limit: number,
+    page: number,
+    date: string
+  ): Promise<TokenDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<TokenDto[]>(
-        `${this.url}/llm/tokens/mentions?limit=${limit}&page=${page}`,
+        `${this.url}/llm/tokens/mentions`,
         {
           headers: {
             ApiKey: this.apiKey,
             Address: this.address,
+          },
+          params: {
+            limit,
+            page,
+            date,
           },
         }
       )
