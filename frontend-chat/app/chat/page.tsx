@@ -57,6 +57,9 @@ export default function ChatPage() {
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { jwt } = useAuth();
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -81,11 +84,43 @@ export default function ChatPage() {
     setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
   };
 
-  const handleChatSelect = (chatId: string) => {
+  const handleChatSelect = async (chatId: string) => {
     setCurrentChatId(chatId);
     const selectedChat = chats.find((chat) => chat.id === chatId);
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
+      
+      // If the chat has no messages, load the initial set
+      if (!selectedChat.messages || selectedChat.messages.length === 0) {
+        try {
+          const messagesResponse = await backend.get(`/history/${chatId}/messages`, {
+            params: {
+              page: 1,
+              limit: 10
+            },
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          });
+
+          console.log('Chat select messages response:', messagesResponse.data);
+
+          const { messages, total } = messagesResponse.data;
+          const hasMoreMessages = messages.length === 10;
+
+          setChats((prevChats) =>
+            prevChats.map((chat) =>
+              chat.id === chatId
+                ? { ...chat, messages: [...messages].reverse() }
+                : chat
+            )
+          );
+          setHasMore(hasMoreMessages);
+          setCurrentPage(1);
+        } catch (error) {
+          console.error('Error loading chat messages:', error);
+        }
+      }
     }
   };
 
@@ -458,32 +493,58 @@ export default function ChatPage() {
     if (!jwt) return;
 
     (async () => {
-      const chatResponse = await backend.get('/history', {
-        headers: {
-          Authorization: `Bearer ${jwt}`,
-        },
-      });
+      try {
+        // First get the chat list
+        const chatResponse = await backend.get('/history', {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+          },
+        });
 
-      const savedChats = chatResponse.data;
-      if (savedChats) {
-        const updatedChats = savedChats.chats.map((chat: Chat) => ({
-          ...chat,
-        }));
-        setChats(updatedChats);
-        if (updatedChats.length > 0) {
+        const savedChats = chatResponse.data;
+        if (savedChats && savedChats.chats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
-          const mostRecentChat = updatedChats.reduce(
+          const mostRecentChat = savedChats.chats.reduce(
             (latest: Chat, current: Chat) =>
               (current.lastUpdated || 0) > (latest.lastUpdated || 0)
                 ? current
                 : latest
           );
+
+          // Get initial messages for the most recent chat
+          const messagesResponse = await backend.get(`/history/${mostRecentChat.id}/messages`, {
+            params: {
+              page: 1,
+              limit: 10
+            },
+            headers: {
+              Authorization: `Bearer ${jwt}`,
+            },
+          });
+
+          console.log('Initial messages response:', messagesResponse.data);
+
+          // Check if there are more messages based on the total count
+          const { messages, total } = messagesResponse.data;
+          const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
+
+          // Update the most recent chat with only the first 10 messages
+          const updatedChats = savedChats.chats.map((chat: Chat) => 
+            chat.id === mostRecentChat.id 
+              ? { ...chat, messages: [...messages].reverse() }
+              : { ...chat, messages: [] } // Initialize other chats with empty messages
+          );
+
+          setChats(updatedChats);
           setCurrentChatId(mostRecentChat.id);
           setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
+          setHasMore(hasMoreMessages);
+          setCurrentPage(1);
         } else {
           handleNewChat();
         }
-      } else {
+      } catch (error) {
+        console.error('Error loading initial chat data:', error);
         handleNewChat();
       }
     })();
@@ -690,6 +751,84 @@ export default function ChatPage() {
     }
   };
 
+  const handleLoadMore = async (page: number) => {
+    if (!currentChatId || isLoadingMore) {
+      console.log('[LoadMore] Skipping load - currentChatId:', currentChatId, 'isLoadingMore:', isLoadingMore);
+      return;
+    }
+    
+    console.log('[LoadMore] Starting load - page:', page, 'currentChatId:', currentChatId);
+    setIsLoadingMore(true);
+    try {
+      // page from InfiniteScroll starts at 0, but we want to start at page 2 for loading more
+      const nextPage = page + 1;
+      console.log('[LoadMore] Requesting page:', nextPage);
+      
+      const currentChat = chats.find(chat => chat.id === currentChatId);
+      console.log('[LoadMore] Current chat messages count:', currentChat?.messages.length);
+      
+      const response = await backend.get(`/history/${currentChatId}/messages`, {
+        params: {
+          page: nextPage,
+          limit: 10
+        },
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      console.log('[LoadMore] Response data:', {
+        messagesCount: response.data?.messages?.length,
+        total: response.data?.total,
+        page: response.data?.page,
+        totalPages: response.data?.totalPages
+      });
+
+      if (!response.data || !response.data.messages) {
+        console.error('[LoadMore] Invalid response format:', response.data);
+        setHasMore(false);
+        return;
+      }
+
+      const { messages: olderMessages } = response.data;
+      
+      if (olderMessages && olderMessages.length > 0) {
+        console.log(`[LoadMore] Loaded ${olderMessages.length} messages from page ${nextPage}`);
+        setChats((prevChats) =>
+          prevChats.map((chat) => {
+            if (chat.id === currentChatId) {
+              const updatedMessages = [...olderMessages.reverse(), ...chat.messages];
+              console.log('[LoadMore] Messages state update:', {
+                previousCount: chat.messages.length,
+                newMessagesCount: olderMessages.length,
+                totalAfterUpdate: updatedMessages.length
+              });
+              return {
+                ...chat,
+                messages: updatedMessages,
+              };
+            }
+            return chat;
+          })
+        );
+        
+        // Only set hasMore to false if we got less than a full page
+        const shouldHaveMore = olderMessages.length === 10;
+        console.log('[LoadMore] Setting hasMore:', shouldHaveMore);
+        setHasMore(shouldHaveMore);
+        setCurrentPage(nextPage);
+      } else {
+        console.log('[LoadMore] No more messages to load');
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('[LoadMore] Error loading more messages:', error);
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
+    }
+  };
+
   return (
     <div className="flex h-[100dvh] overflow-hidden bg-background">
       <ChatSidebar
@@ -733,6 +872,10 @@ export default function ChatPage() {
             status={status}
             showNoChatsMessage={showNoChatsMessage}
             isAssistantResponding={isAssistantResponding}
+            currentChatId={currentChatId || undefined}
+            onLoadMore={handleLoadMore}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
           />
           <ChatInput onSendMessage={handleSendMessage} />
         </div>

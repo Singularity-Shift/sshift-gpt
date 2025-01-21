@@ -159,10 +159,14 @@ export class UserService {
   }
 
   async getChatMessagesWithPagination(address: string, chatId: string, page = 1, limit = 50) {
+    console.log(`[Pagination] Request params - address: ${address}, chatId: ${chatId}, page: ${page}, limit: ${limit}`);
+    
     // Ensure page is at least 1
     page = Math.max(1, page);
     // Ensure limit is between 1 and 100
     limit = Math.min(Math.max(1, limit), 100);
+    
+    console.log(`[Pagination] Normalized params - page: ${page}, limit: ${limit}`);
 
     const user = await this.userModel.findOne(
       { 
@@ -175,26 +179,76 @@ export class UserService {
     );
 
     if (!user || !user.chats || user.chats.length === 0) {
+      console.log(`[Pagination] No chat found for address: ${address} and chatId: ${chatId}`);
       return null;
     }
 
     const chat = user.chats[0];
     const totalMessages = chat.messages.length;
+    console.log(`[Pagination] Total messages in chat: ${totalMessages}`);
+
+    // If there are no messages, return empty result with metadata
+    if (totalMessages === 0) {
+      console.log('[Pagination] No messages in chat');
+      return {
+        chatId: chat.id,
+        messages: [],
+        total: 0,
+        page,
+        limit,
+        totalPages: 0,
+      };
+    }
+
+    // Calculate total pages first
+    const totalPages = Math.ceil(totalMessages / limit);
+
+    // Validate page number against total pages
+    if (page > totalPages) {
+      console.log(`[Pagination] Requested page ${page} exceeds total pages ${totalPages}`);
+      return {
+        chatId: chat.id,
+        messages: [],
+        total: totalMessages,
+        page,
+        limit,
+        totalPages,
+      };
+    }
     
     // Calculate start and end indices for pagination
-    const startIdx = Math.max(0, totalMessages - (page * limit));
-    const endIdx = Math.max(0, totalMessages - ((page - 1) * limit));
+    let startIdx = Math.max(0, totalMessages - (page * limit));
+    let endIdx = Math.max(0, totalMessages - ((page - 1) * limit));
     
+    // Ensure indices are within bounds
+    startIdx = Math.max(0, Math.min(startIdx, totalMessages));
+    endIdx = Math.max(0, Math.min(endIdx, totalMessages));
+    
+    // Ensure startIdx is less than endIdx
+    if (startIdx >= endIdx) {
+      console.log('[Pagination] Start index >= End index, adjusting...');
+      if (startIdx === endIdx && startIdx > 0) {
+        startIdx = Math.max(0, startIdx - 1);
+      }
+    }
+    
+    console.log(`[Pagination] Calculated indices - startIdx: ${startIdx}, endIdx: ${endIdx}`);
+    console.log(`[Pagination] Messages array bounds - 0 to ${totalMessages - 1}`);
+
     // Get the paginated messages in reverse order (newest first)
     const paginatedMessages = chat.messages.slice(startIdx, endIdx).reverse();
+    console.log(`[Pagination] Retrieved ${paginatedMessages.length} messages`);
 
-    return {
+    const response = {
       chatId: chat.id,
       messages: paginatedMessages,
       total: totalMessages,
       page,
       limit,
-      totalPages: Math.ceil(totalMessages / limit),
+      totalPages,
     };
+
+    console.log(`[Pagination] Response metadata - total: ${response.total}, page: ${response.page}, totalPages: ${response.totalPages}`);
+    return response;
   }
 }
