@@ -4,11 +4,13 @@ import Image from 'next/image';
 import { silkscreen } from './fonts';
 import { SshiftWallet } from '../src/components/SshigtWallet';
 import { GameOfLife } from '../src/components/ui/gameOfLife';
+import { IndexHeader } from '../src/components/ui/IndexHeader';
 
 export default function Home() {
   return (
     <div className="relative min-h-screen">
       <GameOfLife />
+      <IndexHeader />
       <div className="relative z-10 flex flex-col items-center justify-center min-h-screen p-4">
         <div className="flex flex-col md:flex-row items-center mb-4 md:mb-8">
           <div className="relative w-40 h-40 md:w-64 md:h-64 mb-4 md:mb-0 md:mr-8">
