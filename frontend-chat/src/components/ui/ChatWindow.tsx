@@ -84,9 +84,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative min-h-0">
       <div 
         ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto"
-        style={{ height: 'calc(100vh - 180px)' }}
+        className="flex-1 overflow-y-auto scrollbar-hide"
+        style={{ 
+          height: 'calc(100vh - 180px)',
+          scrollbarWidth: 'none',  /* Firefox */
+          msOverflowStyle: 'none',  /* IE and Edge */
+          WebkitOverflowScrolling: 'touch'
+        }}
       >
+        <style jsx global>{`
+          /* Hide scrollbar for Chrome, Safari and Opera */
+          .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+          }
+          
+          /* Hide scrollbar for IE, Edge and Firefox */
+          .scrollbar-hide {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+          }
+        `}</style>
         <InfiniteScroll
           pageStart={1}
           loadMore={handleLoadMore}
