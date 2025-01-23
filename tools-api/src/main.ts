@@ -5,18 +5,18 @@
 
 import { Logger, ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
-import { readFileSync } from 'fs';
-import path from 'path';
 
 import { AppModule } from './app.module';
 import { ConfigService } from '@nest-modules';
+import path from 'path';
+import { readFileSync } from 'fs';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   const port = app
     .get<ConfigService>(ConfigService)
-    .get<number>('serverChatApi.port');
+    .get<number>('serverToolsApi.port');
   const globalPrefix = 'chat-api';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());

@@ -3,18 +3,17 @@ import { CacheInterceptor, CacheModule } from '@nestjs/cache-manager';
 import { APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { redisStore } from 'cache-manager-ioredis-yet';
 import { RedisOptions } from 'ioredis';
-import { ConfigModule } from './share/config/config.module';
-import { ConfigService } from './share/config/config.service';
+import {
+  ConfigModule,
+  UserModule,
+  ChatModule,
+  AuthGuard,
+  AuthModule,
+  ConfigService,
+  AdminConfigModule,
+} from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
-import { AuthModule } from './auth/auth.module';
-import { AuthGuard } from './auth/auth.guard';
-import { ChatModule } from './chat/chat.module';
-import { UserModule } from './user/user.module';
-import { AdminConfigModule } from './admin-config/admin-config.module';
 import { MultisignModule } from './multisign/multising.module';
-import { ToolsModule } from './tools/tools.module';
-import { BucketModule } from './bucket/bucket.module';
-import { HandleFinderModule } from './handle-finder/handle-finder.module';
 
 @Module({
   imports: [
@@ -45,9 +44,6 @@ import { HandleFinderModule } from './handle-finder/handle-finder.module';
     UserModule,
     AdminConfigModule,
     MultisignModule,
-    ToolsModule,
-    BucketModule,
-    HandleFinderModule,
   ],
   controllers: [],
   providers: [

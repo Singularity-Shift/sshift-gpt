@@ -1,0 +1,27 @@
+{
+  "name": "tools-api",
+  "$schema": "../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "tools-api/src",
+  "projectType": "application",
+  "tags": [],
+  "targets": {
+    "serve": {
+      "executor": "@nx/js:node",
+      "defaultConfiguration": "development",
+      "dependsOn": ["build"],
+      "options": {
+        "inspect": false,
+        "buildTarget": "tools-api:build",
+        "runBuildTargetDependencies": false
+      },
+      "configurations": {
+        "development": {
+          "buildTarget": "tools-api:build:development"
+        },
+        "production": {
+          "buildTarget": "tools-api:build:production"
+        }
+      }
+    }
+  }
+}
