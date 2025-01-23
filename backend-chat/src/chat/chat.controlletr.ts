@@ -8,8 +8,9 @@ import {
   Query,
   DefaultValuePipe,
   ParseIntPipe,
+  Param,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery } from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiQuery, ApiParam } from '@nestjs/swagger';
 import { UserService } from '../user/user.service';
 import { GetUserDto } from '../user/dto/get-user.dto';
 import { UserAuth } from '../auth/auth.decorator';
@@ -98,6 +99,62 @@ export class ChatController {
     if (!result) {
       throw new NotFoundException(
         `User with address ${userAuth.address} does not exist`
+      );
+    }
+
+    return result;
+  }
+
+  @Get(':chatId/messages')
+  @ApiBearerAuth('Authorization')
+  @ApiOperation({
+    description: 'Get paginated messages for a specific chat',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Paginated messages for the specified chat',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat not found',
+  })
+  @ApiParam({
+    name: 'chatId',
+    description: 'ID of the chat to get messages from',
+    type: String,
+  })
+  @ApiQuery({ 
+    name: 'page', 
+    required: false, 
+    type: Number,
+    description: 'Page number (default: 1, min: 1)'
+  })
+  @ApiQuery({ 
+    name: 'limit', 
+    required: false, 
+    type: Number,
+    description: 'Number of messages per page (default: 50, min: 1, max: 100)'
+  })
+  async getChatMessages(
+    @UserAuth() userAuth: IUserAuth,
+    @Param('chatId') chatId: string,
+    @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+    @Query('limit', new DefaultValuePipe(50), ParseIntPipe) limit: number,
+  ) {
+    const result = await this.userService.getChatMessagesWithPagination(
+      userAuth.address,
+      chatId,
+      page,
+      limit
+    );
+
+    if (!result) {
+      throw new NotFoundException(
+        `Chat with ID ${chatId} not found for user ${userAuth.address}`
       );
     }
 
