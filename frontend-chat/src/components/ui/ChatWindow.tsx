@@ -37,20 +37,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const [initialLoad, setInitialLoad] = useState(true);
   const [shouldEnableInfiniteScroll, setShouldEnableInfiniteScroll] = useState(false);
-  const [initialScrollHeight, setInitialScrollHeight] = useState<number | null>(null);
-  const previousScrollHeightRef = useRef<number>(0);
   const isLoadingOlderMessages = useRef(false);
+  const [isAutoScroll, setIsAutoScroll] = useState(true);
+
+  // Handle scroll events to detect when user scrolls away from bottom
+  const handleScroll = () => {
+    if (scrollContainerRef.current && !isLoadingOlderMessages.current) {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      // If user is within 100px of the bottom, enable auto-scroll
+      const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
+      setIsAutoScroll(isNearBottom);
+    }
+  };
 
   // Initial scroll position setup
   useEffect(() => {
     if (scrollContainerRef.current && initialLoad && messages.length > 0) {
       const container = scrollContainerRef.current;
-      const scrollHeight = container.scrollHeight;
-      setInitialScrollHeight(scrollHeight);
-      container.scrollTop = scrollHeight;
+      container.scrollTop = container.scrollHeight;
       setInitialLoad(false);
       
-      // Enable infinite scroll after ensuring scroll position is maintained
+      // Enable infinite scroll after initial load
       const enableScrollTimer = setTimeout(() => {
         setShouldEnableInfiniteScroll(true);
       }, 1000);
@@ -59,70 +66,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   }, [messages, initialLoad]);
 
-  // Maintain scroll position when loading older messages
+  // Auto-scroll effect
   useEffect(() => {
-    const container = scrollContainerRef.current;
-    if (!container || initialLoad) return;
-
-    if (isLoadingOlderMessages.current && messages.length > 0) {
-      // Calculate how much new content was added
-      const newScrollHeight = container.scrollHeight;
-      const addedHeight = newScrollHeight - previousScrollHeightRef.current;
-      
-      // Adjust scroll position to maintain the same relative position
-      if (addedHeight > 0) {
-        container.scrollTop = container.scrollTop + addedHeight;
-      }
-      
-      isLoadingOlderMessages.current = false;
+    if (isAutoScroll && !isLoadingOlderMessages.current && scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
     }
-    
-    // Store current scroll height for next comparison
-    previousScrollHeightRef.current = container.scrollHeight;
-  }, [messages, initialLoad]);
-
-  // Only scroll to bottom for new messages
-  const prevMessageCountRef = useRef(messages.length);
-  const prevMessagesRef = useRef(messages);
-  useEffect(() => {
-    const isNewMessage = messages.length > prevMessageCountRef.current;
-    // Check if the new messages were added at the end (new messages) or beginning (history)
-    const wasAppended = isNewMessage && 
-      messages.slice(-1)[0]?.id !== prevMessagesRef.current.slice(-1)[0]?.id;
-
-    if (!initialLoad && wasAppended && !isLoadingOlderMessages.current) {
-      scrollToBottom();
-    }
-    prevMessageCountRef.current = messages.length;
-    prevMessagesRef.current = messages;
-  }, [messages, initialLoad]);
-
-  const scrollToBottom = () => {
-    if (lastMessageRef.current) {
-      lastMessageRef.current.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Debug logs for props
-  useEffect(() => {
-    console.log('ChatWindow props:', {
-      messagesCount: messages.length,
-      hasMore,
-      isLoadingMore,
-      currentChatId,
-      shouldEnableInfiniteScroll
-    });
-  }, [messages.length, hasMore, isLoadingMore, currentChatId, shouldEnableInfiniteScroll]);
+  }, [messages, isAutoScroll]);
 
   const handleLoadMore = async (page: number) => {
     if (!isLoadingMore && hasMore) {
-      // Set flag before loading older messages
       isLoadingOlderMessages.current = true;
-      // Store current scroll height before loading
-      if (scrollContainerRef.current) {
-        previousScrollHeightRef.current = scrollContainerRef.current.scrollHeight;
-      }
       await onLoadMore(page);
+      isLoadingOlderMessages.current = false;
     }
   };
 
@@ -137,6 +92,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           msOverflowStyle: 'none',  /* IE and Edge */
           WebkitOverflowScrolling: 'touch'
         }}
+        onScroll={handleScroll}
       >
         <style jsx global>{`
           /* Hide scrollbar for Chrome, Safari and Opera */
