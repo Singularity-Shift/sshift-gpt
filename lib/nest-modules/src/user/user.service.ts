@@ -6,6 +6,9 @@ import { ChatHistoryDto } from '../chat/dto/chat-history.dto';
 import { Activity } from './activity/activity.schema';
 import { FeatureActivityDto } from './dto/credits-used.dto';
 import { FeatureActivity } from './activity/feature-used.schema';
+import { ChatMessagesDto } from '../chat/dto/chat-messages.dto';
+import { ChatHistory } from '../chat/chat-history.schema';
+import { Chat } from '../chat/chat.schema';
 
 @Injectable()
 export class UserService {
@@ -125,97 +128,114 @@ export class UserService {
     return creditsUsed;
   }
 
-  async updateUser(
-    address: string,
-    chats: ChatHistoryDto[]
-  ): Promise<UpdateWriteOpResult> {
+  async updateChat(address: string, chat: ChatHistoryDto): Promise<Chat> {
+    const { message, id } = chat;
+
     const currentUser = await this.userModel.findOne({
-      address: address.toLowerCase(),
+      $and: [
+        { address: address.toLowerCase() },
+        { chats: { $elemMatch: { id } } },
+      ],
     });
 
     if (!currentUser) {
       throw new Error(`User with address ${address} not found`);
     }
 
-    // Process each chat one at a time
-    for (const newChat of chats) {
-      // First, try to update existing chat if it exists
-      const updateResult = await this.userModel.updateOne(
+    const chatIndex = currentUser.chats.findIndex((c) => c.id === id);
+
+    if (chatIndex === -1) {
+      const newChat: Chat = {
+        id,
+        title: chat.title,
+        model: chat.model,
+        system_fingerprint: chat.system_fingerprint,
+        messages: [{ ...message, createdAt: new Date() }],
+        usage: chat.usage,
+        createdAt: chat.createdAt,
+        lastUpdated: chat.lastUpdated,
+      };
+
+      const user = (await this.userModel.findOneAndUpdate(
         {
-          _id: currentUser._id,
-          'chats.id': newChat.id,
+          address: address.toLowerCase(),
+        },
+        {
+          $push: { chats: newChat },
+        }
+      )) as User;
+
+      return user.chats[chatIndex];
+    }
+
+    const messageIndex = currentUser.chats[chatIndex].messages.findIndex(
+      (m) => m.id === message.id
+    );
+
+    if (messageIndex === -1) {
+      const user = (await this.userModel.findOneAndUpdate(
+        {
+          $and: [
+            { address: address.toLowerCase() },
+            { chats: { $elemMatch: { id } } },
+          ],
         },
         {
           $set: {
-            'chats.$.title': newChat.title,
-            'chats.$.model': newChat.model,
-            'chats.$.lastUpdated': Date.now(),
-          },
-        }
-      );
-
-      // If chat doesn't exist, add it as a new chat
-      if (updateResult.matchedCount === 0) {
-        await this.userModel.updateOne(
-          { _id: currentUser._id },
-          {
-            $push: {
-              chats: {
-                ...newChat,
-                lastUpdated: Date.now(),
-              },
-            },
-          }
-        );
-      }
-
-      // Now handle messages for this chat
-      const existingChat = await this.userModel.findOne(
-        {
-          _id: currentUser._id,
-          'chats.id': newChat.id,
-        },
-        { 'chats.$': 1 }
-      );
-
-      if (existingChat && existingChat.chats[0]) {
-        const existingMessages = existingChat.chats[0].messages || [];
-        const newMessages = newChat.messages || [];
-
-        // Find messages that are in newMessages but not in existingMessages
-        const messagesToAdd = newMessages.filter(
-          (newMsg) =>
-            !existingMessages.some(
-              (existingMsg) => existingMsg.id === newMsg.id
-            )
-        );
-
-        if (messagesToAdd.length > 0) {
-          // Add only new messages to the chat
-          await this.userModel.updateOne(
-            {
-              _id: currentUser._id,
-              'chats.id': newChat.id,
-            },
-            {
+            'chats.$[chat]': {
               $push: {
-                'chats.$.messages': {
-                  $each: messagesToAdd,
-                },
+                messages: message,
               },
-            }
-          );
+              $set: { lastUpdated: new Date() },
+            },
+          },
+        },
+        {
+          arrayFilters: [{ 'chat.id': id }],
         }
-      }
+      )) as User;
+
+      return user.chats[chatIndex];
     }
 
-    return {
-      acknowledged: true,
-      modifiedCount: 1,
-      matchedCount: 1,
-      upsertedCount: 0,
-      upsertedId: null,
-    };
+    const createdAt = new Date();
+
+    await this.userModel.updateOne(
+      {
+        $and: [
+          { address: address.toLowerCase() },
+          { chats: { $elemMatch: { id } } },
+        ],
+      },
+      {
+        $pull: {
+          'chats.$[chat].messages': { createdAt: { $gte: createdAt } },
+        },
+      },
+      {
+        arrayFilters: [{ 'chat.id': id }],
+      }
+    );
+
+    const user = (await this.userModel.findOneAndUpdate(
+      {
+        $and: [
+          { address: address.toLowerCase() },
+          { chats: { $elemMatch: { id } } },
+        ],
+      },
+      {
+        $push: {
+          'chats.$.messages': { ...message, createdAt },
+        },
+        $set: { 'chats.$[chat].lastUpdated': new Date() },
+      },
+      {
+        arrayFilters: [{ 'chat.id': id }],
+      }
+    )) as User;
+
+    return user.chats[chatIndex];
   }
 
   async getChatMessagesWithPagination(

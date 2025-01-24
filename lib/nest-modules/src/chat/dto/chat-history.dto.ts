@@ -35,11 +35,11 @@ export class ChatHistoryDto {
 
   @ApiProperty({
     description: 'Messages of the chat',
-    type: [ChatMessagesDto],
+    type: ChatMessagesDto,
   })
   @Type(() => ChatMessagesDto)
-  @ValidateNested({ each: true })
-  messages: ChatMessagesDto[];
+  @ValidateNested()
+  message: ChatMessagesDto;
 
   @ApiProperty({
     description: 'Chat usage',
