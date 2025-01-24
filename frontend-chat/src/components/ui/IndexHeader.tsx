@@ -18,7 +18,7 @@ export function IndexHeader() {
             <DialogTrigger className="text-gray-800 hover:text-gray-600 transition-colors font-medium text-[13px] min-[500px]:text-base">
               About SShift
             </DialogTrigger>
-            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6">
+            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6 landscape:h-[95vh]">
               <div className="text-gray-600 space-y-4 text-sm sm:text-base pr-4">
                 <DialogTitle className="text-2xl font-bold text-gray-800 mb-6">About SShift</DialogTitle>
                 <p>
@@ -44,7 +44,7 @@ export function IndexHeader() {
             <DialogTrigger className="text-gray-800 hover:text-gray-600 transition-colors font-medium text-[13px] min-[500px]:text-base">
               How to Use
             </DialogTrigger>
-            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6">
+            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6 landscape:h-[95vh]">
               <div className="text-gray-600 space-y-4 text-sm sm:text-base pr-4">
                 <DialogTitle className="text-2xl font-bold text-gray-800 mb-6">How to Use SShift GPT</DialogTitle>
                 <p>
@@ -91,7 +91,7 @@ export function IndexHeader() {
             <DialogTrigger className="text-gray-800 hover:text-gray-600 transition-colors font-medium text-[13px] min-[500px]:text-base">
               Custom Tools
             </DialogTrigger>
-            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6">
+            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6 landscape:h-[95vh]">
               <div className="text-gray-600 space-y-4 text-sm sm:text-base pr-4">
                 <DialogTitle className="text-2xl font-bold text-gray-800 mb-6">Custom Tools</DialogTitle>
                 <p>
@@ -154,7 +154,7 @@ export function IndexHeader() {
             <DialogTrigger className="text-gray-800 hover:text-gray-600 transition-colors font-medium text-[13px] min-[500px]:text-base">
               Contact Us
             </DialogTrigger>
-            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6">
+            <DialogContent className="bg-white max-w-2xl h-[90vh] sm:h-auto overflow-y-auto p-6 landscape:h-[95vh]">
               <div className="text-gray-600 space-y-4 text-sm sm:text-base pr-4">
                 <DialogTitle className="text-2xl font-bold text-gray-800 mb-6">Contact Us</DialogTitle>
                 <p>
@@ -184,3 +184,4 @@ export function IndexHeader() {
     </header>
   );
 } 
+
