@@ -22,16 +22,22 @@ export class AgentGuard implements CanActivate {
 
       const user: IUserAuth = context.switchToHttp().getRequest()?.user;
 
+      if (user.config.isCollector) {
+        return true;
+      }
+
+      if (!user.config.subscriptionPlan.active) {
+        throw new UnauthorizedException(
+          'User subscription has not active plan'
+        );
+      }
+
       const createMessageDto: CreateMessageDto = context
         .switchToHttp()
         .getRequest()?.body;
 
       if (createMessageDto?.model) {
         model = createMessageDto.model;
-      }
-
-      if (user.config.isCollector) {
-        return true;
       }
 
       if (
