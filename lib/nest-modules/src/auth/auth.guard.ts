@@ -46,7 +46,7 @@ export class AuthGuard implements CanActivate {
 
       payload.config = await this.getUserConfig(payload.address);
 
-      request['user'] = payload;
+      request['user'] = { auth: token, ...payload };
 
       return true;
     } catch (error) {

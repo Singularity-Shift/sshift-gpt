@@ -1,13 +1,25 @@
 import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
-import { UserAuth, UserService } from '@nest-modules';
+import { AdminConfigService, UserAuth, UserService } from '@nest-modules';
 import { IUserAuth } from '@helpers';
 import { AgentGuard } from './agent.guard';
-import { Response } from 'express';
+import { Response } from 'express-stream';
+import { OpenAI } from 'openai';
+import toolSchema from './tool_schema.json';
+import { ChatCompletionMessageParam } from 'openai/resources';
+import { AgentService } from './agent.service';
 
 @Controller('agent')
 export class AgentController {
-  constructor(private readonly userService: UserService) {}
+  private shouldStopStream = false;
+  private controller = new AbortController();
+
+  constructor(
+    private readonly userService: UserService,
+    private readonly adminConfigService: AdminConfigService,
+    private readonly agentService: AgentService,
+    private readonly openai: OpenAI
+  ) {}
   @Post()
   @UseGuards(AgentGuard)
   async newMessage(
@@ -15,13 +27,14 @@ export class AgentController {
     @UserAuth() userAuth: IUserAuth,
     @Res() res: Response
   ) {
-    const chat = await this.userService.updateChat(
-      userAuth.address,
-      createMessageDto.message
-    );
+    const { model, message, temperature } = createMessageDto;
+
+    this.controller = new AbortController();
+
+    const chat = await this.userService.updateChat(userAuth.address, message);
 
     let currentToolCalls = [];
-    let assistantMessage = { content: '', images: [] };
+    const assistantMessage = { content: '', images: [] };
 
     // Format messages to handle images properly
     const formattedMessages = chat.messages.map((msg) => {
@@ -54,6 +67,10 @@ export class AgentController {
       };
     });
 
+    const adminConfig = await this.adminConfigService.findAdminConfig();
+
+    const systemPrompt = adminConfig.systemPrompt;
+
     // Add system prompt at the beginning of the messages array
     const messagesWithSystemPrompt = [
       {
@@ -61,7 +78,7 @@ export class AgentController {
         content: systemPrompt || 'You are a helpful assistant.',
       },
       ...formattedMessages,
-    ];
+    ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
 
     // Set up response headers
     res.writeHead(200, {
@@ -71,20 +88,20 @@ export class AgentController {
     });
 
     try {
-      const stream = await openai.chat.completions.create({
+      const stream = await this.openai.chat.completions.create({
         model: model || 'gpt-4o-mini',
         messages: messagesWithSystemPrompt,
         max_completion_tokens: 16384,
         temperature,
         stream: true,
-        tools: toolSchema,
+        tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
         tool_choice: 'auto',
         parallel_tool_calls: true,
       });
 
       for await (const chunk of stream) {
         // Check if we should stop the stream
-        if (shouldStopStream()) {
+        if (this.shouldStopStream) {
           // Send final message and end stream
           res.write(
             `data: ${JSON.stringify({
@@ -101,17 +118,17 @@ export class AgentController {
 
         if (chunk.choices[0]?.delta?.content) {
           assistantMessage.content += chunk.choices[0].delta.content;
-          writeResponseChunk(chunk, res);
+          this.writeResponseChunk(chunk, res);
           res.flush();
         } else if (chunk.choices[0]?.delta?.tool_calls) {
-          const isToolCall = await handleToolCall(chunk, currentToolCalls);
+          const isToolCall = await this.handleToolCall(chunk, currentToolCalls);
           if (isToolCall) {
             res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
             res.flush();
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
           // Add the assistant's message with tool calls to the history
-          const assistantToolMessage = {
+          const assistantToolMessage: ChatCompletionMessageParam = {
             role: 'assistant',
             content: assistantMessage.content,
             tool_calls: currentToolCalls.map((call) => ({
@@ -123,29 +140,29 @@ export class AgentController {
               },
             })),
           };
+
           messagesWithSystemPrompt.push(assistantToolMessage);
 
           // Process tool calls and add their results to the history
-          const toolResults = await processToolCalls(
+          const toolResults = await this.processToolCalls(
             currentToolCalls,
-            userConfig,
-            auth,
-            signal
+            userAuth
           );
           messagesWithSystemPrompt.push(...toolResults);
 
           // Create continuation with the updated message history
-          const continuationResponse = await openai.chat.completions.create({
-            model: model || 'gpt-4o-mini',
-            messages: messagesWithSystemPrompt,
-            max_tokens: 16384,
-            temperature,
-            stream: true,
-          });
+          const continuationResponse =
+            await this.openai.chat.completions.create({
+              model: model || 'gpt-4o-mini',
+              messages: messagesWithSystemPrompt,
+              max_tokens: 16384,
+              temperature,
+              stream: true,
+            });
 
           for await (const continuationChunk of continuationResponse) {
             // Check if we should stop during continuation
-            if (shouldStopStream()) {
+            if (this.shouldStopStream) {
               res.write(
                 `data: ${JSON.stringify({
                   final_message: {
@@ -162,7 +179,7 @@ export class AgentController {
             if (continuationChunk.choices[0]?.delta?.content) {
               assistantMessage.content +=
                 continuationChunk.choices[0].delta.content;
-              writeResponseChunk(continuationChunk, res);
+              this.writeResponseChunk(continuationChunk, res);
               res.flush();
             }
           }
@@ -211,5 +228,128 @@ export class AgentController {
         res.end();
       }
     }
+  }
+
+  async handleToolCall(chunk, currentToolCalls) {
+    if (chunk.choices[0]?.delta?.tool_calls) {
+      const toolCall = chunk.choices[0].delta.tool_calls[0];
+
+      if (!currentToolCalls.find((call) => call.index === toolCall.index)) {
+        currentToolCalls.push({
+          index: toolCall.index,
+          id: toolCall.id,
+          function: { name: '', arguments: '' },
+        });
+      }
+
+      const currentCall = currentToolCalls.find(
+        (call) => call.index === toolCall.index
+      );
+
+      if (toolCall.function) {
+        if (toolCall.function.name) {
+          currentCall.function.name = toolCall.function.name;
+        }
+        if (toolCall.function.arguments) {
+          currentCall.function.arguments += toolCall.function.arguments;
+        }
+      }
+
+      return true;
+    }
+    return false;
+  }
+
+  writeResponseChunk(chunk, res) {
+    if (chunk.choices[0]?.delta?.content) {
+      res.write(
+        `data: ${JSON.stringify({
+          content: chunk.choices[0].delta.content,
+        })}\n\n`
+      );
+    }
+  }
+
+  async processToolCalls(currentToolCalls, userConfig: IUserAuth) {
+    const results = [];
+
+    // Set global userConfig for tool calls
+    global.userConfig = userConfig;
+
+    for (const toolCall of currentToolCalls) {
+      try {
+        const args = JSON.parse(toolCall.function.arguments);
+        const toolFunction = this.agentService[toolCall.function.name];
+
+        if (typeof toolFunction === 'function') {
+          console.log(`Processing tool call: ${toolCall.function.name}`, args);
+
+          const result = await toolFunction(
+            ...Object.values(args),
+            userConfig.auth,
+            this.controller.signal
+          );
+
+          if (result.error) {
+            console.error(
+              `Tool call error for ${toolCall.function.name}:`,
+              result.error
+            );
+            results.push({
+              role: 'tool',
+              content: JSON.stringify({
+                error: true,
+                message: result.message || 'Tool call failed',
+              }),
+              tool_call_id: toolCall.id,
+            });
+          } else {
+            console.log(
+              `Tool call success for ${toolCall.function.name}:`,
+              result
+            );
+
+            // Special handling for image generation results
+            if (toolCall.function.name === 'generateImage') {
+              // Format the result to include both URL and prompt
+              const formattedResult = {
+                url: result.url,
+                prompt: result.prompt,
+                formatted_url: `![Generated Image](${result.url})`,
+              };
+              results.push({
+                role: 'tool',
+                content: JSON.stringify(formattedResult),
+                tool_call_id: toolCall.id,
+              });
+            } else {
+              results.push({
+                role: 'tool',
+                content: JSON.stringify(result),
+                tool_call_id: toolCall.id,
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error(
+          `Error processing tool call ${toolCall.function.name}:`,
+          error
+        );
+        results.push({
+          role: 'tool',
+          content: JSON.stringify({
+            error: true,
+            message: `Tool call failed: ${error.message}`,
+          }),
+          tool_call_id: toolCall.id,
+        });
+      }
+    }
+
+    // Clear global userConfig after tool calls are done
+    global.userConfig = undefined;
+
+    return results;
   }
 }

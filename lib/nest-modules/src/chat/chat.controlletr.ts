@@ -1,10 +1,8 @@
 import {
-  Body,
   Controller,
   Logger,
   NotFoundException,
   Get,
-  Put,
   Query,
   DefaultValuePipe,
   ParseIntPipe,
@@ -28,39 +26,6 @@ import { Chat } from './chat.schema';
 export class ChatController {
   logger = new Logger(ChatController.name);
   constructor(private readonly userService: UserService) {}
-
-  @Put()
-  @ApiBearerAuth('Authorization')
-  @ApiOperation({
-    description: 'Update user chat history',
-  })
-  @ApiResponse({
-    status: 201,
-    description: 'User chat history update',
-  })
-  @ApiResponse({
-    status: 401,
-    description: 'Unauthorized access',
-  })
-  async updateUserChatHistory(
-    @Body() chats: ChatHistoryDto[],
-    @UserAuth() userAuth: IUserAuth
-  ) {
-    const user = await this.userService.findUserByAddress(userAuth.address);
-
-    if (!user) {
-      throw new NotFoundException(
-        `User with address ${userAuth.address} does not exist`
-      );
-    }
-
-    await this.userService.updateUser(userAuth.address.toLowerCase(), chats);
-
-    return GetUserDto.fromJson({
-      ...user,
-      chats: chats as Chat[],
-    });
-  }
 
   @Get()
   @ApiBearerAuth('Authorization')

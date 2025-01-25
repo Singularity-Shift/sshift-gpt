@@ -1,4 +1,4 @@
-import { ChatHistoryDto } from '@nest-modules';
+import { ChatHistoryDto, NewMessageDto } from '@nest-modules';
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
 import { ValidateNested } from 'class-validator';
@@ -8,9 +8,9 @@ export class CreateMessageDto {
     description: 'Content of the message',
     type: ChatHistoryDto,
   })
-  @Type(() => ChatHistoryDto)
+  @Type(() => NewMessageDto)
   @ValidateNested()
-  message: ChatHistoryDto;
+  message: NewMessageDto;
 
   @ApiProperty({
     description: 'Model of the chat',

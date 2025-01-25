@@ -33,6 +33,7 @@ export interface IChat {
 }
 
 export interface IUserAuth {
+  auth: string;
   address: string;
   config: IUserConfig;
 }

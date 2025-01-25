@@ -14,6 +14,7 @@ import {
 } from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MultisignModule } from './multisign/multising.module';
+import { AgentModule } from './agent/agent.module';
 
 @Module({
   imports: [
@@ -44,6 +45,7 @@ import { MultisignModule } from './multisign/multising.module';
     UserModule,
     AdminConfigModule,
     MultisignModule,
+    AgentModule,
   ],
   controllers: [],
   providers: [

@@ -4,6 +4,7 @@ export { UserService } from './user/user.service';
 export { UserModule } from './user/user.module';
 export { ChatModule } from './chat/chat.module';
 export { ChatHistoryDto } from './chat/dto/chat-history.dto';
+export { NewMessageDto } from './chat/dto/new-message.dto';
 export { AuthModule } from './auth/auth.module';
 export { AuthGuard } from './auth/auth.guard';
 export { UserAuth } from './auth/auth.decorator';

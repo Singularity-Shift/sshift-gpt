@@ -1,14 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
-import { Model, UpdateWriteOpResult } from 'mongoose';
-import { ChatHistoryDto } from '../chat/dto/chat-history.dto';
+import { Model } from 'mongoose';
 import { Activity } from './activity/activity.schema';
 import { FeatureActivityDto } from './dto/credits-used.dto';
 import { FeatureActivity } from './activity/feature-used.schema';
-import { ChatMessagesDto } from '../chat/dto/chat-messages.dto';
-import { ChatHistory } from '../chat/chat-history.schema';
 import { Chat } from '../chat/chat.schema';
+import { NewMessageDto } from '../chat/dto/new-message.dto';
 
 @Injectable()
 export class UserService {
@@ -128,7 +126,7 @@ export class UserService {
     return creditsUsed;
   }
 
-  async updateChat(address: string, chat: ChatHistoryDto): Promise<Chat> {
+  async updateChat(address: string, chat: NewMessageDto): Promise<Chat> {
     const { message, id } = chat;
 
     const currentUser = await this.userModel.findOne({
