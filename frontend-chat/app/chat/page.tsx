@@ -876,7 +876,7 @@ export default function ChatPage() {
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
           />
-          <ChatInput onSendMessage={handleSendMessage} />
+          <ChatInput onSendMessage={handleSendMessage} isGenerating={isAssistantResponding} />
         </div>
       </div>
     </div>

@@ -8,16 +8,17 @@ import { ImageUploadButton } from './ImageUploadButton';
 
 interface ChatInputProps {
   onSendMessage: (message: string, imageUrls: string[]) => void;
+  isGenerating?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGenerating = false }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const [uploading, setUploading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSendMessage = () => {
-    if (inputMessage.trim() || uploadedImages.length > 0) {
+    if ((inputMessage.trim() || uploadedImages.length > 0) && !isGenerating) {
       onSendMessage(inputMessage, uploadedImages);
       setInputMessage('');
       setUploadedImages([]);
@@ -28,7 +29,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-      handleSendMessage();
+      if (!isGenerating) {
+        handleSendMessage();
+      }
     }
   };
 
@@ -89,7 +92,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
               uploadedImages={uploadedImages}
             />
             <StopButton onStop={handleStop} />
-            <SendButton onClick={handleSendMessage} />
+            <SendButton onClick={handleSendMessage} disabled={isGenerating} />
           </div>
         </div>
       </div>
