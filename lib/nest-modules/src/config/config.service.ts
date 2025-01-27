@@ -17,6 +17,7 @@ const DOTENV_SCHEMA = Joi.object({
     port: 3100,
   }),
   serverToolsApi: Joi.object({
+    uri: Joi.string().required(),
     port: Joi.number().default(3400),
   }).default({
     port: 3400,
@@ -79,6 +80,7 @@ type DotenvSchemaKeys =
   | 'nodeEnv'
   | 'serverChatApi.port'
   | 'serverToolsApi.port'
+  | 'serverToolsApi.uri'
   | 'redis.pwd'
   | 'redis.port'
   | 'redis.host'

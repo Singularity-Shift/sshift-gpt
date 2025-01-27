@@ -1,17 +1,23 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
+import { ConfigService } from '@nest-modules';
 
 @Injectable()
 export class AgentService {
-  constructor(private httpService: HttpService) {}
+  private logger = new Logger(AgentService.name);
+
+  constructor(
+    private httpService: HttpService,
+    private readonly configService: ConfigService
+  ) {}
   async generateImage(prompt, size, style, auth, signal) {
     try {
-      console.log('Generating image with params:', { prompt, size, style });
+      this.logger.log('Generating image with params:', { prompt, size, style });
 
       const result = await firstValueFrom(
         this.httpService.post(
-          '/tools/generate-image',
+          `${this.configService.get('serverToolsApi.uri')}/tool/generate-image`,
           {
             prompt,
             size,
@@ -48,12 +54,18 @@ export class AgentService {
   async searchWeb(query, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get('/tools/search-web', {
-          headers: { 'Content-Type': 'application/json', Authorization: auth },
-          params: { query },
-          timeout: 60000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/tool/search-web`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: auth,
+            },
+            params: { query },
+            timeout: 60000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -69,12 +81,18 @@ export class AgentService {
   async wikiSearch(action, searchString, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get('/tools/wiki-search', {
-          headers: { 'Content-Type': 'application/json', Authorization: auth },
-          params: { action, searchString },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/tool/wiki-search`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: auth,
+            },
+            params: { action, searchString },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -91,7 +109,7 @@ export class AgentService {
     try {
       const result = await firstValueFrom(
         this.httpService.post(
-          '/tools/get-stock-info',
+          `${this.configService.get('serverToolsApi.uri')}/tool/get-stock-info`,
           {
             tickers,
             info_types,
@@ -121,7 +139,9 @@ export class AgentService {
     try {
       const result = await firstValueFrom(
         this.httpService.get(
-          `/tools/get-crypto-info-from-cmd/${token_symbol}`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/get-crypto-info-from-cmd/${token_symbol}`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -153,7 +173,7 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.post(
-          '/tools/search-arxiv',
+          `${this.configService.get('serverToolsApi.uri')}/tool/search-arxiv`,
           { search_query, max_results, sort_by, sort_order },
           {
             headers: {
@@ -179,12 +199,20 @@ export class AgentService {
   async getTrendingCryptos(option, limit = 10, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get(`/tools/get-trending-cryptos/${option}`, {
-          params: { limit },
-          headers: { 'Content-Type': 'application/json', Authorization: auth },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/get-trending-cryptos/${option}`,
+          {
+            params: { limit },
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: auth,
+            },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -201,7 +229,9 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `/tools/search-nft-collection/${collection_name}`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/search-nft-collection/${collection_name}`,
           {
             headers: {
               Authorization: auth,
@@ -226,12 +256,20 @@ export class AgentService {
   async searchTrendingNFT(period, trending_by, limit, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get('/tools/search-trending-nft', {
-          headers: { 'Content-Type': 'application/json', Authorization: auth },
-          params: { period, trending_by, limit },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/search-trending-nft`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: auth,
+            },
+            params: { period, trending_by, limit },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -252,7 +290,7 @@ export class AgentService {
     signal
   ) {
     try {
-      console.log('Creating sound effect with params:', {
+      this.logger.log('Creating sound effect with params:', {
         text,
         duration_seconds,
         prompt_influence,
@@ -260,7 +298,9 @@ export class AgentService {
 
       const result = await firstValueFrom(
         this.httpService.post(
-          '/tools/create-sound-effect',
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/create-sound-effect`,
           {
             text,
             duration_seconds,
@@ -299,7 +339,9 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.post(
-          '/tools/fetch-user-nft-collections',
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tool/fetch-user-nft-collections`,
           {},
           {
             headers: {

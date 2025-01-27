@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Res, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Post, Res, UseGuards } from '@nestjs/common';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { AdminConfigService, UserAuth, UserService } from '@nest-modules';
 import { IUserAuth } from '@helpers';
@@ -11,8 +11,8 @@ import { AgentService } from './agent.service';
 
 @Controller('agent')
 export class AgentController {
-  private shouldStopStream = false;
-  private controller = new AbortController();
+  private controller = new Map<string, AbortController>();
+  private shouldStopStream = new Map<string, boolean>();
 
   constructor(
     private readonly userService: UserService,
@@ -29,7 +29,10 @@ export class AgentController {
   ) {
     const { model, message, temperature } = createMessageDto;
 
-    this.controller = new AbortController();
+    const controller = new AbortController();
+    this.controller.set(userAuth.address, controller);
+
+    const shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
     const chat = await this.userService.updateChat(userAuth.address, message);
 
@@ -101,7 +104,7 @@ export class AgentController {
 
       for await (const chunk of stream) {
         // Check if we should stop the stream
-        if (this.shouldStopStream) {
+        if (shouldStopStream) {
           // Send final message and end stream
           res.write(
             `data: ${JSON.stringify({
@@ -146,7 +149,8 @@ export class AgentController {
           // Process tool calls and add their results to the history
           const toolResults = await this.processToolCalls(
             currentToolCalls,
-            userAuth
+            userAuth,
+            controller.signal
           );
           messagesWithSystemPrompt.push(...toolResults);
 
@@ -270,7 +274,11 @@ export class AgentController {
     }
   }
 
-  async processToolCalls(currentToolCalls, userConfig: IUserAuth) {
+  async processToolCalls(
+    currentToolCalls,
+    userConfig: IUserAuth,
+    signal: AbortSignal
+  ) {
     const results = [];
 
     // Set global userConfig for tool calls
@@ -287,7 +295,7 @@ export class AgentController {
           const result = await toolFunction(
             ...Object.values(args),
             userConfig.auth,
-            this.controller.signal
+            signal
           );
 
           if (result.error) {
@@ -351,5 +359,13 @@ export class AgentController {
     global.userConfig = undefined;
 
     return results;
+  }
+
+  @Delete()
+  async deleteAgent(@UserAuth() userAuth: IUserAuth) {
+    const controller = this.controller.get(userAuth.address);
+
+    controller.abort();
+    this.shouldStopStream.set(userAuth.address, true);
   }
 }

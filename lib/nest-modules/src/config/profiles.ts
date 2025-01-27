@@ -13,6 +13,7 @@ export const Profiles = {
       port: process.env.PORT_CHAT,
     },
     serverToolsApi: {
+      uri: process.env.URI_TOOLS,
       port: process.env.PORT_TOOLS,
     },
     jwt: {

@@ -17,7 +17,7 @@ async function bootstrap() {
   const port = app
     .get<ConfigService>(ConfigService)
     .get<number>('serverToolsApi.port');
-  const globalPrefix = 'chat-api';
+  const globalPrefix = 'tools';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
@@ -27,7 +27,7 @@ async function bootstrap() {
   const packageJson = JSON.parse(packageJsonString) as { version: string };
 
   const options = new DocumentBuilder()
-    .setTitle('Chat API')
+    .setTitle('Tools API')
     .setVersion(packageJson.version)
     .addBearerAuth(
       {

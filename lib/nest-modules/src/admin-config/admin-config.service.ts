@@ -1,12 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { AdminConfig, AdminConfigDocument } from './admin-config.schema';
+import { AdminConfig } from './admin-config.schema';
 import { AdminConfigDto } from './dto/adming-config.dto';
 import { CACHE_MANAGER, Cache } from '@nestjs/cache-manager';
 
 // Use require for JSON file since TypeScript needs special config for JSON imports
-const defaultPrompt = require('./defaultPrompt.json');
+import defaultPrompt from './defaultPrompt.json';
 
 @Injectable()
 export class AdminConfigService {
