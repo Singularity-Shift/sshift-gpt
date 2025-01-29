@@ -1,6 +1,18 @@
-import { Body, Controller, Delete, Post, Res, UseGuards } from '@nestjs/common';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { AdminConfigService, UserAuth, UserService } from '@nest-modules';
+import {
+  Body,
+  Controller,
+  Delete,
+  Logger,
+  Post,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  AdminConfigService,
+  NewMessageDto,
+  UserAuth,
+  UserService,
+} from '@nest-modules';
 import { IUserAuth } from '@helpers';
 import { AgentGuard } from './agent.guard';
 import { Response } from 'express-stream';
@@ -8,11 +20,13 @@ import { OpenAI } from 'openai';
 import toolSchema from './tool_schema.json';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { AgentService } from './agent.service';
+import { v4 as uuidv4 } from 'uuid';
 
 @Controller('agent')
 export class AgentController {
   private controller = new Map<string, AbortController>();
   private shouldStopStream = new Map<string, boolean>();
+  private logger = new Logger(AgentController.name);
 
   constructor(
     private readonly userService: UserService,
@@ -23,18 +37,17 @@ export class AgentController {
   @Post()
   @UseGuards(AgentGuard)
   async newMessage(
-    @Body() createMessageDto: CreateMessageDto,
+    @Body() newMessageDto: NewMessageDto,
     @UserAuth() userAuth: IUserAuth,
     @Res() res: Response
   ) {
-    const { model, message, temperature } = createMessageDto;
-
     const controller = new AbortController();
     this.controller.set(userAuth.address, controller);
 
-    const shouldStopStream = this.shouldStopStream.get(userAuth.address);
-
-    const chat = await this.userService.updateChat(userAuth.address, message);
+    const chat = await this.userService.updateChat(
+      userAuth.address,
+      newMessageDto
+    );
 
     let currentToolCalls = [];
     const assistantMessage = { content: '', images: [] };
@@ -92,19 +105,22 @@ export class AgentController {
 
     try {
       const stream = await this.openai.chat.completions.create({
-        model: model || 'gpt-4o-mini',
+        model: newMessageDto.model || 'gpt-4o-mini',
         messages: messagesWithSystemPrompt,
         max_completion_tokens: 16384,
-        temperature,
+        temperature: newMessageDto.temperature,
         stream: true,
         tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
         tool_choice: 'auto',
         parallel_tool_calls: true,
       });
 
+      let shouldStopStream = this.shouldStopStream.get(userAuth.address);
+
       for await (const chunk of stream) {
         // Check if we should stop the stream
         if (shouldStopStream) {
+          this.shouldStopStream.set(userAuth.address, false);
           // Send final message and end stream
           res.write(
             `data: ${JSON.stringify({
@@ -122,12 +138,10 @@ export class AgentController {
         if (chunk.choices[0]?.delta?.content) {
           assistantMessage.content += chunk.choices[0].delta.content;
           this.writeResponseChunk(chunk, res);
-          res.flush();
         } else if (chunk.choices[0]?.delta?.tool_calls) {
           const isToolCall = await this.handleToolCall(chunk, currentToolCalls);
           if (isToolCall) {
             res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
-            res.flush();
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
           // Add the assistant's message with tool calls to the history
@@ -157,16 +171,20 @@ export class AgentController {
           // Create continuation with the updated message history
           const continuationResponse =
             await this.openai.chat.completions.create({
-              model: model || 'gpt-4o-mini',
+              model: newMessageDto.model || 'gpt-4o-mini',
               messages: messagesWithSystemPrompt,
               max_tokens: 16384,
-              temperature,
+              temperature: newMessageDto.temperature,
               stream: true,
             });
 
+          shouldStopStream = this.shouldStopStream.get(userAuth.address);
+
           for await (const continuationChunk of continuationResponse) {
             // Check if we should stop during continuation
-            if (this.shouldStopStream) {
+            if (shouldStopStream) {
+              this.shouldStopStream.set(userAuth.address, false);
+              this.logger.log('Stream stopped during continuation');
               res.write(
                 `data: ${JSON.stringify({
                   final_message: {
@@ -184,7 +202,6 @@ export class AgentController {
               assistantMessage.content +=
                 continuationChunk.choices[0].delta.content;
               this.writeResponseChunk(continuationChunk, res);
-              res.flush();
             }
           }
 
@@ -206,6 +223,15 @@ export class AgentController {
             })}\n\n`
           );
           res.write('data: [DONE]\n\n');
+          await this.userService.updateChat(userAuth.address, {
+            ...newMessageDto,
+            message: {
+              ...assistantMessage,
+              id: uuidv4(),
+              role: 'assistant',
+              timestamp: Date.now(),
+            },
+          });
           res.end();
           return;
         }
@@ -213,6 +239,8 @@ export class AgentController {
 
       // Normal stream completion
       if (!res.writableEnded) {
+        this.logger.log('Normal stream completion');
+
         res.write(
           `data: ${JSON.stringify({
             final_message: {
@@ -222,10 +250,19 @@ export class AgentController {
           })}\n\n`
         );
         res.write('data: [DONE]\n\n');
+        await this.userService.updateChat(userAuth.address, {
+          ...newMessageDto,
+          message: {
+            ...assistantMessage,
+            id: uuidv4(),
+            role: 'assistant',
+            timestamp: Date.now(),
+          },
+        });
         res.end();
       }
     } catch (error) {
-      console.error('Error in stream response:', error);
+      this.logger.error('Error in stream response:', error);
       if (!res.writableEnded) {
         res.write(`data: ${JSON.stringify({ error: error.message })}\n\n`);
         res.write('data: [DONE]\n\n');
@@ -290,16 +327,19 @@ export class AgentController {
         const toolFunction = this.agentService[toolCall.function.name];
 
         if (typeof toolFunction === 'function') {
-          console.log(`Processing tool call: ${toolCall.function.name}`, args);
+          this.logger.log(
+            `Processing tool call: ${toolCall.function.name}`,
+            args
+          );
 
-          const result = await toolFunction(
+          const result = await this.agentService[toolCall.function.name](
             ...Object.values(args),
             userConfig.auth,
             signal
           );
 
           if (result.error) {
-            console.error(
+            this.logger.error(
               `Tool call error for ${toolCall.function.name}:`,
               result.error
             );
@@ -312,7 +352,7 @@ export class AgentController {
               tool_call_id: toolCall.id,
             });
           } else {
-            console.log(
+            this.logger.log(
               `Tool call success for ${toolCall.function.name}:`,
               result
             );
@@ -340,7 +380,7 @@ export class AgentController {
           }
         }
       } catch (error) {
-        console.error(
+        this.logger.error(
           `Error processing tool call ${toolCall.function.name}:`,
           error
         );

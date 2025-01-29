@@ -33,7 +33,6 @@ export class BucketService {
 
     const bucketName = 'sshift-gpt-bucket';
     const filename = `images/${uuidv4()}-generated-image.png`;
-
     const bucket = this.storage.bucket(bucketName);
     const blob = bucket.file(filename);
     const blobStream = blob.createWriteStream({

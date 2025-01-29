@@ -35,6 +35,7 @@
       "options": {
         "buildTarget": "backend-chat:build",
         "inspect": false,
+        "watch": true
       },
       "configurations": {
         "development": {
@@ -44,9 +45,6 @@
           "buildTarget": "backend-chat:build:production"
         }
       }
-    },
-    "watch": {
-      "command": "nest start --watch"
     }
   }
 }

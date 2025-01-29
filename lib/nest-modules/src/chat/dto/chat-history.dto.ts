@@ -24,22 +24,10 @@ export class ChatHistoryDto {
   model: string;
 
   @ApiProperty({
-    description: 'Fingerprint of the system',
-    example: 'fp_44709d6fcb',
-  })
-  system_fingerprint: string;
-
-  @ApiProperty({
     description: 'Messages of the chat',
     type: ChatMessagesDto,
   })
   messages: ChatMessagesDto[];
-
-  @ApiProperty({
-    description: 'Chat usage',
-    type: ChatUsageDto,
-  })
-  usage: ChatUsageDto;
 
   @ApiProperty({
     description: 'Timestamp when the chat was created',

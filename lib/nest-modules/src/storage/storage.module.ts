@@ -9,17 +9,19 @@ export const storageProvider = {
   provide: Storage,
   inject: [ConfigService],
   useFactory: (configService: ConfigService) => {
+    const credentialsBase64 = configService.get<string>(
+      'storage.storageCredentials'
+    ) as string;
+
+    const credentialsJson = Buffer.from(credentialsBase64, 'base64').toString(
+      'utf-8'
+    );
+
+    const credentials = JSON.parse(credentialsJson);
+
     return new Storage({
       projectId: configService.get<string>('storage.project_id'),
-      credentials: {
-        type: 'service_account',
-        projectId: configService.get<string>('storage.project_id'),
-        private_key: configService.get<string>('storage.private_key'),
-        private_key_id: configService.get<string>('storage.private_key_id'),
-        client_email: configService.get<string>('storage.client_email'),
-        client_id: configService.get<string>('storage.client_id'),
-        universe_domain: configService.get<string>('storage.universe_domain'),
-      },
+      credentials,
     });
   },
 };

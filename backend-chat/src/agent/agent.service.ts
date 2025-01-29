@@ -17,7 +17,9 @@ export class AgentService {
 
       const result = await firstValueFrom(
         this.httpService.post(
-          `${this.configService.get('serverToolsApi.uri')}/tool/generate-image`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tools/generate-image`,
           {
             prompt,
             size,
@@ -26,7 +28,7 @@ export class AgentService {
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 120000,
             signal,
@@ -55,11 +57,11 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `${this.configService.get('serverToolsApi.uri')}/tool/search-web`,
+          `${this.configService.get('serverToolsApi.uri')}/tools/search-web`,
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             params: { query },
             timeout: 60000,
@@ -82,11 +84,11 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `${this.configService.get('serverToolsApi.uri')}/tool/wiki-search`,
+          `${this.configService.get('serverToolsApi.uri')}/tools/wiki-search`,
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             params: { action, searchString },
             timeout: 30000,
@@ -109,7 +111,9 @@ export class AgentService {
     try {
       const result = await firstValueFrom(
         this.httpService.post(
-          `${this.configService.get('serverToolsApi.uri')}/tool/get-stock-info`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tools/get-stock-info`,
           {
             tickers,
             info_types,
@@ -117,7 +121,7 @@ export class AgentService {
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 30000,
             signal,
@@ -141,11 +145,11 @@ export class AgentService {
         this.httpService.get(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/get-crypto-info-from-cmd/${token_symbol}`,
+          )}/tools/get-crypto-info-from-cmd/${token_symbol}`,
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 30000,
             signal,
@@ -173,12 +177,12 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.post(
-          `${this.configService.get('serverToolsApi.uri')}/tool/search-arxiv`,
+          `${this.configService.get('serverToolsApi.uri')}/tools/search-arxiv`,
           { search_query, max_results, sort_by, sort_order },
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 30000,
             signal,
@@ -202,12 +206,12 @@ export class AgentService {
         this.httpService.get(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/get-trending-cryptos/${option}`,
+          )}/tools/get-trending-cryptos/${option}`,
           {
             params: { limit },
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 30000,
             signal,
@@ -231,10 +235,10 @@ export class AgentService {
         this.httpService.get(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/search-nft-collection/${collection_name}`,
+          )}/tools/search-nft-collection/${collection_name}`,
           {
             headers: {
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
               'Content-Type': 'application/json',
             },
             timeout: 30000,
@@ -259,11 +263,11 @@ export class AgentService {
         this.httpService.get(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/search-trending-nft`,
+          )}/tools/search-trending-nft`,
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             params: { period, trending_by, limit },
             timeout: 30000,
@@ -300,7 +304,7 @@ export class AgentService {
         this.httpService.post(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/create-sound-effect`,
+          )}/tools/create-sound-effect`,
           {
             text,
             duration_seconds,
@@ -309,7 +313,7 @@ export class AgentService {
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 120000,
             signal,
@@ -341,12 +345,12 @@ export class AgentService {
         this.httpService.post(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/tool/fetch-user-nft-collections`,
+          )}/tools/fetch-user-nft-collections`,
           {},
           {
             headers: {
               'Content-Type': 'application/json',
-              Authorization: auth,
+              Authorization: `Bearer ${auth}`,
             },
             timeout: 30000,
             signal,
@@ -370,7 +374,7 @@ export class AgentService {
         this.httpService.get('/handle-finder/topics', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: auth,
+            Authorization: `Bearer ${auth}`,
           },
           params: { date },
           timeout: 30000,
@@ -394,7 +398,7 @@ export class AgentService {
         this.httpService.get('/handle-finder/tokens/mentions', {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: auth,
+            Authorization: `Bearer ${auth}`,
           },
           params: { limit, page, date },
           timeout: 30000,
@@ -420,7 +424,7 @@ export class AgentService {
         this.httpService.post('/handle-finder/trending/users', query, {
           headers: {
             'Content-Type': 'application/json',
-            Authorization: auth,
+            Authorization: `Bearer ${auth}`,
           },
           timeout: 30000,
           signal,

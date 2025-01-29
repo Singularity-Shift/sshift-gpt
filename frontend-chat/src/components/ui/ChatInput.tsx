@@ -5,6 +5,8 @@ import { Image, Send, Upload, X } from 'lucide-react';
 import { StopButton } from './StopButton';
 import { SendButton } from './SendButton';
 import { ImageUploadButton } from './ImageUploadButton';
+import backend from '@fn-chat/services/backend';
+import { useAuth } from '@fn-chat/context/AuthProvider';
 
 interface ChatInputProps {
   onSendMessage: (message: string, imageUrls: string[]) => void;
@@ -13,7 +15,7 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
-  const [uploading, setUploading] = useState(false);
+  const { jwt } = useAuth();
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSendMessage = () => {
@@ -33,17 +35,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    setUploadedImages(uploadedImages.filter((_, index) => index !== indexToRemove));
+    setUploadedImages(
+      uploadedImages.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   const handleStop = async () => {
     try {
-      const response = await fetch('/api/chat', {
-        method: 'DELETE',
+      await backend.delete('/agent', {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
       });
-      if (!response.ok) {
-        console.error('Failed to stop the stream:', response.statusText);
-      }
     } catch (error) {
       console.error('Error stopping the stream:', error);
     }

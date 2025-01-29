@@ -3,16 +3,40 @@
   "$schema": "../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "tools-api/src",
   "projectType": "application",
+  "implicitDependencies": ["!aptos", "!nest-modules"],
   "tags": [],
   "targets": {
+    "build": {
+      "executor": "@nrwl/webpack:webpack",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "target": "node",
+        "compiler": "tsc",
+        "outputPath": "dist/tools-api",
+        "main": "tools-api/src/main.ts",
+        "tsConfig": "tools-api/tsconfig.app.json",
+        "assets": ["tools-api/src/assets"],
+        "webpackConfig": "tools-api/webpack.config.js",
+        "sourceMap": true
+      },
+      "configurations": {
+        "production": {
+          "optimization": true,
+          "extractLicenses": true
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false
+        }
+      }
+    },
     "serve": {
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
-      "dependsOn": ["build"],
       "options": {
         "inspect": false,
         "buildTarget": "tools-api:build",
-        "runBuildTargetDependencies": false
+        "watch": true
       },
       "configurations": {
         "development": {

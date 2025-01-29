@@ -18,7 +18,6 @@ async function bootstrap() {
     .get<ConfigService>(ConfigService)
     .get<number>('serverToolsApi.port');
   const globalPrefix = 'tools';
-  app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
 
@@ -39,12 +38,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, options);
 
-  SwaggerModule.setup('chat/v1/docs', app, document);
+  SwaggerModule.setup('tools/v1/docs', app, document);
 
   await app.listen(port);
-  Logger.log(
-    `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`
-  );
+  Logger.log(`🚀 Application is running on: http://localhost:${port}`);
 }
 
 bootstrap();

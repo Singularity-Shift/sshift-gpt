@@ -19,6 +19,9 @@ export class ChatHistory {
 
   @Prop({ type: Date, default: now() })
   createdAt: Date;
+
+  @Prop({ type: Number, required: true })
+  timestamp: number;
 }
 
 export const ChatHistorySchema = SchemaFactory.createForClass(ChatHistory);

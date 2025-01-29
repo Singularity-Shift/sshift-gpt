@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { User } from './user.schema';
 import { Model } from 'mongoose';
@@ -7,9 +7,12 @@ import { FeatureActivityDto } from './dto/credits-used.dto';
 import { FeatureActivity } from './activity/feature-used.schema';
 import { Chat } from '../chat/chat.schema';
 import { NewMessageDto } from '../chat/dto/new-message.dto';
+import { ChatHistoryDto } from '../chat/dto/chat-history.dto';
 
 @Injectable()
 export class UserService {
+  private logger = new Logger('UserService');
+
   constructor(
     @InjectModel(User.name) private userModel: Model<User>,
     @InjectModel(Activity.name) private activityModel: Model<Activity>
@@ -126,8 +129,26 @@ export class UserService {
     return creditsUsed;
   }
 
+  async addChat(address: string, chat: ChatHistoryDto): Promise<Chat> {
+    const user = await this.userModel.findOneAndUpdate(
+      {
+        address: address.toLowerCase(),
+      },
+      {
+        $push: { chats: chat },
+      },
+      {
+        new: true,
+      }
+    );
+
+    return user?.chats.find((c) => c.id === chat.id) as Chat;
+  }
+
   async updateChat(address: string, chat: NewMessageDto): Promise<Chat> {
     const { message, id } = chat;
+
+    this.logger.log(`Updating chat ${id} for user ${address}`);
 
     const currentUser = await this.userModel.findOne({
       $and: [
@@ -147,9 +168,13 @@ export class UserService {
         id,
         title: chat.title,
         model: chat.model,
-        system_fingerprint: chat.system_fingerprint,
-        messages: [{ ...message, createdAt: new Date() }],
-        usage: chat.usage,
+        messages: [
+          {
+            ...message,
+            createdAt: new Date(),
+            timestamp: Date.now(),
+          },
+        ],
         createdAt: chat.createdAt,
         lastUpdated: chat.lastUpdated,
       };
@@ -179,17 +204,14 @@ export class UserService {
           ],
         },
         {
-          $set: {
-            'chats.$[chat]': {
-              $push: {
-                messages: message,
-              },
-              $set: { lastUpdated: new Date() },
-            },
+          $push: {
+            'chats.$[chat].messages': message,
           },
+          $set: { 'chats.$[chat].lastUpdated': new Date() },
         },
         {
           arrayFilters: [{ 'chat.id': id }],
+          new: true,
         }
       )) as User;
 
@@ -347,5 +369,26 @@ export class UserService {
       `[Pagination] Response metadata - total: ${response.total}, page: ${response.page}, totalPages: ${response.totalPages}`
     );
     return response;
+  }
+
+  async deleteChatById(address: string, chatId: string): Promise<Chat[]> {
+    return (
+      (await this.userModel.findOneAndUpdate(
+        {
+          address,
+          'chats.id': chatId,
+        },
+        {
+          $pull: { chats: { id: chatId } },
+        },
+        {
+          new: true,
+        }
+      )) || []
+    );
+  }
+
+  async deleteAllChatId(address: string): Promise<void> {
+    await this.userModel.updateOne({ address }, { $set: { chats: [] } });
   }
 }

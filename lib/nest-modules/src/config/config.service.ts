@@ -38,13 +38,8 @@ const DOTENV_SCHEMA = Joi.object({
     apiKey: Joi.string().required(),
   }),
   storage: Joi.object({
-    type: Joi.string().default('local'),
     project_id: Joi.string().required(),
-    private_key_id: Joi.string().required(),
-    private_key: Joi.string().required(),
-    client_email: Joi.string().required(),
-    client_id: Joi.string().required(),
-    universe_domain: Joi.string().required(),
+    storageCredentials: Joi.string().required(),
   }),
   eleven: Joi.object({
     url: Joi.string().required(),
@@ -88,13 +83,8 @@ type DotenvSchemaKeys =
   | 'jwt.secret'
   | 'jwt.expiredTime'
   | 'openApi.apiKey'
-  | 'storage.type'
   | 'storage.project_id'
-  | 'storage.private_key_id'
-  | 'storage.private_key'
-  | 'storage.client_email'
-  | 'storage.client_id'
-  | 'storage.universe_domain'
+  | 'storage.storageCredentials'
   | 'eleven.url'
   | 'eleven.apiKey'
   | 'indexer.url'

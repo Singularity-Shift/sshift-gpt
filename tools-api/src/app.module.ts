@@ -1,8 +1,16 @@
 import { Module } from '@nestjs/common';
 import { ToolsModule } from './tools/tools.module';
 import { HandleFinderModule } from './handle-finder/handle-finder.module';
-import { ConfigModule, ConfigService } from '@nest-modules';
+import {
+  AuthGuard,
+  AuthModule,
+  ConfigModule,
+  ConfigService,
+  StorageModule,
+  UserModule,
+} from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -17,8 +25,17 @@ import { MongooseModule } from '@nestjs/mongoose';
         };
       },
     }),
+    AuthModule,
+    StorageModule,
+    ConfigModule,
+    UserModule,
   ],
   controllers: [],
-  providers: [],
+  providers: [
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+  ],
 })
 export class AppModule {}

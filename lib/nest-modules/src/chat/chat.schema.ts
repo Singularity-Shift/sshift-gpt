@@ -16,14 +16,8 @@ export class Chat {
   @Prop({ type: String, required: true })
   model: string;
 
-  @Prop({ type: String, required: true })
-  system_fingerprint: string;
-
   @Prop({ type: [ChatHistory] })
   messages: ChatHistory[];
-
-  @Prop({ type: ChatUsage })
-  usage: ChatUsage;
 
   @Prop({ type: Number, required: true, default: Date.now })
   createdAt: number;

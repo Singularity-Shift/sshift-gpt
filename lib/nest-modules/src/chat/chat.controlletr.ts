@@ -7,6 +7,9 @@ import {
   DefaultValuePipe,
   ParseIntPipe,
   Param,
+  Delete,
+  Body,
+  Post,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -20,12 +23,28 @@ import { GetUserDto } from '../user/dto/get-user.dto';
 import { UserAuth } from '../auth/auth.decorator';
 import { IUserAuth } from '@helpers';
 import { ChatHistoryDto } from './dto/chat-history.dto';
-import { Chat } from './chat.schema';
 
 @Controller('history')
 export class ChatController {
   logger = new Logger(ChatController.name);
   constructor(private readonly userService: UserService) {}
+
+  @Post()
+  @ApiBearerAuth('Authorization')
+  @ApiOperation({
+    description: 'Create new chat',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Created new chat',
+    type: ChatHistoryDto,
+  })
+  async createChat(
+    @UserAuth() userAuth: IUserAuth,
+    @Body() newChat: ChatHistoryDto
+  ): Promise<ChatHistoryDto> {
+    return this.userService.addChat(userAuth.address, newChat);
+  }
 
   @Get()
   @ApiBearerAuth('Authorization')
@@ -127,5 +146,53 @@ export class ChatController {
     }
 
     return result;
+  }
+
+  @Delete(':chatId')
+  @ApiBearerAuth('Authorization')
+  @ApiOperation({
+    description: 'Delete a specific chat',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Chat deleted',
+    type: [ChatHistoryDto],
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access',
+  })
+  @ApiResponse({
+    status: 404,
+    description: 'Chat not found',
+  })
+  @ApiParam({
+    name: 'chatId',
+    description: 'ID of the chat to delete',
+    type: String,
+  })
+  async deleteChat(
+    @UserAuth() userAuth: IUserAuth,
+    @Param('chatId') chatId: string
+  ): Promise<ChatHistoryDto[]> {
+    return this.userService.deleteChatById(userAuth.address, chatId);
+  }
+
+  @Delete()
+  @ApiBearerAuth('Authorization')
+  @ApiOperation({
+    description: 'Delete all chats for a user',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'All chats deleted',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Unauthorized access',
+  })
+  async deleteAllChats(@UserAuth() userAuth: IUserAuth) {
+    await this.userService.deleteAllChatId(userAuth.address);
+    this.logger.log(`All chats for user ${userAuth.address} deleted`);
   }
 }

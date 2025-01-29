@@ -24,10 +24,19 @@ export class ChatMessagesDto {
 
   @ApiProperty({
     description: 'Image URLs',
-    example: ['https://example.com/image1.png', 'https://example.com/image2.png'],
+    example: [
+      'https://example.com/image1.png',
+      'https://example.com/image2.png',
+    ],
     required: false,
     isArray: true,
   })
   @IsOptional()
   images: string[];
+
+  @ApiProperty({
+    description: 'Timestamp when the message was created',
+    example: 1704926547123,
+  })
+  timestamp: number;
 }

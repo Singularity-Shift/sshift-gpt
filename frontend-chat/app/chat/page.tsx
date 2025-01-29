@@ -14,6 +14,7 @@ import { Button } from '../../src/components/ui/button';
 
 import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
+import { API_BACKEND_URL } from '../../config/env';
 
 // Types
 export interface Message {
@@ -26,12 +27,28 @@ export interface Message {
   model?: string;
   finish_reason?: string;
   system_fingerprint?: string;
+  timestamp: number;
 }
 
 interface Chat {
   id: string;
   title: string;
   messages: Message[];
+  isRenaming?: boolean;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  createdAt?: number;
+  lastUpdated?: number;
+  model: string;
+}
+
+interface NewMessage {
+  id: string;
+  title: string;
+  message: Message;
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -70,19 +87,29 @@ export default function ChatPage() {
     }
   };
 
-  const handleNewChat = () => {
-    const currentTime = Date.now();
-    const newChat: Chat = {
-      id: uuidv4(),
-      title: `New Chat ${chats.length + 1}`,
-      messages: [],
-      model: 'gpt-4o-mini', // Set default model for new chats
-      createdAt: currentTime,
-      lastUpdated: currentTime,
-    };
-    setChats([...chats, newChat]);
-    setCurrentChatId(newChat.id);
-    setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+  const handleNewChat = async () => {
+    try {
+      const currentTime = Date.now();
+      const newChat: Chat = {
+        id: uuidv4(),
+        title: `New Chat ${chats.length + 1}`,
+        messages: [],
+        model: 'gpt-4o-mini', // Set default model for new chats
+        createdAt: currentTime,
+        lastUpdated: currentTime,
+      };
+
+      const response = await backend.post('/history', newChat, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+      setChats([...chats, response.data]);
+      setCurrentChatId(response.data.id);
+      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
   };
 
   const handleChatSelect = async (chatId: string) => {
@@ -90,19 +117,22 @@ export default function ChatPage() {
     const selectedChat = chats.find((chat) => chat.id === chatId);
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
-      
+
       // If the chat has no messages, load the initial set
       if (!selectedChat.messages || selectedChat.messages.length === 0) {
         try {
-          const messagesResponse = await backend.get(`/history/${chatId}/messages`, {
-            params: {
-              page: 1,
-              limit: 10
-            },
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-            },
-          });
+          const messagesResponse = await backend.get(
+            `/history/${chatId}/messages`,
+            {
+              params: {
+                page: 1,
+                limit: 10,
+              },
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+              },
+            }
+          );
 
           console.log('Chat select messages response:', messagesResponse.data);
 
@@ -151,24 +181,11 @@ export default function ChatPage() {
 
     if (inputMessage.trim() || selectedImages.length > 0) {
       const userMessage: Message = {
-        id: Date.now().toString(),
+        id: uuidv4(),
         role: 'user',
         content: inputMessage,
         images: selectedImages,
-      };
-
-      // Prepare the content array for the API request
-      const contentArray = [
-        ...selectedImages.map((imageUrl) => ({
-          type: 'image_url',
-          image_url: { url: imageUrl, detail: 'high' },
-        })),
-        { type: 'text', text: inputMessage },
-      ];
-
-      const formattedMessage = {
-        role: 'user',
-        content: contentArray,
+        timestamp: Date.now(),
       };
 
       setChats((prevChats) => {
@@ -193,39 +210,22 @@ export default function ChatPage() {
 
       scrollToBottom();
 
+      const chat = chats.find((chat) => chat.id === currentChatId) as Chat;
+
+      const newMessage: NewMessage = {
+        ...chat,
+        model: selectedModel,
+        message: userMessage,
+      };
+
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(`${API_BACKEND_URL}/agent`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${jwt}`,
           },
-          body: JSON.stringify({
-            messages: [
-              ...(
-                chats.find((chat) => chat.id === currentChatId)?.messages || []
-              ).map((msg) => {
-                if (msg.role === 'user' && msg.images) {
-                  return {
-                    role: msg.role,
-                    content: [
-                      ...msg.images.map((imageUrl) => ({
-                        type: 'image_url',
-                        image_url: { url: imageUrl, detail: 'high' },
-                      })),
-                      { type: 'text', text: msg.content },
-                    ],
-                  };
-                }
-                return {
-                  role: msg.role,
-                  content: msg.content,
-                };
-              }),
-              formattedMessage,
-            ],
-            model: selectedModel,
-          }),
+          body: JSON.stringify(newMessage),
         });
 
         if (!response.ok) {
@@ -513,15 +513,18 @@ export default function ChatPage() {
           );
 
           // Get initial messages for the most recent chat
-          const messagesResponse = await backend.get(`/history/${mostRecentChat.id}/messages`, {
-            params: {
-              page: 1,
-              limit: 10
-            },
-            headers: {
-              Authorization: `Bearer ${jwt}`,
-            },
-          });
+          const messagesResponse = await backend.get(
+            `/history/${mostRecentChat.id}/messages`,
+            {
+              params: {
+                page: 1,
+                limit: 10,
+              },
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+              },
+            }
+          );
 
           console.log('Initial messages response:', messagesResponse.data);
 
@@ -530,10 +533,11 @@ export default function ChatPage() {
           const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
 
           // Update the most recent chat with only the first 10 messages
-          const updatedChats = savedChats.chats.map((chat: Chat) => 
-            chat.id === mostRecentChat.id 
-              ? { ...chat, messages: [...messages].reverse() }
-              : { ...chat, messages: [] } // Initialize other chats with empty messages
+          const updatedChats = savedChats.chats.map(
+            (chat: Chat) =>
+              chat.id === mostRecentChat.id
+                ? { ...chat, messages: [...messages].reverse() }
+                : { ...chat, messages: [] } // Initialize other chats with empty messages
           );
 
           setChats(updatedChats);
@@ -550,27 +554,6 @@ export default function ChatPage() {
       }
     })();
   }, [jwt]);
-
-  useEffect(() => {
-    if (!chats?.length || !jwt || isPaginating) return;
-
-    const syncChats = async () => {
-      try {
-        await backend.put('/history', [...chats], {
-          headers: {
-            Authorization: `Bearer ${jwt}`,
-          },
-        });
-      } catch (error) {
-        console.error('Error syncing chats with database:', error);
-      }
-    };
-
-    // Debounce the sync operation
-    const timeoutId = setTimeout(syncChats, 1000);
-
-    return () => clearTimeout(timeoutId);
-  }, [chats, jwt, isPaginating]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
@@ -740,7 +723,7 @@ export default function ChatPage() {
 
     try {
       // Clear chats from the database
-      await backend.put('/history', [], {
+      await backend.delete('/history', {
         headers: {
           Authorization: `Bearer ${jwt}`,
         },
@@ -754,24 +737,37 @@ export default function ChatPage() {
 
   const handleLoadMore = async (page: number) => {
     if (!currentChatId || isLoadingMore) {
-      console.log('[LoadMore] Skipping load - currentChatId:', currentChatId, 'isLoadingMore:', isLoadingMore);
+      console.log(
+        '[LoadMore] Skipping load - currentChatId:',
+        currentChatId,
+        'isLoadingMore:',
+        isLoadingMore
+      );
       return;
     }
-    
-    console.log('[LoadMore] Starting load - page:', page, 'currentChatId:', currentChatId);
+
+    console.log(
+      '[LoadMore] Starting load - page:',
+      page,
+      'currentChatId:',
+      currentChatId
+    );
     setIsLoadingMore(true);
     setIsPaginating(true);
     try {
       const nextPage = currentPage + 1;
       console.log('[LoadMore] Requesting page:', nextPage);
-      
-      const currentChat = chats.find(chat => chat.id === currentChatId);
-      console.log('[LoadMore] Current chat messages count:', currentChat?.messages.length);
-      
+
+      const currentChat = chats.find((chat) => chat.id === currentChatId);
+      console.log(
+        '[LoadMore] Current chat messages count:',
+        currentChat?.messages.length
+      );
+
       const response = await backend.get(`/history/${currentChatId}/messages`, {
         params: {
           page: nextPage,
-          limit: 10
+          limit: 10,
         },
         headers: {
           Authorization: `Bearer ${jwt}`,
@@ -782,7 +778,7 @@ export default function ChatPage() {
         messagesCount: response.data?.messages?.length,
         total: response.data?.total,
         page: response.data?.page,
-        totalPages: response.data?.totalPages
+        totalPages: response.data?.totalPages,
       });
 
       if (!response.data || !response.data.messages) {
@@ -792,17 +788,22 @@ export default function ChatPage() {
       }
 
       const { messages: olderMessages, total, totalPages } = response.data;
-      
+
       if (olderMessages && olderMessages.length > 0) {
-        console.log(`[LoadMore] Loaded ${olderMessages.length} messages from page ${nextPage}`);
+        console.log(
+          `[LoadMore] Loaded ${olderMessages.length} messages from page ${nextPage}`
+        );
         setChats((prevChats) =>
           prevChats.map((chat) => {
             if (chat.id === currentChatId) {
-              const updatedMessages = [...olderMessages.reverse(), ...chat.messages];
+              const updatedMessages = [
+                ...olderMessages.reverse(),
+                ...chat.messages,
+              ];
               console.log('[LoadMore] Messages state update:', {
                 previousCount: chat.messages.length,
                 newMessagesCount: olderMessages.length,
-                totalAfterUpdate: updatedMessages.length
+                totalAfterUpdate: updatedMessages.length,
               });
               return {
                 ...chat,
@@ -812,7 +813,7 @@ export default function ChatPage() {
             return chat;
           })
         );
-        
+
         setCurrentPage(nextPage);
         setHasMore(nextPage < totalPages);
       } else {
