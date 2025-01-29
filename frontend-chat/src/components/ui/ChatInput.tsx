@@ -1,25 +1,29 @@
-import React, { useState, useRef } from 'react';
-import { Button } from './button';
+import React, { useState } from 'react';
 import { Textarea } from './textarea';
-import { Image, Send, Upload, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { StopButton } from './StopButton';
 import { SendButton } from './SendButton';
 import { ImageUploadButton } from './ImageUploadButton';
-import backend from '@fn-chat/services/backend';
-import { useAuth } from '@fn-chat/context/AuthProvider';
+import backend from '../../services/backend';
+import { useAuth } from '../../context/AuthProvider';
 
 interface ChatInputProps {
   onSendMessage: (message: string, imageUrls: string[]) => void;
+  isGenerating?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({
+  onSendMessage,
+  isGenerating = false,
+}) => {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
   const { jwt } = useAuth();
+  const [uploading, setUploading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
 
   const handleSendMessage = () => {
-    if (inputMessage.trim() || uploadedImages.length > 0) {
+    if ((inputMessage.trim() || uploadedImages.length > 0) && !isGenerating) {
       onSendMessage(inputMessage, uploadedImages);
       setInputMessage('');
       setUploadedImages([]);
@@ -30,7 +34,9 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
       e.preventDefault();
-      handleSendMessage();
+      if (!isGenerating) {
+        handleSendMessage();
+      }
     }
   };
 
@@ -49,6 +55,59 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
       });
     } catch (error) {
       console.error('Error stopping the stream:', error);
+    }
+  };
+
+  const handlePaste = async (e: React.ClipboardEvent) => {
+    const items = e.clipboardData?.items;
+
+    if (!items || uploadedImages.length >= 4) return;
+
+    for (let i = 0; i < items.length; i++) {
+      const item = items[i];
+
+      if (item.type.indexOf('image') === -1) continue;
+
+      e.preventDefault();
+
+      if (uploadedImages.length >= 4) {
+        alert('Maximum 4 images allowed.');
+        return;
+      }
+
+      try {
+        setUploading(true);
+        const file = item.getAsFile();
+        if (!file) continue;
+
+        // Create a new filename with timestamp to avoid conflicts
+        const timestamp = new Date().getTime();
+        const newFile = new File(
+          [file],
+          `pasted-image-${timestamp}.${file.type.split('/')[1]}`,
+          {
+            type: file.type,
+          }
+        );
+
+        const formData = new FormData();
+        formData.append('file', newFile);
+
+        const response = await backend.post('/bucket', formData, {
+          headers: {
+            'content-type': 'multipart/form-data',
+            Authorization: `Bearer ${jwt}`,
+          },
+        });
+
+        const data = await response.data;
+        setUploadedImages((prev) => [...prev, data.url]);
+      } catch (error) {
+        console.error('Error uploading pasted image:', error);
+        alert('Failed to upload pasted image');
+      } finally {
+        setUploading(false);
+      }
     }
   };
 
@@ -80,6 +139,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
               value={inputMessage}
               onChange={(e) => setInputMessage(e.target.value)}
               onKeyDown={handleKeyDown}
+              onPaste={handlePaste}
               placeholder="Type your message here... (Ctrl+Enter to send)"
               className="resize-none"
               isExpanded={isExpanded}
@@ -92,7 +152,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage }) => {
               uploadedImages={uploadedImages}
             />
             <StopButton onStop={handleStop} />
-            <SendButton onClick={handleSendMessage} />
+            <SendButton onClick={handleSendMessage} disabled={isGenerating} />
           </div>
         </div>
       </div>
