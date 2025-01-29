@@ -229,7 +229,7 @@ export class UserService {
       },
       {
         $pull: {
-          'chats.$[chat].messages': { createdAt: { $gte: createdAt } },
+          'chats.$[chat].messages': { timestamp: { $gte: message.timestamp } },
         },
       },
       {
@@ -246,12 +246,13 @@ export class UserService {
       },
       {
         $push: {
-          'chats.$.messages': { ...message, createdAt },
+          'chats.$[chat].messages': { ...message, createdAt },
         },
         $set: { 'chats.$[chat].lastUpdated': new Date() },
       },
       {
         arrayFilters: [{ 'chat.id': id }],
+        new: true,
       }
     )) as User;
 

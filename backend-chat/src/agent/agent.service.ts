@@ -371,15 +371,20 @@ export class AgentService {
   async getAllTopics(date, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get('/handle-finder/topics', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${auth}`,
-          },
-          params: { date },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/handle-finder/topics`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: { date },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -395,15 +400,20 @@ export class AgentService {
   async getTokensMentioned(limit, page, date, auth, signal) {
     try {
       const response = await firstValueFrom(
-        this.httpService.get('/handle-finder/tokens/mentions', {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${auth}`,
-          },
-          params: { limit, page, date },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/handle-finder/tokens/mentions`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: { limit, page, date },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;
@@ -421,14 +431,20 @@ export class AgentService {
 
     try {
       const response = await firstValueFrom(
-        this.httpService.post('/handle-finder/trending/users', query, {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${auth}`,
-          },
-          timeout: 30000,
-          signal,
-        })
+        this.httpService.post(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/handle-finder/trending/users`,
+          query,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            timeout: 30000,
+            signal,
+          }
+        )
       );
 
       return response.data;

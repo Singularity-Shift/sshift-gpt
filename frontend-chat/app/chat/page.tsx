@@ -237,9 +237,10 @@ export default function ChatPage() {
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let assistantMessage: Message = {
-          id: Date.now().toString(),
+          id: uuidv4(),
           role: 'assistant',
           content: '',
+          timestamp: Date.now(),
         };
 
         setIsWaiting(false);
@@ -349,10 +350,14 @@ export default function ChatPage() {
       if (!currentChat) return;
 
       // Find the index of the assistant message to regenerate
+
       const messageIndex = currentChat.messages.findIndex(
         (msg) => msg.id === assistantMessage.id
       );
       if (messageIndex === -1) return;
+
+      const lastMessage = currentChat.messages[messageIndex];
+      if (!lastMessage) return;
 
       // Get all messages up to and including the previous user message
       const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
@@ -361,42 +366,28 @@ export default function ChatPage() {
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === currentChatId
-            ? { ...chat, messages: messagesUpToLastUser }
+            ? {
+                ...chat,
+                messages: [...messagesUpToLastUser],
+              }
             : chat
         )
       );
 
-      // Format messages for the API request
-      const formattedMessages = messagesUpToLastUser.map((msg) => {
-        if (msg.role === 'user' && msg.images && msg.images.length > 0) {
-          return {
-            role: msg.role,
-            content: [
-              ...msg.images.map((imageUrl) => ({
-                type: 'image_url',
-                image_url: { url: imageUrl, detail: 'high' },
-              })),
-              { type: 'text', text: msg.content },
-            ],
-          };
-        }
-        return {
-          role: msg.role,
-          content: msg.content,
-        };
-      });
+      const newMessage: NewMessage = {
+        ...currentChat,
+        model: selectedModel,
+        message: messagesUpToLastUser,
+      };
 
       // Call the API with formatted messages
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BACKEND_URL}/agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${jwt as string}`,
         },
-        body: JSON.stringify({
-          messages: formattedMessages,
-          model: selectedModel,
-        }),
+        body: JSON.stringify(newMessage),
       });
 
       if (!response.ok) {
@@ -408,9 +399,10 @@ export default function ChatPage() {
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
       let newAssistantMessage: Message = {
-        id: Date.now().toString(),
+        id: uuidv4(),
         role: 'assistant',
         content: '',
+        timestamp: Date.now(),
       };
 
       while (true) {
@@ -561,6 +553,12 @@ export default function ChatPage() {
     const editedMessageIndex = currentChat?.messages.findIndex(
       (msg) => msg.id === editedMessage.id
     );
+
+    if (!editedMessageIndex || editedMessageIndex === -1) return;
+
+    const messageToUpdate = currentChat?.messages[editedMessageIndex];
+
+    if (!messageToUpdate) return;
     if (
       editedMessageIndex !== undefined &&
       editedMessageIndex !== -1 &&
@@ -581,12 +579,19 @@ export default function ChatPage() {
             : chat
         )
       );
+
+      const newMessage: NewMessage = {
+        ...currentChat,
+        message: { ...editedMessage, content: newContent },
+        model: selectedModel,
+      };
+
       // Regenerate the conversation from this point forward
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true);
-      regenerateConversation(updatedMessages).finally(() => {
+      regenerateConversation(updatedMessages, newMessage).finally(() => {
         setIsWaiting(false);
         setIsTyping(false);
         setStatus('thinking');
@@ -595,7 +600,10 @@ export default function ChatPage() {
     }
   };
 
-  const regenerateConversation = async (messagesUpToEdit: Message[]) => {
+  const regenerateConversation = async (
+    messagesUpToEdit: Message[],
+    newMessage: NewMessage
+  ) => {
     if (!currentChatId) return;
 
     try {
@@ -605,33 +613,13 @@ export default function ChatPage() {
       setIsTyping(false);
       setIsAssistantResponding(true);
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BACKEND_URL}/agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${jwt}`,
         },
-        body: JSON.stringify({
-          messages: messagesUpToEdit.map((msg) => {
-            if (msg.role === 'user' && msg.images) {
-              return {
-                role: msg.role,
-                content: [
-                  ...msg.images.map((imageUrl) => ({
-                    type: 'image_url',
-                    image_url: { url: imageUrl, detail: 'high' },
-                  })),
-                  { type: 'text', text: msg.content },
-                ],
-              };
-            }
-            return {
-              role: msg.role,
-              content: msg.content,
-            };
-          }),
-          model: selectedModel,
-        }),
+        body: JSON.stringify(newMessage),
       });
 
       if (!response.ok) {
@@ -645,9 +633,10 @@ export default function ChatPage() {
       let done = false;
 
       const newAssistantMessage: Message = {
-        id: Date.now().toString(),
+        id: uuidv4(),
         role: 'assistant',
         content: '',
+        timestamp: Date.now(),
       };
 
       while (!done) {
@@ -877,7 +866,10 @@ export default function ChatPage() {
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
           />
-          <ChatInput onSendMessage={handleSendMessage} isGenerating={isAssistantResponding} />
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isGenerating={isAssistantResponding}
+          />
         </div>
       </div>
     </div>
