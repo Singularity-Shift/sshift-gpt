@@ -1,24 +1,27 @@
-import React, { useState, useRef } from 'react';
-import { Button } from './button';
+import React, { useState } from 'react';
 import { Textarea } from './textarea';
-import { Image, Send, Upload, X } from 'lucide-react';
+import { X } from 'lucide-react';
 import { StopButton } from './StopButton';
 import { SendButton } from './SendButton';
 import { ImageUploadButton } from './ImageUploadButton';
 import backend from '../../services/backend';
 import { useAuth } from '../../context/AuthProvider';
+import tools from '../../services/tools';
 
 interface ChatInputProps {
   onSendMessage: (message: string, imageUrls: string[]) => void;
   isGenerating?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGenerating = false }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({
+  onSendMessage,
+  isGenerating = false,
+}) => {
   const [inputMessage, setInputMessage] = useState('');
   const [uploadedImages, setUploadedImages] = useState<string[]>([]);
+  const { jwt } = useAuth();
   const [uploading, setUploading] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
-  const { jwt } = useAuth();
 
   const handleSendMessage = () => {
     if ((inputMessage.trim() || uploadedImages.length > 0) && !isGenerating) {
@@ -39,17 +42,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGeneratin
   };
 
   const handleRemoveImage = (indexToRemove: number) => {
-    setUploadedImages(uploadedImages.filter((_, index) => index !== indexToRemove));
+    setUploadedImages(
+      uploadedImages.filter((_, index) => index !== indexToRemove)
+    );
   };
 
   const handleStop = async () => {
     try {
-      const response = await fetch('/api/chat', {
-        method: 'DELETE',
+      await backend.delete('/agent', {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
       });
-      if (!response.ok) {
-        console.error('Failed to stop the stream:', response.statusText);
-      }
     } catch (error) {
       console.error('Error stopping the stream:', error);
     }
@@ -57,16 +61,16 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGeneratin
 
   const handlePaste = async (e: React.ClipboardEvent) => {
     const items = e.clipboardData?.items;
-    
+
     if (!items || uploadedImages.length >= 4) return;
 
     for (let i = 0; i < items.length; i++) {
       const item = items[i];
-      
+
       if (item.type.indexOf('image') === -1) continue;
-      
+
       e.preventDefault();
-      
+
       if (uploadedImages.length >= 4) {
         alert('Maximum 4 images allowed.');
         return;
@@ -79,14 +83,18 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGeneratin
 
         // Create a new filename with timestamp to avoid conflicts
         const timestamp = new Date().getTime();
-        const newFile = new File([file], `pasted-image-${timestamp}.${file.type.split('/')[1]}`, {
-          type: file.type,
-        });
+        const newFile = new File(
+          [file],
+          `pasted-image-${timestamp}.${file.type.split('/')[1]}`,
+          {
+            type: file.type,
+          }
+        );
 
         const formData = new FormData();
         formData.append('file', newFile);
 
-        const response = await backend.post('/bucket', formData, {
+        const response = await tools.post('/bucket', formData, {
           headers: {
             'content-type': 'multipart/form-data',
             Authorization: `Bearer ${jwt}`,
@@ -94,7 +102,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isGeneratin
         });
 
         const data = await response.data;
-        setUploadedImages(prev => [...prev, data.url]);
+        setUploadedImages((prev) => [...prev, data.url]);
       } catch (error) {
         console.error('Error uploading pasted image:', error);
         alert('Failed to upload pasted image');
