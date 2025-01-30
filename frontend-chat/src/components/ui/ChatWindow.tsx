@@ -88,28 +88,35 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative min-h-0">
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-[1920px] mx-auto relative min-h-0">
+      {/* Left Panel */}
+      <div className="fixed left-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
+        {/* Your left panel content here */}
+      </div>
+
+      {/* Right Panel */}
+      <div className="fixed right-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
+        {/* Your right panel content here */}
+      </div>
+
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-hide"
+        className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50/50 shadow-[inset_6px_0_8px_-6px_rgba(0,0,0,0.15),inset_-6px_0_8px_-6px_rgba(0,0,0,0.15)] border border-gray-200/50"
         style={{
           height: 'calc(100vh - 180px)',
-          scrollbarWidth: 'none' /* Firefox */,
-          msOverflowStyle: 'none' /* IE and Edge */,
-          WebkitOverflowScrolling: 'touch',
+          scrollbarWidth: 'none',
+          msOverflowStyle: 'none',
+          WebkitOverflowScrolling: 'touch'
         }}
         onScroll={handleScroll}
       >
         <style jsx global>{`
-          /* Hide scrollbar for Chrome, Safari and Opera */
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
           }
-
-          /* Hide scrollbar for IE, Edge and Firefox */
           .scrollbar-hide {
-            -ms-overflow-style: none; /* IE and Edge */
-            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none;
+            scrollbar-width: none;
           }
         `}</style>
         <InfiniteScroll
@@ -127,19 +134,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           threshold={100}
           initialLoad={false}
         >
-          <div className="w-full px-2 py-2 md:px-4 md:py-8 space-y-3 md:space-y-4">
+          <div className="w-full space-y-3 md:space-y-4 bg-transparent px-4">
             {messages.map((message, index) => (
               <div
                 key={`${message.id}-${index}`}
                 ref={index === messages.length - 1 ? lastMessageRef : null}
               >
-                <MessageBubble
-                  message={message}
-                  onCopy={onCopy}
+                <MessageBubble 
+                  message={message} 
+                  onCopy={onCopy} 
                   onRegenerate={() => onRegenerate(message)}
-                  onEdit={(editedMessage, newContent) =>
-                    onEdit(editedMessage, newContent)
-                  }
+                  onEdit={(editedMessage, newContent) => onEdit(editedMessage, newContent)}
                 />
               </div>
             ))}

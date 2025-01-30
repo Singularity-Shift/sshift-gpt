@@ -26,9 +26,9 @@ export function StopButton({ onStop }: StopButtonProps) {
       variant="outline"
       size="icon-sm"
       onClick={handleStopClick}
-      className="text-black hover:bg-gray-200"
+      className="bg-red-50 border-red-100 hover:bg-red-100 hover:border-red-200 transition-colors"
     >
-      <StopCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-black hover:text-gray-500" />
+      <StopCircle className="h-3.5 w-3.5 md:h-4 md:w-4 text-red-600" />
     </Button>
   );
 }

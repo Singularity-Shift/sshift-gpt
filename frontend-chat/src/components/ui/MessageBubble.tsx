@@ -269,7 +269,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </Avatar>
       )}
       <div
-        className={`max-w-[75%] w-auto p-3 rounded-lg ${
+        className={`max-w-[75%] w-auto p-3 rounded-lg shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_16px_-1px_rgba(0,0,0,0.3)] transition-shadow duration-200 transform hover:-translate-y-0.5 ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
         } text-sm min-[768px]:text-base overflow-hidden overflow-x-auto`}
       >

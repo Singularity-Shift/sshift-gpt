@@ -924,7 +924,7 @@ export default function ChatPage() {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col max-w-[1920px] mx-auto w-full">
           <ChatWindow
             messages={currentChat?.messages || []}
             onCopy={(text: string) => navigator.clipboard.writeText(text)}

@@ -116,25 +116,25 @@ export const ChatInput: React.FC<ChatInputProps> = ({
     <div className="w-full bg-background border-t border-border flex-shrink-0">
       <div className="max-w-6xl mx-auto px-2 py-2 md:px-4 md:py-3">
         {uploadedImages.length > 0 && (
-          <div className="flex gap-1 items-center mb-2">
+          <div className="flex gap-1.5 items-center mb-2 px-1">
             {uploadedImages.map((url, index) => (
               <div key={url} className="relative flex-shrink-0">
                 <img
                   src={url}
                   alt={`Uploaded ${index + 1}`}
-                  className="h-5 w-5 md:h-6 md:w-6 object-cover rounded-full border border-gray-300"
+                  className="h-6 w-6 md:h-8 md:w-8 object-cover rounded-lg border border-gray-200 shadow-sm"
                 />
                 <button
-                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5"
+                  className="absolute -top-1 -right-1 bg-red-500 text-white rounded-full p-0.5 shadow-sm hover:bg-red-600 transition-colors"
                   onClick={() => handleRemoveImage(index)}
                 >
-                  <X className="h-2 w-2" />
+                  <X className="h-2.5 w-2.5" />
                 </button>
               </div>
             ))}
           </div>
         )}
-        <div className="flex gap-1.5 md:gap-2 items-end">
+        <div className="flex gap-2 md:gap-3 items-end">
           <div className="flex-1 min-h-0">
             <Textarea
               value={inputMessage}
@@ -142,17 +142,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               onKeyDown={handleKeyDown}
               onPaste={handlePaste}
               placeholder="Type your message here... (Ctrl+Enter to send)"
-              className="resize-none"
+              className="resize-none bg-white rounded-xl shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border border-gray-100 focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-shadow"
               isExpanded={isExpanded}
               onToggleExpand={() => setIsExpanded(!isExpanded)}
             />
           </div>
           <div className="flex items-end self-end gap-1.5 md:gap-2 flex-shrink-0">
+            <StopButton onStop={handleStop} />
             <ImageUploadButton
               onImageSelect={setUploadedImages}
               uploadedImages={uploadedImages}
             />
-            <StopButton onStop={handleStop} />
             <SendButton onClick={handleSendMessage} disabled={isGenerating} />
           </div>
         </div>

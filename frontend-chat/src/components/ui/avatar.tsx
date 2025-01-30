@@ -14,7 +14,7 @@ const Avatar = memo(React.forwardRef<
   <AvatarPrimitive.Root
     ref={ref}
     className={cn(
-      'relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full',
+      'relative flex h-10 w-10 shrink-0 overflow-hidden rounded-full border border-gray-200 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)]',
       className
     )}
     {...props}

@@ -152,12 +152,12 @@ export function ImageUploadButton({
         size="icon-sm"
         onClick={handleButtonClick}
         disabled={isUploading || uploadedImages.length >= 4}
-        className="border-gray-200 hover:bg-gray-100"
+        className="bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 transition-colors"
       >
         {isUploading ? (
-          <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin" />
+          <Loader2 className="h-3.5 w-3.5 md:h-4 md:w-4 animate-spin text-blue-600" />
         ) : (
-          <LucideImage className="h-3.5 w-3.5 md:h-4 md:w-4" />
+          <LucideImage className="h-3.5 w-3.5 md:h-4 md:w-4 text-blue-600" />
         )}
       </Button>
     </>
