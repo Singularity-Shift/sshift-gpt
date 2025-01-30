@@ -62,6 +62,7 @@ services:
     ports:
       - "3000:3000"
       - "3100:3100"
+      - "3400:3400"
     volumes:
       - ./:/usr/src/sshift_dao_chat
 
