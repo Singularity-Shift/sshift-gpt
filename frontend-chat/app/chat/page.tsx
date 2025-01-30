@@ -16,40 +16,12 @@ import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
 import { API_BACKEND_URL } from '../../config/env';
 import { useToast } from '../../src/components/ui/use-toast';
-
-// Types
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  auth?: string;
-  images?: string[];
-  created?: number;
-  model?: string;
-  finish_reason?: string;
-  system_fingerprint?: string;
-  timestamp: number;
-}
-
-interface Chat {
-  id: string;
-  title: string;
-  messages: Message[];
-  isRenaming?: boolean;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-  createdAt?: number;
-  lastUpdated?: number;
-  model: string;
-}
+import { IChat, IMessage } from '@helpers';
 
 interface NewMessage {
   id: string;
   title: string;
-  message: Message;
+  message: IMessage;
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -64,7 +36,7 @@ interface NewMessage {
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<IChat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [, setIsWaiting] = useState(false);
   const [, setIsTyping] = useState(false);
@@ -92,7 +64,7 @@ export default function ChatPage() {
   const handleNewChat = async () => {
     try {
       const currentTime = Date.now();
-      const newChat: Chat = {
+      const newChat: IChat = {
         id: uuidv4(),
         title: `New Chat ${chats.length + 1}`,
         messages: [],
@@ -117,7 +89,7 @@ export default function ChatPage() {
   const createFirstChat = async () => {
     try {
       const currentTime = Date.now();
-      const newChat: Chat = {
+      const newChat: IChat = {
         id: uuidv4(),
         title: `New Chat 1`,
         messages: [],
@@ -208,7 +180,7 @@ export default function ChatPage() {
     setIsAssistantResponding(true);
 
     if (inputMessage.trim() || selectedImages.length > 0) {
-      const userMessage: Message = {
+      const userMessage: IMessage = {
         id: uuidv4(),
         role: 'user',
         content: inputMessage,
@@ -238,7 +210,7 @@ export default function ChatPage() {
 
       scrollToBottom();
 
-      const chat = chats.find((chat) => chat.id === currentChatId) as Chat;
+      const chat = chats.find((chat) => chat.id === currentChatId) as IChat;
 
       const newMessage: NewMessage = {
         ...chat,
@@ -264,7 +236,7 @@ export default function ChatPage() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let assistantMessage: Message = {
+        let assistantMessage: IMessage = {
           id: uuidv4(),
           role: 'assistant',
           content: '',
@@ -335,7 +307,7 @@ export default function ChatPage() {
     }
   };
 
-  const updateChat = (message: Message) => {
+  const updateChat = (message: IMessage) => {
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.id === currentChatId
@@ -418,7 +390,7 @@ export default function ChatPage() {
     }
   };
 
-  const handleRegenerateMessage = async (assistantMessage: Message) => {
+  const handleRegenerateMessage = async (assistantMessage: IMessage) => {
     if (!currentChatId) return;
 
     try {
@@ -480,7 +452,7 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let newAssistantMessage: Message = {
+      let newAssistantMessage: IMessage = {
         id: uuidv4(),
         role: 'assistant',
         content: '',
@@ -580,7 +552,7 @@ export default function ChatPage() {
         if (savedChats && savedChats.chats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
           const mostRecentChat = savedChats.chats.reduce(
-            (latest: Chat, current: Chat) =>
+            (latest: IChat, current: IChat) =>
               (current.lastUpdated || 0) > (latest.lastUpdated || 0)
                 ? current
                 : latest
@@ -608,7 +580,7 @@ export default function ChatPage() {
 
           // Update the most recent chat with only the first 10 messages
           const updatedChats = savedChats.chats.map(
-            (chat: Chat) =>
+            (chat: IChat) =>
               chat.id === mostRecentChat.id
                 ? { ...chat, messages: [...messages].reverse() }
                 : { ...chat, messages: [] } // Initialize other chats with empty messages
@@ -631,7 +603,7 @@ export default function ChatPage() {
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
-  const handleEdit = (editedMessage: Message, newContent: string) => {
+  const handleEdit = (editedMessage: IMessage, newContent: string) => {
     const editedMessageIndex = currentChat?.messages.findIndex(
       (msg) => msg.id === editedMessage.id
     );
@@ -683,7 +655,7 @@ export default function ChatPage() {
   };
 
   const regenerateConversation = async (
-    messagesUpToEdit: Message[],
+    messagesUpToEdit: IMessage[],
     newMessage: NewMessage
   ) => {
     if (!currentChatId) return;
@@ -714,7 +686,7 @@ export default function ChatPage() {
       const decoder = new TextDecoder();
       let done = false;
 
-      const newAssistantMessage: Message = {
+      const newAssistantMessage: IMessage = {
         id: uuidv4(),
         role: 'assistant',
         content: '',

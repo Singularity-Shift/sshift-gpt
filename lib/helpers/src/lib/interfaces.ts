@@ -13,25 +13,6 @@ export interface IJwt {
   authToken: string;
 }
 
-export interface IChatHistory {
-  role: string;
-  content: string;
-}
-
-export interface IChatUsage {
-  prompt_tokens: number;
-  completion_tokens: number;
-  total_tokens: number;
-}
-
-export interface IChat {
-  id: string;
-  model: string;
-  system_fingerprint: string;
-  message_history: IChatHistory[];
-  usage: IChatUsage;
-}
-
 export interface IUserAuth {
   auth: string;
   address: string;
@@ -287,4 +268,32 @@ export interface ITicker {
 export interface IJWTUser {
   account: string;
   token: string;
+}
+
+export interface IMessage {
+  id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  auth?: string;
+  images?: string[];
+  created?: number;
+  model?: string;
+  finish_reason?: string;
+  system_fingerprint?: string;
+  timestamp: number;
+}
+
+export interface IChat {
+  id: string;
+  title: string;
+  messages: IMessage[];
+  isRenaming?: boolean;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  createdAt?: number;
+  lastUpdated?: number;
+  model: string;
 }

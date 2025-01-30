@@ -66,8 +66,12 @@ export const Profiles = {
       host: process.env.REDIS_HOST,
       port: process.env.REDIS_PORT,
     },
-    server: {
-      port: process.env.PORT,
+    serverChatApi: {
+      port: process.env.PORT_CHAT,
+    },
+    serverToolsApi: {
+      uri: process.env.URI_TOOLS,
+      port: process.env.PORT_TOOLS,
     },
     jwt: {
       secret: process.env.JWT_SECRET_KEY,
