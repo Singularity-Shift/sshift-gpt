@@ -12,8 +12,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse } from '@nestjs/swagger';
-import { UserService } from '../user/user.service';
-import { UserAuth } from '../auth/auth.decorator';
+import { UserAuth, UserService } from '@nest-modules';
 import { IUserAuth, MultisignAction } from '@helpers';
 import { UpdateActionDto } from './dto/update-action.dto';
 import { MultisignService } from './multisign.service';

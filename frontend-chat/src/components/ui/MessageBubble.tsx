@@ -6,23 +6,13 @@ import { ImageThumbnail } from './ImageThumbnail';
 import { AudioPlayer } from './AudioPlayer';
 import { AssistantButtonArray } from './assistantButtonArray';
 import { UserButtonArray } from './userButtonArray';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  created?: number;
-  model?: string;
-  finish_reason?: string;
-  system_fingerprint?: string;
-  images?: string[];
-}
+import { IMessage } from '@helpers';
 
 interface MessageBubbleProps {
-  message: Message;
+  message: IMessage;
   onCopy: (text: string) => void;
-  onRegenerate: (message: Message) => void;
-  onEdit: (message: Message, newContent: string) => void;
+  onRegenerate: (message: IMessage) => void;
+  onEdit: (message: IMessage, newContent: string) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -39,19 +29,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     images?: string[];
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<number | null>(null);
+  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<
+    number | null
+  >(null);
 
   // Extract audio URLs before rendering
   const audioUrls = useMemo(() => {
     const urls: string[] = [];
     const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/g;
     let match;
-    
+
     // Find all sound effect matches
     while ((match = soundEffectRegex.exec(parsedContent.text)) !== null) {
       urls.push(match[2]);
     }
-    
+
     // Find all direct .mp3 links
     const mp3LinkRegex = /\[(.*?)\]\((.*?\.mp3)\)/g;
     while ((match = mp3LinkRegex.exec(parsedContent.text)) !== null) {
@@ -59,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         urls.push(match[2]);
       }
     }
-    
+
     return urls;
   }, [parsedContent.text]);
 
@@ -169,11 +161,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </code>
               );
             },
-            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
+            h1: ({ children }) => (
+              <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">
+                {children}
+              </h3>
+            ),
             p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[768px]:text-base">{children}</div>;
+              return (
+                <div className="mb-2 text-sm min-[768px]:text-base">
+                  {children}
+                </div>
+              );
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -191,8 +199,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </a>
               );
             },
-            ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+            ul: ({ children }) => (
+              <ul className="list-disc pl-4 mb-2">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-4 mb-2">{children}</ol>
+            ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => (
               <ImageThumbnail
@@ -200,7 +212,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onClick={() =>
                   isUser
                     ? setExpandedImage(src || '')
-                    : setExpandedThumbnailIndex(expandedThumbnailIndex === 0 ? null : 0)
+                    : setExpandedThumbnailIndex(
+                        expandedThumbnailIndex === 0 ? null : 0
+                      )
                 }
                 isExpanded={!isUser && expandedThumbnailIndex === 0}
                 isAssistantMessage={!isUser}
@@ -221,7 +235,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onClick={() =>
                   isUser
                     ? setExpandedImage(imageUrl)
-                    : setExpandedThumbnailIndex(expandedThumbnailIndex === index ? null : index)
+                    : setExpandedThumbnailIndex(
+                        expandedThumbnailIndex === index ? null : index
+                      )
                 }
                 isExpanded={!isUser && expandedThumbnailIndex === index}
                 isAssistantMessage={!isUser}
@@ -269,7 +285,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           />
         )}
         {isUser && (
-          <UserButtonArray onEdit={(newContent) => onEdit(message, newContent)} content={message.content} />
+          <UserButtonArray
+            onEdit={(newContent) => onEdit(message, newContent)}
+            content={message.content}
+          />
         )}
       </div>
       {isUser && (

@@ -1,16 +1,16 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { MessageBubble } from './MessageBubble';
 import { StatusIndicator } from './statusIndicator';
-import { Message } from '../../../app/chat/page';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import InfiniteScroll from 'react-infinite-scroller';
 import { Loader2 } from 'lucide-react';
+import { IMessage } from '@helpers';
 
 interface ChatWindowProps {
-  messages: Message[];
+  messages: IMessage[];
   onCopy: (text: string) => void;
-  onRegenerate: (message: Message) => void;
-  onEdit: (message: Message, newContent: string) => void;
+  onRegenerate: (message: IMessage) => void;
+  onEdit: (message: IMessage, newContent: string) => void;
   status: 'thinking' | 'tool-calling' | 'typing';
   showNoChatsMessage: boolean;
   isAssistantResponding: boolean;
@@ -20,30 +20,31 @@ interface ChatWindowProps {
   isLoadingMore: boolean;
 }
 
-export const ChatWindow: React.FC<ChatWindowProps> = ({ 
-  messages, 
-  onCopy, 
-  onRegenerate, 
+export const ChatWindow: React.FC<ChatWindowProps> = ({
+  messages,
+  onCopy,
+  onRegenerate,
   onEdit,
   status,
   showNoChatsMessage,
   isAssistantResponding,
-  currentChatId,
   onLoadMore,
   hasMore,
-  isLoadingMore
+  isLoadingMore,
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const [initialLoad, setInitialLoad] = useState(true);
-  const [shouldEnableInfiniteScroll, setShouldEnableInfiniteScroll] = useState(false);
+  const [shouldEnableInfiniteScroll, setShouldEnableInfiniteScroll] =
+    useState(false);
   const isLoadingOlderMessages = useRef(false);
   const [isAutoScroll, setIsAutoScroll] = useState(true);
 
   // Handle scroll events to detect when user scrolls away from bottom
   const handleScroll = () => {
     if (scrollContainerRef.current && !isLoadingOlderMessages.current) {
-      const { scrollTop, scrollHeight, clientHeight } = scrollContainerRef.current;
+      const { scrollTop, scrollHeight, clientHeight } =
+        scrollContainerRef.current;
       // If user is within 100px of the bottom, enable auto-scroll
       const isNearBottom = scrollHeight - scrollTop - clientHeight < 100;
       setIsAutoScroll(isNearBottom);
@@ -56,7 +57,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       const container = scrollContainerRef.current;
       container.scrollTop = container.scrollHeight;
       setInitialLoad(false);
-      
+
       // Enable infinite scroll after initial load
       const enableScrollTimer = setTimeout(() => {
         setShouldEnableInfiniteScroll(true);
@@ -68,8 +69,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   // Auto-scroll effect
   useEffect(() => {
-    if (isAutoScroll && !isLoadingOlderMessages.current && scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+    if (
+      isAutoScroll &&
+      !isLoadingOlderMessages.current &&
+      scrollContainerRef.current
+    ) {
+      scrollContainerRef.current.scrollTop =
+        scrollContainerRef.current.scrollHeight;
     }
   }, [messages, isAutoScroll]);
 
@@ -82,25 +88,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-[1920px] mx-auto relative min-h-0">
-      {/* Left Panel */}
-      <div className="fixed left-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
-        {/* Your left panel content here */}
-      </div>
-      
-      {/* Right Panel */}
-      <div className="fixed right-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
-        {/* Your right panel content here */}
-      </div>
-
-      <div 
-        ref={scrollContainerRef} 
-        className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50/50 shadow-[inset_6px_0_8px_-6px_rgba(0,0,0,0.15),inset_-6px_0_8px_-6px_rgba(0,0,0,0.15)] border border-gray-200/50"
-        style={{ 
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative min-h-0">
+      <div
+        ref={scrollContainerRef}
+        className="flex-1 overflow-y-auto scrollbar-hide"
+        style={{
           height: 'calc(100vh - 180px)',
-          scrollbarWidth: 'none',  /* Firefox */
-          msOverflowStyle: 'none',  /* IE and Edge */
-          WebkitOverflowScrolling: 'touch'
+          scrollbarWidth: 'none' /* Firefox */,
+          msOverflowStyle: 'none' /* IE and Edge */,
+          WebkitOverflowScrolling: 'touch',
         }}
         onScroll={handleScroll}
       >
@@ -109,11 +105,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           .scrollbar-hide::-webkit-scrollbar {
             display: none;
           }
-          
+
           /* Hide scrollbar for IE, Edge and Firefox */
           .scrollbar-hide {
-            -ms-overflow-style: none;  /* IE and Edge */
-            scrollbar-width: none;  /* Firefox */
+            -ms-overflow-style: none; /* IE and Edge */
+            scrollbar-width: none; /* Firefox */
           }
         `}</style>
         <InfiniteScroll
@@ -137,23 +133,39 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 key={`${message.id}-${index}`}
                 ref={index === messages.length - 1 ? lastMessageRef : null}
               >
-                <MessageBubble 
-                  message={message} 
-                  onCopy={onCopy} 
+                <MessageBubble
+                  message={message}
+                  onCopy={onCopy}
                   onRegenerate={() => onRegenerate(message)}
-                  onEdit={(editedMessage, newContent) => onEdit(editedMessage, newContent)}
+                  onEdit={(editedMessage, newContent) =>
+                    onEdit(editedMessage, newContent)
+                  }
                 />
               </div>
             ))}
             {isAssistantResponding && (
               <div className="flex items-start space-x-2" ref={lastMessageRef}>
-                {status === 'thinking' && (!messages?.length || messages[messages.length - 1]?.role === 'user') && (
-                  <Avatar className="w-6 h-6 md:w-8 md:h-8 mr-2 flex-shrink-0">
-                    <AvatarImage src="/images/sshift-guy.png" alt="AI Avatar" />
-                    <AvatarFallback>AI</AvatarFallback>
-                  </Avatar>
-                )}
-                <StatusIndicator status={status} className={status === 'thinking' && (!messages?.length || messages[messages.length - 1]?.role === 'user') ? "mt-1 md:mt-2" : ""} />
+                {status === 'thinking' &&
+                  (!messages?.length ||
+                    messages[messages.length - 1]?.role === 'user') && (
+                    <Avatar className="w-6 h-6 md:w-8 md:h-8 mr-2 flex-shrink-0">
+                      <AvatarImage
+                        src="/images/sshift-guy.png"
+                        alt="AI Avatar"
+                      />
+                      <AvatarFallback>AI</AvatarFallback>
+                    </Avatar>
+                  )}
+                <StatusIndicator
+                  status={status}
+                  className={
+                    status === 'thinking' &&
+                    (!messages?.length ||
+                      messages[messages.length - 1]?.role === 'user')
+                      ? 'mt-1 md:mt-2'
+                      : ''
+                  }
+                />
               </div>
             )}
           </div>

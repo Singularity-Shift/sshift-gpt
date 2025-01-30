@@ -18,7 +18,8 @@
       "@aptos": ["lib/aptos/src/index.ts"],
       "@fn-backend/*": ["./backend-chat/src/*"],
       "@fn-chat/*": ["./frontend-chat/src/*"],
-      "@helpers": ["lib/helpers/src/index.ts"]
+      "@helpers": ["lib/helpers/src/index.ts"],
+      "@nest-modules": ["lib/nest-modules/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]

@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { Button } from './button';
 import { Image as LucideImage, Loader2 } from 'lucide-react';
-import backend from '../../services/backend';
 import { useAuth } from '../../context/AuthProvider';
+import tools from '../../services/tools';
 
 interface ImageUploadButtonProps {
   onImageSelect: (imageUrls: string[]) => void;
@@ -104,7 +104,7 @@ export function ImageUploadButton({
         const formData = new FormData();
         formData.append('file', resizedFile);
 
-        const response = await backend.post('/bucket', formData, {
+        const response = await tools.post('/bucket', formData, {
           headers: {
             'content-type': 'multipart/form-data',
             Authorization: `Bearer ${jwt}`,

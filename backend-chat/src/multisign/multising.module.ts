@@ -3,7 +3,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Multisign, MultisignSchema } from './multisign.schema';
 import { MultisignService } from './multisign.service';
 import { MultisignController } from './multisign.controller';
-import { UserModule } from '../user/user.module';
+import { UserModule } from '@nest-modules';
 
 @Module({
   imports: [

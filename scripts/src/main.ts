@@ -1,5 +1,6 @@
 import { Command } from 'commander';
 import { compile, publish, test, upgrade } from './subscription';
+import { convertFileToBase64 } from './encrypt';
 
 const program = new Command();
 
@@ -13,6 +14,8 @@ const options = program
   .option('-p, --publish', 'publish subscription contracts')
   .option('-t, --test', 'run subscription contract tests')
   .option('-u, --upgrade', 'upgrade subscription contract')
+  .command('encrypt')
+  .option('-f, --file <path>', 'path to the file to be encrypted')
   .parse(process.argv)
   .opts();
 
@@ -24,6 +27,9 @@ if (options.compile) {
   test();
 } else if (options.upgrade) {
   upgrade;
+} else if (options.file) {
+  console.log(`Encrypting file: ${options.file}`);
+  convertFileToBase64(options.file);
 } else {
   console.error('Invalid command. Use --help for more information.');
 }
