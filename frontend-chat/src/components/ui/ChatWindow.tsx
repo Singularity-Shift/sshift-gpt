@@ -88,10 +88,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-7xl mx-auto relative min-h-0">
+    <div className="flex-1 overflow-hidden flex flex-col w-full max-w-[1920px] mx-auto relative min-h-0">
+      {/* Left Panel */}
+      <div className="fixed left-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
+        {/* Your left panel content here */}
+      </div>
+
+      {/* Right Panel */}
+      <div className="fixed right-0 top-[73px] bottom-0 w-[max(0px,calc((100%-1920px)/2*0.75))] bg-transparent hidden md:block">
+        {/* Your right panel content here */}
+      </div>
+
       <div
         ref={scrollContainerRef}
-        className="flex-1 overflow-y-auto scrollbar-hide"
+        className="flex-1 overflow-y-auto scrollbar-hide bg-gray-50/50 shadow-[inset_6px_0_8px_-6px_rgba(0,0,0,0.15),inset_-6px_0_8px_-6px_rgba(0,0,0,0.15)] border border-gray-200/50"
         style={{
           height: 'calc(100vh - 180px)',
           scrollbarWidth: 'none' /* Firefox */,
