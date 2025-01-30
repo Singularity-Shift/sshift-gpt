@@ -47,10 +47,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <span>Dashboard</span>
         </Button>
         <Select value={currentChatModel || selectedModel} onValueChange={onModelChange}>
-          <SelectTrigger className="w-[130px] min-[1010px]:w-[180px]">
+          <SelectTrigger className="w-[130px] min-[1010px]:w-[180px] bg-white shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border-gray-100 hover:border-blue-200 focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-all">
             <SelectValue placeholder="Select model" />
           </SelectTrigger>
-          <SelectContent className="bg-white">
+          <SelectContent className="bg-white shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border-gray-100">
             <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
             <SelectItem value="gpt-4o">GPT-4o</SelectItem>
           </SelectContent>
@@ -58,10 +58,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <Button 
           onClick={onNewChat} 
           variant="outline"
-          className="h-9 px-4 whitespace-nowrap"
+          className="h-9 px-4 whitespace-nowrap bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] transition-colors"
         >
-          <span className="hidden min-[390px]:inline">New Chat</span>
-          <span className="min-[390px]:hidden">New</span>
+          <span className="hidden min-[390px]:inline text-blue-600">New Chat</span>
+          <span className="min-[390px]:hidden text-blue-600">New</span>
         </Button>
       </div>
       <UserLoginStatus />
