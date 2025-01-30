@@ -372,6 +372,27 @@ export class UserService {
     return response;
   }
 
+  async renameChat(
+    address: string,
+    chatId: string,
+    newTitle: string
+  ): Promise<Chat | undefined> {
+    const user = await this.userModel.findOneAndUpdate(
+      {
+        $and: [
+          { address: address.toLowerCase() },
+          { chats: { $elemMatch: { id: chatId } } },
+        ],
+      },
+      {
+        $set: { 'chats.$[chat].title': newTitle },
+      },
+      { arrayFilters: [{ 'chat.id': chatId }] }
+    );
+
+    return user?.chats.find((c) => c.id === chatId);
+  }
+
   async deleteChatById(address: string, chatId: string): Promise<Chat[]> {
     return (
       (await this.userModel.findOneAndUpdate(

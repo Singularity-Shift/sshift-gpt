@@ -10,6 +10,7 @@ import {
   Delete,
   Body,
   Post,
+  Patch,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -44,6 +45,27 @@ export class ChatController {
     @Body() newChat: ChatHistoryDto
   ): Promise<ChatHistoryDto> {
     return this.userService.addChat(userAuth.address, newChat);
+  }
+
+  @Patch(':id/:name')
+  @ApiBearerAuth('Authorization')
+  @ApiOperation({
+    description: 'Rename chat',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Renamed chat',
+  })
+  async renameChat(
+    @UserAuth() userAuth: IUserAuth,
+    @Param('id') id: string,
+    @Param('name') name: string
+  ): Promise<void> {
+    const chat = await this.userService.renameChat(userAuth.address, id, name);
+
+    if (!chat) {
+      throw new NotFoundException(`Chat with id ${id} does not exist`);
+    }
   }
 
   @Get()

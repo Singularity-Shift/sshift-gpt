@@ -15,6 +15,7 @@ import { Button } from '../../src/components/ui/button';
 import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
 import { API_BACKEND_URL } from '../../config/env';
+import { useToast } from '../../src/components/ui/use-toast';
 
 // Types
 export interface Message {
@@ -78,6 +79,7 @@ export default function ChatPage() {
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [isPaginating, setIsPaginating] = useState(false);
+  const { toast } = useToast();
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -105,6 +107,32 @@ export default function ChatPage() {
         },
       });
       setChats([...chats, response.data]);
+      setCurrentChatId(response.data.id);
+      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
+  };
+
+  const createFirstChat = async () => {
+    try {
+      const currentTime = Date.now();
+      const newChat: Chat = {
+        id: uuidv4(),
+        title: `New Chat 1`,
+        messages: [],
+        model: 'gpt-4o-mini', // Set default model for new chats
+        createdAt: currentTime,
+        lastUpdated: currentTime,
+      };
+
+      const response = await backend.post('/history', newChat, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      setChats([{ ...response.data }]);
       setCurrentChatId(response.data.id);
       setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
     } catch (error) {
@@ -323,16 +351,70 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleDeleteChat = (chatId: string) => {
-    setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-    if (currentChatId === chatId) {
-      const remainingChats = chats.filter((chat) => chat.id !== chatId);
-      if (remainingChats.length > 0) {
-        setCurrentChatId(remainingChats[0].id);
-      } else {
-        setCurrentChatId(null);
-        handleNewChat(); // Create a new chat if all chats are deleted
+  const handleRenameChat = async (chatId: string, newTitle: string) => {
+    try {
+      await backend.patch(
+        `/history/${chatId}/${newTitle}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+          },
+        }
+      );
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId ? { ...chat, title: newTitle } : chat
+        )
+      );
+
+      toast({
+        variant: 'default',
+        title: 'Chat renamed',
+        description: 'Chat title has been updated.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error renaming chat',
+        description: 'Failed to rename chat.',
+      });
+    }
+  };
+
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      await backend.delete(`/history/${chatId}`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const chatsFiltered = chats.filter((chat) => chat.id !== chatId);
+
+      setChats([...chatsFiltered]);
+
+      toast({
+        variant: 'default',
+        title: 'Chat deleted',
+        description: 'Chat has been deleted.',
+      });
+
+      if (currentChatId === chatId) {
+        if (chatsFiltered.length > 0) {
+          setCurrentChatId(chatsFiltered[0].id);
+        } else {
+          setCurrentChatId(null);
+          createFirstChat(); // Create a new chat if all chats are deleted
+        }
       }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error deleting chat',
+        description: 'Failed to delete chat.',
+      });
     }
   };
 
@@ -377,7 +459,7 @@ export default function ChatPage() {
       const newMessage: NewMessage = {
         ...currentChat,
         model: selectedModel,
-        message: messagesUpToLastUser,
+        message: lastMessage,
       };
 
       // Call the API with formatted messages
@@ -538,11 +620,11 @@ export default function ChatPage() {
           setHasMore(hasMoreMessages);
           setCurrentPage(1);
         } else {
-          handleNewChat();
+          createFirstChat();
         }
       } catch (error) {
         console.error('Error loading initial chat data:', error);
-        handleNewChat();
+        createFirstChat();
       }
     })();
   }, [jwt]);
@@ -690,6 +772,12 @@ export default function ChatPage() {
               scrollToBottom();
             } catch (error) {
               console.error('Error parsing JSON:', error);
+              toast({
+                title: 'Error parsing JSON',
+                description:
+                  'An error occurred while parsing the JSON response.',
+                variant: `destructive`,
+              });
             }
           }
         }
@@ -698,6 +786,11 @@ export default function ChatPage() {
       console.log('Final regenerated assistant message:', newAssistantMessage);
     } catch (error) {
       console.error('Error in regenerateConversation:', error);
+      toast({
+        title: 'Error regenerating conversation',
+        description: 'An error occurred while regenerating the conversation.',
+        variant: `destructive`,
+      });
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
@@ -707,9 +800,6 @@ export default function ChatPage() {
   };
 
   const handleClearAllChats = async () => {
-    setChats([]); // Clear all chats from state
-    setCurrentChatId(null); // Reset current chat ID
-
     try {
       // Clear chats from the database
       await backend.delete('/history', {
@@ -717,10 +807,21 @@ export default function ChatPage() {
           Authorization: `Bearer ${jwt}`,
         },
       });
-      console.log('All chats cleared from database');
+
+      createFirstChat();
+
+      toast({
+        title: 'All chats cleared',
+        description: 'All chats have been cleared from your database.',
+        variant: 'default',
+      });
     } catch (error) {
-      console.error('Error clearing chats from database:', error);
-      // Optionally, you could show an error message to the user here
+      console.error('Error clearing chats:', error);
+      toast({
+        title: 'Error clearing chats',
+        description: 'An error occurred while clearing your chats.',
+        variant: `destructive`,
+      });
     }
   };
 
@@ -811,6 +912,11 @@ export default function ChatPage() {
       }
     } catch (error) {
       console.error('[LoadMore] Error loading more messages:', error);
+      toast({
+        title: 'Error loading more messages',
+        description: 'An error occurred while loading more messages.',
+        variant: `destructive`,
+      });
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);
@@ -825,13 +931,7 @@ export default function ChatPage() {
         currentChatId={currentChatId}
         onChatSelect={handleChatSelect}
         onDeleteChat={handleDeleteChat}
-        onRenameChat={(chatId, newTitle) => {
-          setChats((prevChats) =>
-            prevChats.map((chat) =>
-              chat.id === chatId ? { ...chat, title: newTitle } : chat
-            )
-          );
-        }}
+        onRenameChat={handleRenameChat}
         onClearAllChats={handleClearAllChats}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -840,7 +940,7 @@ export default function ChatPage() {
         <ChatHeader
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
-          onNewChat={handleNewChat}
+          onNewChat={() => handleNewChat()}
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
         />

@@ -6,6 +6,7 @@ import { SendButton } from './SendButton';
 import { ImageUploadButton } from './ImageUploadButton';
 import backend from '../../services/backend';
 import { useAuth } from '../../context/AuthProvider';
+import tools from '../../services/tools';
 
 interface ChatInputProps {
   onSendMessage: (message: string, imageUrls: string[]) => void;
@@ -93,7 +94,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         const formData = new FormData();
         formData.append('file', newFile);
 
-        const response = await backend.post('/bucket', formData, {
+        const response = await tools.post('/bucket', formData, {
           headers: {
             'content-type': 'multipart/form-data',
             Authorization: `Bearer ${jwt}`,
