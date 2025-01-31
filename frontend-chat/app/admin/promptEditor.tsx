@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import backend from '../../src/services/backend';
+import { useAuth } from '@fn-chat/context/AuthProvider';
 
 interface PromptEditorProps {
   isOpen: boolean;
@@ -9,19 +10,19 @@ interface PromptEditorProps {
 // Format the prompt for display by replacing escaped characters
 const formatForDisplay = (prompt: string): string => {
   return prompt
-    .replace(/\\n/g, '\n')  // Replace \n with actual newlines
-    .replace(/\\"/g, '"')   // Replace \" with "
-    .replace(/\\'/g, "'")   // Replace \' with '
+    .replace(/\\n/g, '\n') // Replace \n with actual newlines
+    .replace(/\\"/g, '"') // Replace \" with "
+    .replace(/\\'/g, "'") // Replace \' with '
     .replace(/\\\\/g, '\\'); // Replace \\ with \
 };
 
 // Restore the prompt to its original format for saving
 const formatForSaving = (prompt: string): string => {
   return prompt
-    .replace(/\\/g, '\\\\')  // Replace \ with \\
-    .replace(/"/g, '\\"')    // Replace " with \"
-    .replace(/'/g, "\\'")    // Replace ' with \'
-    .replace(/\n/g, '\\n');  // Replace newlines with \n
+    .replace(/\\/g, '\\\\') // Replace \ with \\
+    .replace(/"/g, '\\"') // Replace " with \"
+    .replace(/'/g, "\\'") // Replace ' with \'
+    .replace(/\n/g, '\\n'); // Replace newlines with \n
 };
 
 const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
@@ -29,6 +30,7 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const { jwt } = useAuth();
 
   useEffect(() => {
     const fetchSystemPrompt = async () => {
@@ -67,19 +69,20 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
     try {
       const response = await backend.get('/admin-config');
       const currentConfig = response.data;
-      
-      await backend.put('/admin-config', 
+
+      await backend.put(
+        '/admin-config',
         {
           ...currentConfig,
-          systemPrompt: formatForSaving(promptContent)
+          systemPrompt: formatForSaving(promptContent),
         },
         {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`
-          }
+            Authorization: `Bearer ${jwt}`,
+          },
         }
       );
-      
+
       onClose();
     } catch (error) {
       console.error('Error saving system prompt:', error);
@@ -93,9 +96,9 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div 
-        style={{ 
-          width: `${dimensions.width}px`, 
+      <div
+        style={{
+          width: `${dimensions.width}px`,
           height: `${dimensions.height}px`,
         }}
         className="bg-white rounded-lg shadow-xl flex flex-col"
@@ -114,16 +117,17 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
               value={promptContent}
               onChange={(e) => setPromptContent(e.target.value)}
               className="w-full h-full p-4 border rounded-lg resize-none font-mono text-sm"
-              style={{ 
+              style={{
                 minHeight: '100%',
                 lineHeight: '1.6',
                 fontSize: '14px',
                 whiteSpace: 'pre-wrap',
                 tabSize: '2',
                 overflowY: 'auto',
-                fontFamily: 'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
+                fontFamily:
+                  'ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace',
                 backgroundColor: '#f8f9fa',
-                color: '#1a1a1a'
+                color: '#1a1a1a',
               }}
               spellCheck="false"
               disabled={isSaving}
@@ -159,4 +163,4 @@ const PromptEditor = ({ isOpen, onClose }: PromptEditorProps) => {
   );
 };
 
-export default PromptEditor; 
+export default PromptEditor;
