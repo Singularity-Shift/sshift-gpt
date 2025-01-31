@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import backend from '../../src/services/backend';
-import { useAuth } from '@fn-chat/context/AuthProvider';
+import { useAuth } from '../../src/context/AuthProvider';
 
 interface PromptEditorProps {
   isOpen: boolean;
