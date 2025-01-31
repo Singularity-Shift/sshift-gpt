@@ -357,7 +357,7 @@ module sshift_dao_addr::subscription_v3 {
                 account: buyer_addr,
                 start_time,
                 end_time: start_time + duration,
-                price: price - discount,
+                price: final_price - discount,
                 created_at: timestamp::now_seconds(),
                 upgrades,
             }
@@ -423,6 +423,84 @@ module sshift_dao_addr::subscription_v3 {
         let final_price = extensions_price - discount;
 
         primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
+
+        
+    }
+
+    public entry fun buy_duration(
+        sender: &signer,
+        nfts_holding: vector<address>,
+        duration: u64,
+        currency: address
+    ) acquires SubscriptionPlan, UserSubscription {
+        let buyer_addr = signer::address_of(sender);
+
+        assert!(has_subscription_active(buyer_addr), ENOT_SUBSCRIPTION_ACTIVE);
+
+        let days = duration / (24 * 60 * 60);
+
+        assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
+
+        let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
+
+        assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
+
+        let currencies_addr = fees_v3::get_currencies_addr();
+
+        let (has_currency, _) = vector::find(&currencies_addr, |c| c == &currency);
+        assert!(has_currency, EWRONG_CURRENCY);
+
+        let currency_metadata = object::address_to_object<Metadata>(currency);
+
+        let move_bot_id = option::borrow(&plan.move_bot_id);
+
+        let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
+
+        let resource_account_addr = fees_v3::get_resource_account_address();
+
+        let user_subscription = borrow_global_mut<UserSubscription>(buyer_addr);
+
+        let duration = user_subscription.end_time - timestamp::now_seconds();
+
+        let price = *vector::borrow(&plan.prices, days - 1);
+
+        let extensions_price = vector::fold<u64, Upgrade>(user_subscription.upgrades, 0, |acc, curr|{
+            let Upgrade {
+                name,
+                credits: _,
+            }  = curr;
+
+            let (_,i) = vector::find(&plan.extensions, |ext| &ext.name == &name);
+
+            let extension = vector::borrow(&plan.extensions, i); 
+
+            acc + *vector::borrow(&extension.prices, days)
+        });
+
+        let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
+
+        let discount = get_discount(price + extensions_price, days, discount_per_day, hold_move_token);
+
+        let sender_balance = primary_fungible_store::balance(buyer_addr, currency_metadata);
+
+        assert!(price + extensions_price - discount < sender_balance, ENOT_ENOUGH_BALANCE);
+
+        let final_price = price + extensions_price  - discount;
+
+        primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
+
+        user_subscription.end_time = user_subscription.end_time + duration;
+
+        event::emit(
+            UserSubscribed {
+                account: buyer_addr,
+                start_time: user_subscription.start_time,
+                end_time: user_subscription.end_time,
+                price: final_price - discount,
+                created_at: timestamp::now_seconds(),
+                upgrades: user_subscription.upgrades,
+            }
+        );
     }
 
     #[view]
