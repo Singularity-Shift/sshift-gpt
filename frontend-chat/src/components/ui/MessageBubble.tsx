@@ -6,23 +6,13 @@ import { ImageThumbnail } from './ImageThumbnail';
 import { AudioPlayer } from './AudioPlayer';
 import { AssistantButtonArray } from './assistantButtonArray';
 import { UserButtonArray } from './userButtonArray';
-
-interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  created?: number;
-  model?: string;
-  finish_reason?: string;
-  system_fingerprint?: string;
-  images?: string[];
-}
+import { IMessage } from '@helpers';
 
 interface MessageBubbleProps {
-  message: Message;
+  message: IMessage;
   onCopy: (text: string) => void;
-  onRegenerate: (message: Message) => void;
-  onEdit: (message: Message, newContent: string) => void;
+  onRegenerate: (message: IMessage) => void;
+  onEdit: (message: IMessage, newContent: string) => void;
 }
 
 export const MessageBubble: React.FC<MessageBubbleProps> = ({
@@ -39,19 +29,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     images?: string[];
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
-  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<number | null>(null);
+  const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<
+    number | null
+  >(null);
 
   // Extract audio URLs before rendering
   const audioUrls = useMemo(() => {
     const urls: string[] = [];
     const soundEffectRegex = /\[Sound Effect: (.*?)\]\((.*?\.mp3)\)/g;
     let match;
-    
+
     // Find all sound effect matches
     while ((match = soundEffectRegex.exec(parsedContent.text)) !== null) {
       urls.push(match[2]);
     }
-    
+
     // Find all direct .mp3 links
     const mp3LinkRegex = /\[(.*?)\]\((.*?\.mp3)\)/g;
     while ((match = mp3LinkRegex.exec(parsedContent.text)) !== null) {
@@ -59,7 +51,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         urls.push(match[2]);
       }
     }
-    
+
     return urls;
   }, [parsedContent.text]);
 
@@ -107,6 +99,50 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
+    // For user messages, use simple text rendering with media support
+    if (isUser) {
+      return (
+        <>
+          <div className="whitespace-pre-wrap break-all text-sm min-[768px]:text-base overflow-x-auto max-w-full">
+            {parsedContent.text}
+          </div>
+
+          {message.images && message.images.length > 0 && (
+            <div className="mt-2 flex gap-2 overflow-x-auto">
+              {message.images.map((imageUrl, index) => (
+                <ImageThumbnail
+                  key={`${imageUrl}-${index}`}
+                  src={imageUrl}
+                  onClick={() => setExpandedImage(imageUrl)}
+                  isExpanded={false}
+                  isAssistantMessage={false}
+                />
+              ))}
+            </div>
+          )}
+
+          {expandedImage && (
+            <div className="mt-4">
+              <img
+                src={expandedImage}
+                alt="Expanded view"
+                className="w-full h-auto rounded cursor-pointer"
+                onClick={() => setExpandedImage(null)}
+              />
+            </div>
+          )}
+
+          {audioUrls.length > 0 && (
+            <div className="mt-2 space-y-2">
+              {audioUrls.map((url, index) => (
+                <AudioPlayer key={`${url}-${index}`} src={url} />
+              ))}
+            </div>
+          )}
+        </>
+      );
+    }
+
     return (
       <>
         <ReactMarkdown
@@ -125,11 +161,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </code>
               );
             },
-            h1: ({ children }) => <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">{children}</h1>,
-            h2: ({ children }) => <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">{children}</h2>,
-            h3: ({ children }) => <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">{children}</h3>,
+            h1: ({ children }) => (
+              <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">
+                {children}
+              </h1>
+            ),
+            h2: ({ children }) => (
+              <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">
+                {children}
+              </h2>
+            ),
+            h3: ({ children }) => (
+              <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">
+                {children}
+              </h3>
+            ),
             p: ({ children }) => {
-              return <div className="mb-2 text-sm min-[768px]:text-base">{children}</div>;
+              return (
+                <div className="mb-2 text-sm min-[768px]:text-base">
+                  {children}
+                </div>
+              );
             },
             a: ({ href, children }) => {
               // Handle audio files by rendering the AudioPlayer component
@@ -147,8 +199,12 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 </a>
               );
             },
-            ul: ({ children }) => <ul className="list-disc pl-4 mb-2">{children}</ul>,
-            ol: ({ children }) => <ol className="list-decimal pl-4 mb-2">{children}</ol>,
+            ul: ({ children }) => (
+              <ul className="list-disc pl-4 mb-2">{children}</ul>
+            ),
+            ol: ({ children }) => (
+              <ol className="list-decimal pl-4 mb-2">{children}</ol>
+            ),
             li: ({ children }) => <li className="mb-1">{children}</li>,
             img: ({ src, alt }) => (
               <ImageThumbnail
@@ -156,7 +212,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onClick={() =>
                   isUser
                     ? setExpandedImage(src || '')
-                    : setExpandedThumbnailIndex(expandedThumbnailIndex === 0 ? null : 0)
+                    : setExpandedThumbnailIndex(
+                        expandedThumbnailIndex === 0 ? null : 0
+                      )
                 }
                 isExpanded={!isUser && expandedThumbnailIndex === 0}
                 isAssistantMessage={!isUser}
@@ -177,7 +235,9 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
                 onClick={() =>
                   isUser
                     ? setExpandedImage(imageUrl)
-                    : setExpandedThumbnailIndex(expandedThumbnailIndex === index ? null : index)
+                    : setExpandedThumbnailIndex(
+                        expandedThumbnailIndex === index ? null : index
+                      )
                 }
                 isExpanded={!isUser && expandedThumbnailIndex === index}
                 isAssistantMessage={!isUser}
@@ -209,11 +269,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         </Avatar>
       )}
       <div
-        className={`max-w-[75%] w-auto p-3 rounded-lg ${
+        className={`max-w-[75%] w-auto p-3 rounded-lg shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] hover:shadow-[0_8px_16px_-1px_rgba(0,0,0,0.3)] transition-shadow duration-200 transform hover:-translate-y-0.5 ${
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
-        } text-sm min-[768px]:text-base`}
+        } text-sm min-[768px]:text-base overflow-hidden overflow-x-auto`}
       >
-        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base [&_code]:break-all [&_code]:whitespace-pre-wrap [&_p]:break-all [&_p]:whitespace-pre-wrap">
           {renderContent()}
         </div>
 
@@ -225,7 +285,10 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           />
         )}
         {isUser && (
-          <UserButtonArray onEdit={(newContent) => onEdit(message, newContent)} content={message.content} />
+          <UserButtonArray
+            onEdit={(newContent) => onEdit(message, newContent)}
+            content={message.content}
+          />
         )}
       </div>
       {isUser && (

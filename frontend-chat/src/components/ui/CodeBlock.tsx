@@ -12,19 +12,19 @@ interface CodeBlockProps {
 
 export const CodeBlock: React.FC<CodeBlockProps> = ({ language, value, onCopy }) => {
   return (
-    <div className="relative w-full overflow-hidden">
+    <div className="relative w-full max-w-full overflow-hidden">
       <div className="flex justify-between items-center bg-gray-800 text-white p-1.5 min-[768px]:p-2 rounded-t">
-        <span className="text-[10px] min-[768px]:text-sm">{language}</span>
+        <span className="text-[10px] min-[768px]:text-sm truncate max-w-[calc(100%-40px)]">{language}</span>
         <Button 
           variant="ghost" 
           size="icon" 
           onClick={() => onCopy(value)}
-          className="h-6 w-6 min-[768px]:h-8 min-[768px]:w-8"
+          className="h-6 w-6 min-[768px]:h-8 min-[768px]:w-8 flex-shrink-0"
         >
           <Copy className="h-3 w-3 min-[768px]:h-4 min-[768px]:w-4" />
         </Button>
       </div>
-      <div className="w-full">
+      <div className="w-full max-w-full overflow-x-auto">
         <SyntaxHighlighter
           language={language}
           style={materialDark}
@@ -39,7 +39,7 @@ export const CodeBlock: React.FC<CodeBlockProps> = ({ language, value, onCopy })
             fontSize: 'inherit'
           }}
           wrapLongLines={true}
-          className="text-[11px] min-[768px]:text-[14px] max-w-full overflow-x-auto [&_pre]:!whitespace-pre-wrap [&_pre]:!break-words [&_code]:!whitespace-pre-wrap [&_code]:!break-words"
+          className="text-[11px] min-[768px]:text-[14px] max-w-full overflow-x-auto [&_pre]:!whitespace-pre-wrap [&_pre]:!break-words [&_code]:!whitespace-pre-wrap [&_code]:!break-words [&_code]:!break-all"
         >
           {value}
         </SyntaxHighlighter>

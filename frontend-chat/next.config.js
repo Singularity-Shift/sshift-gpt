@@ -13,7 +13,8 @@ const nextConfig = {
     svgr: false,
   },
   env: {
-    API_BACKEND_URL: process.env.API_BACKEND_URL
+    API_BACKEND_URL: process.env.API_BACKEND_URL,
+    API_TOOLS_URL: process.env.URI_TOOLS,
   }
 };
 

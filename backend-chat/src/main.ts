@@ -10,11 +10,13 @@ import { readFileSync } from 'fs';
 import path from 'path';
 
 import { AppModule } from './app.module';
-import { ConfigService } from './share/config/config.service';
+import { ConfigService } from '@nest-modules';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const port = app.get<ConfigService>(ConfigService).get<number>('server.port');
+  const port = app
+    .get<ConfigService>(ConfigService)
+    .get<number>('serverChatApi.port');
   const globalPrefix = 'chat-api';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());

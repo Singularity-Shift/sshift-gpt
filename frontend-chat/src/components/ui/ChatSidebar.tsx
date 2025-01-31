@@ -38,6 +38,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const [renamingChatId, setRenamingChatId] = useState<string | null>(null);
   const [newChatTitle, setNewChatTitle] = useState('');
   const [isConfirmModalOpen, setIsConfirmModalOpen] = useState(false);
+  const [deletingChatId, setDeletingChatId] = useState<string | null>(null);
   const [collapsedCategories, setCollapsedCategories] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -81,6 +82,17 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
   const confirmClearAllChats = () => {
     onClearAllChats();
     setIsConfirmModalOpen(false);
+  };
+
+  const handleDeleteClick = (chatId: string) => {
+    setDeletingChatId(chatId);
+  };
+
+  const confirmDeleteChat = () => {
+    if (deletingChatId) {
+      onDeleteChat(deletingChatId);
+      setDeletingChatId(null);
+    }
   };
 
   const groupChats = () => {
@@ -226,12 +238,12 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                     variant={
                                       currentChatId === chat.id ? 'secondary' : 'ghost'
                                     }
-                                    className="w-full justify-start text-left truncate pr-16 text-sm"
+                                    className="w-full justify-start text-left truncate pr-12 text-sm"
                                     onClick={() => onChatSelect(chat.id)}
                                   >
-                                    {chat.title}
+                                    {chat.title.length > 25 ? `${chat.title.substring(0, 25)}...` : chat.title}
                                   </Button>
-                                  <div className="flex absolute right-1 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex absolute right-1 top-1/2 -translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity">
                                     <Button
                                       variant="ghost"
                                       size="icon"
@@ -246,10 +258,10 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6"
+                                      className="h-6 w-6 touch-none"
                                       onClick={(e) => {
                                         e.stopPropagation();
-                                        onDeleteChat(chat.id);
+                                        handleDeleteClick(chat.id);
                                       }}
                                     >
                                       <Trash2 className="h-3 w-3" />
@@ -274,6 +286,13 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
         onConfirm={confirmClearAllChats}
         title="Clear All Chats"
         message="Are you sure you want to clear all chat history? This action cannot be undone."
+      />
+      <ConfirmationModal
+        isOpen={!!deletingChatId}
+        onClose={() => setDeletingChatId(null)}
+        onConfirm={confirmDeleteChat}
+        title="Delete Chat"
+        message="Are you sure you want to delete this chat? This action cannot be undone."
       />
     </>
   );

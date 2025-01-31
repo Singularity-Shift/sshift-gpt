@@ -6,44 +6,22 @@ import { v4 as uuidv4 } from 'uuid';
 import { Menu } from 'lucide-react';
 
 // Core Layout Components
-import { ChatSidebar } from '@fn-chat/components/ui/ChatSidebar';
-import { ChatHeader } from '@fn-chat/components/ui/ChatHeader';
-import { ChatWindow } from '@fn-chat/components/ui/ChatWindow';
-import { ChatInput } from '@fn-chat/components/ui/ChatInput';
-import { Button } from '@fn-chat/components/ui/button';
+import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
+import { ChatHeader } from '../../src/components/ui/ChatHeader';
+import { ChatWindow } from '../../src/components/ui/ChatWindow';
+import { ChatInput } from '../../src/components/ui/ChatInput';
+import { Button } from '../../src/components/ui/button';
 
-// Message Components
-import { MessageBubble } from '@fn-chat/components/ui/MessageBubble';
-import { CodeBlock } from '@fn-chat/components/ui/CodeBlock';
-import { ImageThumbnail } from '@fn-chat/components/ui/ImageThumbnail';
-import { AudioPlayer } from '@fn-chat/components/ui/AudioPlayer';
+import backend from '../../src/services/backend';
+import { useAuth } from '../../src/context/AuthProvider';
+import { API_BACKEND_URL } from '../../config/env';
+import { useToast } from '../../src/components/ui/use-toast';
+import { IChat, IMessage } from '@helpers';
 
-// Button Components
-import { AssistantButtonArray } from '@fn-chat/components/ui/assistantButtonArray';
-import { UserButtonArray } from '@fn-chat/components/ui/userButtonArray';
-import { ImageUploadButton } from '@fn-chat/components/ui/ImageUploadButton';
-import { StopButton } from '@fn-chat/components/ui/StopButton';
-import { SendButton } from '@fn-chat/components/ui/SendButton';
-
-import backend from '@fn-chat/services/backend';
-
-// Types
-export interface Message {
-  id: string;
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-  auth?: string;
-  images?: string[];
-  created?: number;
-  model?: string;
-  finish_reason?: string;
-  system_fingerprint?: string;
-}
-
-interface Chat {
+interface NewMessage {
   id: string;
   title: string;
-  messages: Message[];
+  message: IMessage;
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -58,16 +36,22 @@ interface Chat {
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
-  const [chats, setChats] = useState<Chat[]>([]);
+  const [chats, setChats] = useState<IChat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
-  const [isWaiting, setIsWaiting] = useState(false);
-  const [isTyping, setIsTyping] = useState(false);
+  const [, setIsWaiting] = useState(false);
+  const [, setIsTyping] = useState(false);
   const [showNoChatsMessage, setShowNoChatsMessage] = useState(false);
   const [status, setStatus] = useState<'thinking' | 'tool-calling' | 'typing'>(
     'thinking'
   );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { jwt } = useAuth();
+  const [hasMore, setHasMore] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [isPaginating, setIsPaginating] = useState(false);
+  const { toast } = useToast();
 
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
@@ -77,26 +61,97 @@ export default function ChatPage() {
     }
   };
 
-  const handleNewChat = () => {
-    const currentTime = Date.now();
-    const newChat: Chat = {
-      id: uuidv4(),
-      title: `New Chat ${chats.length + 1}`,
-      messages: [],
-      model: 'gpt-4o-mini', // Set default model for new chats
-      createdAt: currentTime,
-      lastUpdated: currentTime,
-    };
-    setChats([...chats, newChat]);
-    setCurrentChatId(newChat.id);
-    setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+  const handleNewChat = async () => {
+    try {
+      const currentTime = Date.now();
+      const newChat: IChat = {
+        id: uuidv4(),
+        title: `New Chat ${chats.length + 1}`,
+        messages: [],
+        model: 'gpt-4o-mini', // Set default model for new chats
+        createdAt: currentTime,
+        lastUpdated: currentTime,
+      };
+
+      const response = await backend.post('/history', newChat, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+      setChats([...chats, response.data]);
+      setCurrentChatId(response.data.id);
+      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
   };
 
-  const handleChatSelect = (chatId: string) => {
+  const createFirstChat = async () => {
+    try {
+      const currentTime = Date.now();
+      const newChat: IChat = {
+        id: uuidv4(),
+        title: `New Chat 1`,
+        messages: [],
+        model: 'gpt-4o-mini', // Set default model for new chats
+        createdAt: currentTime,
+        lastUpdated: currentTime,
+      };
+
+      const response = await backend.post('/history', newChat, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      setChats([{ ...response.data }]);
+      setCurrentChatId(response.data.id);
+      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+    } catch (error) {
+      console.error('Error creating new chat:', error);
+    }
+  };
+
+  const handleChatSelect = async (chatId: string) => {
     setCurrentChatId(chatId);
     const selectedChat = chats.find((chat) => chat.id === chatId);
     if (selectedChat) {
       setSelectedModel(selectedChat.model);
+
+      // If the chat has no messages, load the initial set
+      if (!selectedChat.messages || selectedChat.messages.length === 0) {
+        try {
+          const messagesResponse = await backend.get(
+            `/history/${chatId}/messages`,
+            {
+              params: {
+                page: 1,
+                limit: 10,
+              },
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+              },
+            }
+          );
+
+          console.log('Chat select messages response:', messagesResponse.data);
+
+          const { messages, total } = messagesResponse.data;
+          const hasMoreMessages = messages.length === 10;
+
+          setChats((prevChats) =>
+            prevChats.map((chat) =>
+              chat.id === chatId
+                ? { ...chat, messages: [...messages].reverse() }
+                : chat
+            )
+          );
+          setHasMore(hasMoreMessages);
+          setCurrentPage(1);
+        } catch (error) {
+          console.error('Error loading chat messages:', error);
+        }
+      }
     }
   };
 
@@ -122,30 +177,15 @@ export default function ChatPage() {
     }
 
     setStatus('thinking');
-    setIsWaiting(true);
-    setIsTyping(false);
     setIsAssistantResponding(true);
 
     if (inputMessage.trim() || selectedImages.length > 0) {
-      const userMessage: Message = {
-        id: Date.now().toString(),
+      const userMessage: IMessage = {
+        id: uuidv4(),
         role: 'user',
         content: inputMessage,
         images: selectedImages,
-      };
-
-      // Prepare the content array for the API request
-      const contentArray = [
-        ...selectedImages.map(imageUrl => ({
-          type: 'image_url',
-          image_url: { url: imageUrl, detail: 'high' }
-        })),
-        { type: 'text', text: inputMessage }
-      ];
-
-      const formattedMessage = {
-        role: 'user',
-        content: contentArray
+        timestamp: Date.now(),
       };
 
       setChats((prevChats) => {
@@ -170,37 +210,22 @@ export default function ChatPage() {
 
       scrollToBottom();
 
+      const chat = chats.find((chat) => chat.id === currentChatId) as IChat;
+
+      const newMessage: NewMessage = {
+        ...chat,
+        model: selectedModel,
+        message: userMessage,
+      };
+
       try {
-        const response = await fetch('/api/chat', {
+        const response = await fetch(`${API_BACKEND_URL}/agent`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
+            Authorization: `Bearer ${jwt}`,
           },
-          body: JSON.stringify({
-            auth: localStorage.getItem('jwt') as string,
-            messages: [
-              ...(chats.find((chat) => chat.id === currentChatId)?.messages || []).map(msg => {
-                if (msg.role === 'user' && msg.images) {
-                  return {
-                    role: msg.role,
-                    content: [
-                      ...msg.images.map(imageUrl => ({
-                        type: 'image_url',
-                        image_url: { url: imageUrl, detail: 'high' }
-                      })),
-                      { type: 'text', text: msg.content }
-                    ]
-                  };
-                }
-                return {
-                  role: msg.role,
-                  content: msg.content
-                };
-              }),
-              formattedMessage,
-            ],
-            model: selectedModel,
-          }),
+          body: JSON.stringify(newMessage),
         });
 
         if (!response.ok) {
@@ -211,10 +236,11 @@ export default function ChatPage() {
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
-        let assistantMessage: Message = {
-          id: Date.now().toString(),
+        let assistantMessage: IMessage = {
+          id: uuidv4(),
           role: 'assistant',
           content: '',
+          timestamp: Date.now(),
         };
 
         setIsWaiting(false);
@@ -246,7 +272,7 @@ export default function ChatPage() {
                   if (parsedData.tool_response.name === 'generateImage') {
                     assistantMessage.images = [
                       ...(assistantMessage.images || []),
-                      parsedData.tool_response.result.image_url
+                      parsedData.tool_response.result.image_url,
                     ];
                     updateChat(assistantMessage);
                   } else if (parsedData.tool_response.name === 'searchWeb') {
@@ -258,7 +284,9 @@ export default function ChatPage() {
                   assistantMessage = {
                     ...assistantMessage,
                     content: parsedData.final_message.content,
-                    images: parsedData.final_message.images || assistantMessage.images
+                    images:
+                      parsedData.final_message.images ||
+                      assistantMessage.images,
                   };
                   updateChat(assistantMessage);
                 }
@@ -279,7 +307,7 @@ export default function ChatPage() {
     }
   };
 
-  const updateChat = (message: Message) => {
+  const updateChat = (message: IMessage) => {
     setChats((prevChats) =>
       prevChats.map((chat) =>
         chat.id === currentChatId
@@ -295,20 +323,74 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleDeleteChat = (chatId: string) => {
-    setChats((prevChats) => prevChats.filter((chat) => chat.id !== chatId));
-    if (currentChatId === chatId) {
-      const remainingChats = chats.filter((chat) => chat.id !== chatId);
-      if (remainingChats.length > 0) {
-        setCurrentChatId(remainingChats[0].id);
-      } else {
-        setCurrentChatId(null);
-        handleNewChat(); // Create a new chat if all chats are deleted
-      }
+  const handleRenameChat = async (chatId: string, newTitle: string) => {
+    try {
+      await backend.patch(
+        `/history/${chatId}/${newTitle}`,
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${jwt}`,
+          },
+        }
+      );
+
+      setChats((prevChats) =>
+        prevChats.map((chat) =>
+          chat.id === chatId ? { ...chat, title: newTitle } : chat
+        )
+      );
+
+      toast({
+        variant: 'default',
+        title: 'Chat renamed',
+        description: 'Chat title has been updated.',
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error renaming chat',
+        description: 'Failed to rename chat.',
+      });
     }
   };
 
-  const handleRegenerateMessage = async (assistantMessage: Message) => {
+  const handleDeleteChat = async (chatId: string) => {
+    try {
+      await backend.delete(`/history/${chatId}`, {
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const chatsFiltered = chats.filter((chat) => chat.id !== chatId);
+
+      setChats([...chatsFiltered]);
+
+      toast({
+        variant: 'default',
+        title: 'Chat deleted',
+        description: 'Chat has been deleted.',
+      });
+
+      if (currentChatId === chatId) {
+        if (chatsFiltered.length > 0) {
+          setCurrentChatId(chatsFiltered[0].id);
+        } else {
+          setCurrentChatId(null);
+          createFirstChat(); // Create a new chat if all chats are deleted
+        }
+      }
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error deleting chat',
+        description: 'Failed to delete chat.',
+      });
+    }
+  };
+
+  const handleRegenerateMessage = async (assistantMessage: IMessage) => {
     if (!currentChatId) return;
 
     try {
@@ -317,15 +399,19 @@ export default function ChatPage() {
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true);
-      
+
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
       // Find the index of the assistant message to regenerate
+
       const messageIndex = currentChat.messages.findIndex(
         (msg) => msg.id === assistantMessage.id
       );
       if (messageIndex === -1) return;
+
+      const lastMessage = currentChat.messages[messageIndex];
+      if (!lastMessage) return;
 
       // Get all messages up to and including the previous user message
       const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
@@ -334,42 +420,28 @@ export default function ChatPage() {
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === currentChatId
-            ? { ...chat, messages: messagesUpToLastUser }
+            ? {
+                ...chat,
+                messages: [...messagesUpToLastUser],
+              }
             : chat
         )
       );
 
-      // Format messages for the API request
-      const formattedMessages = messagesUpToLastUser.map(msg => {
-        if (msg.role === 'user' && msg.images && msg.images.length > 0) {
-          return {
-            role: msg.role,
-            content: [
-              ...msg.images.map(imageUrl => ({
-                type: 'image_url',
-                image_url: { url: imageUrl, detail: 'high' }
-              })),
-              { type: 'text', text: msg.content }
-            ]
-          };
-        }
-        return {
-          role: msg.role,
-          content: msg.content
-        };
-      });
+      const newMessage: NewMessage = {
+        ...currentChat,
+        model: selectedModel,
+        message: lastMessage,
+      };
 
       // Call the API with formatted messages
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BACKEND_URL}/agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt as string}`,
         },
-        body: JSON.stringify({
-          auth: localStorage.getItem('jwt') as string,
-          messages: formattedMessages,
-          model: selectedModel,
-        }),
+        body: JSON.stringify(newMessage),
       });
 
       if (!response.ok) {
@@ -380,21 +452,19 @@ export default function ChatPage() {
 
       const reader = response.body.getReader();
       const decoder = new TextDecoder();
-      let newAssistantMessage: Message = {
-        id: Date.now().toString(),
+      let newAssistantMessage: IMessage = {
+        id: uuidv4(),
         role: 'assistant',
         content: '',
+        timestamp: Date.now(),
       };
-
-      setIsWaiting(false);
-      setIsTyping(true);
 
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
 
         const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split('\n').filter(line => line.trim() !== '');
+        const lines = chunk.split('\n').filter((line) => line.trim() !== '');
 
         for (const line of lines) {
           if (line.startsWith('data: ')) {
@@ -415,7 +485,7 @@ export default function ChatPage() {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.images = [
                     ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url
+                    parsedData.tool_response.result.image_url,
                   ];
                   updateChat(newAssistantMessage);
                 } else if (parsedData.tool_response.name === 'searchWeb') {
@@ -427,7 +497,9 @@ export default function ChatPage() {
                 newAssistantMessage = {
                   ...newAssistantMessage,
                   content: parsedData.final_message.content,
-                  images: parsedData.final_message.images || newAssistantMessage.images
+                  images:
+                    parsedData.final_message.images ||
+                    newAssistantMessage.images,
                 };
                 updateChat(newAssistantMessage);
               }
@@ -439,8 +511,8 @@ export default function ChatPage() {
       }
 
       // Update the chat with the regenerated message
-      setChats(prevChats =>
-        prevChats.map(chat => {
+      setChats((prevChats) =>
+        prevChats.map((chat) => {
           if (chat.id === currentChatId) {
             const updatedMessages = chat.messages.slice(0, messageIndex);
             return {
@@ -465,62 +537,82 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
+    if (!jwt) return;
+
     (async () => {
-      const chatResponse = await backend.get('/history', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
-        },
-      });
-
-      const savedChats = chatResponse.data;
-      if (savedChats) {
-        const updatedChats = savedChats.chats.map((chat: Chat) => ({
-          ...chat,
-        }));
-        setChats(updatedChats);
-        if (updatedChats.length > 0) {
-          // Find the most recent chat based on lastUpdated timestamp
-          const mostRecentChat = updatedChats.reduce((latest: Chat, current: Chat) => 
-            (current.lastUpdated || 0) > (latest.lastUpdated || 0) ? current : latest
-          );
-          setCurrentChatId(mostRecentChat.id);
-          setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
-        } else {
-          handleNewChat();
-        }
-      } else {
-        handleNewChat();
-      }
-    })();
-  }, []);
-
-  useEffect(() => {
-    if (!chats?.length) return;
-
-    const syncChats = async () => {
       try {
-        await backend.put('/history', [...chats], {
+        // First get the chat list
+        const chatResponse = await backend.get('/history', {
           headers: {
-            Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+            Authorization: `Bearer ${jwt}`,
           },
         });
+
+        const savedChats = chatResponse.data;
+        if (savedChats && savedChats.chats.length > 0) {
+          // Find the most recent chat based on lastUpdated timestamp
+          const mostRecentChat = savedChats.chats.reduce(
+            (latest: IChat, current: IChat) =>
+              (current.lastUpdated || 0) > (latest.lastUpdated || 0)
+                ? current
+                : latest
+          );
+
+          // Get initial messages for the most recent chat
+          const messagesResponse = await backend.get(
+            `/history/${mostRecentChat.id}/messages`,
+            {
+              params: {
+                page: 1,
+                limit: 10,
+              },
+              headers: {
+                Authorization: `Bearer ${jwt}`,
+              },
+            }
+          );
+
+          console.log('Initial messages response:', messagesResponse.data);
+
+          // Check if there are more messages based on the total count
+          const { messages, total } = messagesResponse.data;
+          const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
+
+          // Update the most recent chat with only the first 10 messages
+          const updatedChats = savedChats.chats.map(
+            (chat: IChat) =>
+              chat.id === mostRecentChat.id
+                ? { ...chat, messages: [...messages].reverse() }
+                : { ...chat, messages: [] } // Initialize other chats with empty messages
+          );
+
+          setChats(updatedChats);
+          setCurrentChatId(mostRecentChat.id);
+          setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
+          setHasMore(hasMoreMessages);
+          setCurrentPage(1);
+        } else {
+          createFirstChat();
+        }
       } catch (error) {
-        console.error('Error syncing chats with database:', error);
+        console.error('Error loading initial chat data:', error);
+        createFirstChat();
       }
-    };
-
-    // Debounce the sync operation
-    const timeoutId = setTimeout(syncChats, 1000);
-
-    return () => clearTimeout(timeoutId);
-  }, [chats]);
+    })();
+  }, [jwt]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
-  const handleEdit = (editedMessage: Message, newContent: string) => {
+  const handleEdit = (editedMessage: IMessage, newContent: string) => {
     const editedMessageIndex = currentChat?.messages.findIndex(
       (msg) => msg.id === editedMessage.id
     );
+
+    if (!editedMessageIndex || editedMessageIndex === -1) return;
+
+    const messageToUpdate = currentChat?.messages[editedMessageIndex];
+
+    if (!messageToUpdate) return;
     if (
       editedMessageIndex !== undefined &&
       editedMessageIndex !== -1 &&
@@ -541,12 +633,19 @@ export default function ChatPage() {
             : chat
         )
       );
+
+      const newMessage: NewMessage = {
+        ...currentChat,
+        message: { ...editedMessage, content: newContent },
+        model: selectedModel,
+      };
+
       // Regenerate the conversation from this point forward
       setStatus('thinking');
       setIsWaiting(true);
       setIsTyping(false);
       setIsAssistantResponding(true);
-      regenerateConversation(updatedMessages).finally(() => {
+      regenerateConversation(updatedMessages, newMessage).finally(() => {
         setIsWaiting(false);
         setIsTyping(false);
         setStatus('thinking');
@@ -555,7 +654,10 @@ export default function ChatPage() {
     }
   };
 
-  const regenerateConversation = async (messagesUpToEdit: Message[]) => {
+  const regenerateConversation = async (
+    messagesUpToEdit: IMessage[],
+    newMessage: NewMessage
+  ) => {
     if (!currentChatId) return;
 
     try {
@@ -565,33 +667,13 @@ export default function ChatPage() {
       setIsTyping(false);
       setIsAssistantResponding(true);
 
-      const response = await fetch('/api/chat', {
+      const response = await fetch(`${API_BACKEND_URL}/agent`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${jwt}`,
         },
-        body: JSON.stringify({
-          auth: localStorage.getItem('jwt') as string,
-          messages: messagesUpToEdit.map(msg => {
-            if (msg.role === 'user' && msg.images) {
-              return {
-                role: msg.role,
-                content: [
-                  ...msg.images.map(imageUrl => ({
-                    type: 'image_url',
-                    image_url: { url: imageUrl, detail: 'high' }
-                  })),
-                  { type: 'text', text: msg.content }
-                ]
-              };
-            }
-            return {
-              role: msg.role,
-              content: msg.content
-            };
-          }),
-          model: selectedModel,
-        }),
+        body: JSON.stringify(newMessage),
       });
 
       if (!response.ok) {
@@ -600,18 +682,16 @@ export default function ChatPage() {
 
       const reader = response.body?.getReader();
       if (!reader) throw new Error('No response body reader');
-      
+
       const decoder = new TextDecoder();
       let done = false;
 
-      const newAssistantMessage: Message = {
-        id: Date.now().toString(),
+      const newAssistantMessage: IMessage = {
+        id: uuidv4(),
         role: 'assistant',
         content: '',
+        timestamp: Date.now(),
       };
-
-      setIsWaiting(false);
-      setIsTyping(true);
 
       while (!done) {
         const { value, done: doneReading } = await reader.read();
@@ -640,7 +720,7 @@ export default function ChatPage() {
                 if (parsedData.tool_response.name === 'generateImage') {
                   newAssistantMessage.images = [
                     ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url
+                    parsedData.tool_response.result.image_url,
                   ];
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response.name === 'searchWeb') {
@@ -664,6 +744,12 @@ export default function ChatPage() {
               scrollToBottom();
             } catch (error) {
               console.error('Error parsing JSON:', error);
+              toast({
+                title: 'Error parsing JSON',
+                description:
+                  'An error occurred while parsing the JSON response.',
+                variant: `destructive`,
+              });
             }
           }
         }
@@ -672,6 +758,11 @@ export default function ChatPage() {
       console.log('Final regenerated assistant message:', newAssistantMessage);
     } catch (error) {
       console.error('Error in regenerateConversation:', error);
+      toast({
+        title: 'Error regenerating conversation',
+        description: 'An error occurred while regenerating the conversation.',
+        variant: `destructive`,
+      });
     } finally {
       setIsWaiting(false);
       setIsTyping(false);
@@ -681,20 +772,127 @@ export default function ChatPage() {
   };
 
   const handleClearAllChats = async () => {
-    setChats([]); // Clear all chats from state
-    setCurrentChatId(null); // Reset current chat ID
-
     try {
       // Clear chats from the database
-      await backend.put('/history', [], {
+      await backend.delete('/history', {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('jwt')}`,
+          Authorization: `Bearer ${jwt}`,
         },
       });
-      console.log('All chats cleared from database');
+
+      createFirstChat();
+
+      toast({
+        title: 'All chats cleared',
+        description: 'All chats have been cleared from your database.',
+        variant: 'default',
+      });
     } catch (error) {
-      console.error('Error clearing chats from database:', error);
-      // Optionally, you could show an error message to the user here
+      console.error('Error clearing chats:', error);
+      toast({
+        title: 'Error clearing chats',
+        description: 'An error occurred while clearing your chats.',
+        variant: `destructive`,
+      });
+    }
+  };
+
+  const handleLoadMore = async (page: number) => {
+    if (!currentChatId || isLoadingMore) {
+      console.log(
+        '[LoadMore] Skipping load - currentChatId:',
+        currentChatId,
+        'isLoadingMore:',
+        isLoadingMore
+      );
+      return;
+    }
+
+    console.log(
+      '[LoadMore] Starting load - page:',
+      page,
+      'currentChatId:',
+      currentChatId
+    );
+    setIsLoadingMore(true);
+    setIsPaginating(true);
+    try {
+      const nextPage = currentPage + 1;
+      console.log('[LoadMore] Requesting page:', nextPage);
+
+      const currentChat = chats.find((chat) => chat.id === currentChatId);
+      console.log(
+        '[LoadMore] Current chat messages count:',
+        currentChat?.messages.length
+      );
+
+      const response = await backend.get(`/history/${currentChatId}/messages`, {
+        params: {
+          page: nextPage,
+          limit: 10,
+        },
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      console.log('[LoadMore] Response data:', {
+        messagesCount: response.data?.messages?.length,
+        total: response.data?.total,
+        page: response.data?.page,
+        totalPages: response.data?.totalPages,
+      });
+
+      if (!response.data || !response.data.messages) {
+        console.error('[LoadMore] Invalid response format:', response.data);
+        setHasMore(false);
+        return;
+      }
+
+      const { messages: olderMessages, total, totalPages } = response.data;
+
+      if (olderMessages && olderMessages.length > 0) {
+        console.log(
+          `[LoadMore] Loaded ${olderMessages.length} messages from page ${nextPage}`
+        );
+        setChats((prevChats) =>
+          prevChats.map((chat) => {
+            if (chat.id === currentChatId) {
+              const updatedMessages = [
+                ...olderMessages.reverse(),
+                ...chat.messages,
+              ];
+              console.log('[LoadMore] Messages state update:', {
+                previousCount: chat.messages.length,
+                newMessagesCount: olderMessages.length,
+                totalAfterUpdate: updatedMessages.length,
+              });
+              return {
+                ...chat,
+                messages: updatedMessages,
+              };
+            }
+            return chat;
+          })
+        );
+
+        setCurrentPage(nextPage);
+        setHasMore(nextPage < totalPages);
+      } else {
+        console.log('[LoadMore] No more messages to load');
+        setHasMore(false);
+      }
+    } catch (error) {
+      console.error('[LoadMore] Error loading more messages:', error);
+      toast({
+        title: 'Error loading more messages',
+        description: 'An error occurred while loading more messages.',
+        variant: `destructive`,
+      });
+      setHasMore(false);
+    } finally {
+      setIsLoadingMore(false);
+      setIsPaginating(false);
     }
   };
 
@@ -705,13 +903,7 @@ export default function ChatPage() {
         currentChatId={currentChatId}
         onChatSelect={handleChatSelect}
         onDeleteChat={handleDeleteChat}
-        onRenameChat={(chatId, newTitle) => {
-          setChats((prevChats) =>
-            prevChats.map((chat) =>
-              chat.id === chatId ? { ...chat, title: newTitle } : chat
-            )
-          );
-        }}
+        onRenameChat={handleRenameChat}
         onClearAllChats={handleClearAllChats}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
@@ -720,7 +912,7 @@ export default function ChatPage() {
         <ChatHeader
           selectedModel={selectedModel}
           onModelChange={handleModelChange}
-          onNewChat={handleNewChat}
+          onNewChat={() => handleNewChat()}
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
         />
@@ -732,7 +924,7 @@ export default function ChatPage() {
         >
           <Menu className="h-5 w-5" />
         </Button>
-        <div className="flex-1 min-h-0 flex flex-col">
+        <div className="flex-1 min-h-0 flex flex-col max-w-[1920px] mx-auto w-full">
           <ChatWindow
             messages={currentChat?.messages || []}
             onCopy={(text: string) => navigator.clipboard.writeText(text)}
@@ -741,8 +933,15 @@ export default function ChatPage() {
             status={status}
             showNoChatsMessage={showNoChatsMessage}
             isAssistantResponding={isAssistantResponding}
+            currentChatId={currentChatId || undefined}
+            onLoadMore={handleLoadMore}
+            hasMore={hasMore}
+            isLoadingMore={isLoadingMore}
           />
-          <ChatInput onSendMessage={handleSendMessage} />
+          <ChatInput
+            onSendMessage={handleSendMessage}
+            isGenerating={isAssistantResponding}
+          />
         </div>
       </div>
     </div>

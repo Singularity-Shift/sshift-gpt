@@ -3,7 +3,7 @@
   "$schema": "../node_modules/nx/schemas/project-schema.json",
   "sourceRoot": "backend-chat/src",
   "projectType": "application",
-  "implicitDependencies": ["!aptos"],
+  "implicitDependencies": ["!aptos", "!nest-modules"],
   "tags": [],
   "targets": {
     "build": {
@@ -21,13 +21,11 @@
       "configurations": {
         "production": {
           "optimization": true,
-          "extractLicenses": true,
-          "inspect": false
+          "extractLicenses": true
         },
         "development": {
           "optimization": false,
-          "extractLicenses": false,
-          "inspect": false
+          "extractLicenses": false
         }
       }
     },
@@ -35,19 +33,18 @@
       "executor": "@nx/js:node",
       "defaultConfiguration": "development",
       "options": {
-        "buildTarget": "backend-chat:build"
+        "buildTarget": "backend-chat:build",
+        "inspect": false,
+        "watch": true
       },
       "configurations": {
         "development": {
-          "buildTarget": "backend-chat:build:development",
+          "buildTarget": "backend-chat:build:development"
         },
         "production": {
-          "buildTarget": "backend-chat:build:production",
+          "buildTarget": "backend-chat:build:production"
         }
       }
-    },
-    "watch": {
-      "command": "nest start --watch"
     }
   }
 }

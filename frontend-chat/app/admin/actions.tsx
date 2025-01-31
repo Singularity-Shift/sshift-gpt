@@ -12,14 +12,14 @@ import {
   SelectTrigger,
 } from '../../src/components/ui/select';
 import { aptos, FeesABI } from '@aptos';
-import { useAppManagment } from '../../src/context/AppManagment';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { MODULE_ADDRESS } from '../../config/env';
 import { MultisignAction } from '@helpers';
+import { useAuth } from '../../src/context/AuthProvider';
 
 export const Actions = () => {
   const { addAction } = useBackend();
-  const { walletAddress } = useAppManagment();
+  const { walletAddress } = useAuth();
   const { abi } = useAbiClient();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);

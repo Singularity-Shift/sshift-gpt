@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { useAppManagment } from '../context/AppManagment';
 import { INFTCollection } from '@helpers';
+import { useAuth } from '../../src/context/AuthProvider';
 
 /**
  * React hook for UI components to fetch and display NFT collections
  * This is separate from the API route that the AI uses
  */
 export const useNFTCollections = () => {
-  const { walletAddress } = useAppManagment();
+  const { walletAddress } = useAuth();
   const [collections, setCollections] = useState<INFTCollection[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

@@ -11,14 +11,12 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { IAction, IMoveBotFields, ISubscription } from '@helpers';
+import { IMoveBotFields, ISubscription } from '@helpers';
 import { aptosClient } from '../lib/utils';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { FeesABI, SubscriptionABI } from '@aptos';
-import { useBackend } from './BackendProvider';
-import * as jwtoken from 'jsonwebtoken';
-import { usePathname, useRouter } from 'next/navigation';
+import { useAuth } from './AuthProvider';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -39,7 +37,6 @@ export type AppManagmenContextProp = {
   isSubscriptionActive: boolean;
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
   expirationDate: string | null;
-  walletAddress: string;
   isReviewer: boolean;
   setIsReviewer: Dispatch<SetStateAction<boolean>>;
   isPendingReviewer: boolean;
@@ -75,78 +72,13 @@ export const AppManagementProvider = ({
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
-  const [walletAddress, setWalletAddress] = useState('');
-  const router = useRouter();
-  const pathname = usePathname();
 
   const { abi } = useAbiClient();
-  const { connected, account, disconnect, connect, wallet } = useWallet();
+  const { connected } = useWallet();
   const { toast } = useToast();
   const aptos = aptosClient();
   const { client } = useWalletClient();
-  const { sigIn } = useBackend();
-
-  const handleConnectWallet = async (address?: string) => {
-    let jwt = localStorage.getItem('jwt');
-
-    if (!jwt) {
-      const authObj = await sigIn();
-
-      jwt = authObj?.authToken || null;
-
-      if (!jwt) {
-        console.error('Error signing in user');
-
-        return;
-      }
-
-      localStorage.setItem('jwt', jwt);
-    }
-
-    if (address) {
-      const payload = jwtoken.decode(jwt as string) as { address: string };
-
-      if (payload && payload.address === address && wallet) {
-        setWalletAddress(address);
-        if (pathname === '/') {
-          router.push('/dashboard');
-        }
-      }
-    }
-  };
-
-  const handleDisconnect = async () => {
-    console.log('User disconnected');
-    localStorage.removeItem('jwt');
-    if (connected) await disconnect();
-    router.push('/');
-  };
-
-  useEffect(() => {
-    handleConnectWallet(account?.address);
-  }, [connected, account]);
-
-  useEffect(() => {
-    const jwt = localStorage.getItem('jwt');
-    let payload;
-
-    if (jwt) {
-      payload = jwtoken.decode(jwt as string) as { address: string };
-    }
-
-    if (payload) {
-      setWalletAddress(payload.address);
-    }
-
-    if (
-      (!connected && !payload) ||
-      (account?.address &&
-        payload?.address &&
-        payload?.address !== account?.address)
-    ) {
-      handleDisconnect();
-    }
-  }, [connected, account]);
+  const { walletAddress } = useAuth();
 
   useEffect(() => {
     if (!connected) return;
@@ -425,9 +357,10 @@ export const AppManagementProvider = ({
       });
 
       // Wait for transaction to be confirmed
-      const committedTransactionResponse = await aptosClient().waitForTransaction({
-        transactionHash: tx?.hash as string,
-      });
+      const committedTransactionResponse =
+        await aptosClient().waitForTransaction({
+          transactionHash: tx?.hash as string,
+        });
 
       if (committedTransactionResponse.success) {
         // Check subscription status after successful purchase
@@ -438,7 +371,8 @@ export const AppManagementProvider = ({
             functionArguments: [walletAddress as `0x${string}`],
           });
 
-        const hasSubscriptionActive = hasSubscriptionActiveResult?.[0] as boolean;
+        const hasSubscriptionActive =
+          hasSubscriptionActiveResult?.[0] as boolean;
         setIsSubscriptionActive(hasSubscriptionActive);
 
         if (hasSubscriptionActive) {
@@ -506,7 +440,6 @@ export const AppManagementProvider = ({
     isSubscriptionActive,
     setIsSubscriptionActive,
     expirationDate,
-    walletAddress,
     isReviewer,
     setIsReviewer,
     isPendingReviewer,
