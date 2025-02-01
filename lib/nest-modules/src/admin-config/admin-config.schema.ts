@@ -20,3 +20,4 @@ export class AdminConfig {
 }
 
 export const AdminConfigSchema = SchemaFactory.createForClass(AdminConfig);
+
