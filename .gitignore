@@ -57,3 +57,4 @@ contracts/**/build
 .vscode
 
 keyfile.json
+.idea

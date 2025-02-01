@@ -207,7 +207,10 @@ export class UserService {
           $push: {
             'chats.$[chat].messages': message,
           },
-          $set: { 'chats.$[chat].lastUpdated': new Date() },
+          $set: {
+            'chats.$[chat].lastUpdated': new Date(),
+            'chats.$[chat].model': chat.model,
+          },
         },
         {
           arrayFilters: [{ 'chat.id': id }],
@@ -248,7 +251,10 @@ export class UserService {
         $push: {
           'chats.$[chat].messages': { ...message, createdAt },
         },
-        $set: { 'chats.$[chat].lastUpdated': new Date() },
+        $set: {
+          'chats.$[chat].lastUpdated': new Date(),
+          'chats.$[chat].model': chat.model,
+        },
       },
       {
         arrayFilters: [{ 'chat.id': id }],

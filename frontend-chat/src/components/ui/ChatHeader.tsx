@@ -53,6 +53,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
           <SelectContent className="bg-white shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border-gray-100">
             <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
             <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+            <SelectItem value="o3-mini">O3-mini</SelectItem>
           </SelectContent>
         </Select>
         <Button 

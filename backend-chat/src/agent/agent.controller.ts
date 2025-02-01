@@ -13,7 +13,7 @@ import {
   UserAuth,
   UserService,
 } from '@nest-modules';
-import { IUserAuth } from '@helpers';
+import { AIModel, IUserAuth } from '@helpers';
 import { AgentGuard } from './agent.guard';
 import { Response } from 'express-stream';
 import { OpenAI } from 'openai';
@@ -44,6 +44,12 @@ export class AgentController {
     const controller = new AbortController();
     this.controller.set(userAuth.address, controller);
 
+    const reasoning = [AIModel.GPTo3Mini];
+    const modelWithCallFeature = [AIModel.GPT4o, AIModel.GPT4oMini];
+
+    const isRareasoning = reasoning.includes(newMessageDto.model);
+    const iscallingTools = modelWithCallFeature.includes(newMessageDto.model);
+
     const chat = await this.userService.updateChat(
       userAuth.address,
       newMessageDto
@@ -52,46 +58,56 @@ export class AgentController {
     let currentToolCalls = [];
     const assistantMessage = { content: '', images: [] };
 
-    // Format messages to handle images properly
+    // Update message formatting: for o3-mini, ignore images
     const formattedMessages = chat.messages.map((msg) => {
-      if (msg.role === 'user' && msg.images?.length) {
+      if (isRareasoning) {
         return {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text: msg.content || "Here's an image.",
-            },
-            ...msg.images.map((image) => ({
-              type: 'image_url',
-              image_url: {
-                url: image,
-                detail: 'auto',
+          role: msg.role || 'user',
+          content: msg.content || '',
+        };
+      } else {
+        if (msg.role === 'user' && msg.images?.length) {
+          return {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text: msg.content || "Here's an image.",
               },
-            })),
-          ],
+              ...msg.images.map((image) => ({
+                type: 'image_url',
+                image_url: {
+                  url: image,
+                  detail: 'auto',
+                },
+              })),
+            ],
+          };
+        }
+        if (msg.role === 'user' && Array.isArray(msg.content)) {
+          return msg;
+        }
+        return {
+          role: msg.role || 'user',
+          content: msg.content || '',
         };
       }
-      // Handle messages that are already properly formatted for images
-      if (msg.role === 'user' && Array.isArray(msg.content)) {
-        return msg;
-      }
-      // Handle regular text messages
-      return {
-        role: msg.role || 'user',
-        content: msg.content || '',
-      };
     });
 
     const adminConfig = await this.adminConfigService.findAdminConfig();
 
-    const systemPrompt = adminConfig.systemPrompt;
-
-    // Add system prompt at the beginning of the messages array
+    // Use reasoningPrompt instead of systemPrompt for o3-mini
+    const systemMessageContent = isRareasoning
+      ? adminConfig.reasoningPrompt
+      : adminConfig.systemPrompt;
     const messagesWithSystemPrompt = [
       {
         role: 'developer',
-        content: systemPrompt || 'You are a helpful assistant.',
+        content:
+          systemMessageContent ||
+          (isRareasoning
+            ? 'Provide high reasoning.'
+            : 'You are a helpful assistant.'),
       },
       ...formattedMessages,
     ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
@@ -105,14 +121,19 @@ export class AgentController {
 
     try {
       const stream = await this.openai.chat.completions.create({
-        model: newMessageDto.model || 'gpt-4o-mini',
+        model: newMessageDto.model,
         messages: messagesWithSystemPrompt,
-        max_completion_tokens: 16384,
+        max_completion_tokens: isRareasoning ? 30000 : 16384,
         temperature: newMessageDto.temperature,
         stream: true,
-        tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-        tool_choice: 'auto',
-        parallel_tool_calls: true,
+        reasoning_effort: isRareasoning ? 'high' : undefined,
+        ...(iscallingTools
+          ? {
+              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+              tool_choice: 'auto',
+              parallel_tool_calls: true,
+            }
+          : undefined),
       });
 
       let shouldStopStream = this.shouldStopStream.get(userAuth.address);
@@ -144,68 +165,67 @@ export class AgentController {
             res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-          // Add the assistant's message with tool calls to the history
-          const assistantToolMessage: ChatCompletionMessageParam = {
-            role: 'assistant',
-            content: assistantMessage.content,
-            tool_calls: currentToolCalls.map((call) => ({
-              id: call.id,
-              type: 'function',
-              function: {
-                name: call.function.name,
-                arguments: call.function.arguments,
-              },
-            })),
-          };
+          // For non-o3-mini models, handle tool calls as before
+          if (!reasoning) {
+            const assistantToolMessage: ChatCompletionMessageParam = {
+              role: 'assistant',
+              content: assistantMessage.content,
+              tool_calls: currentToolCalls.map((call) => ({
+                id: call.id,
+                type: 'function',
+                function: {
+                  name: call.function.name,
+                  arguments: call.function.arguments,
+                },
+              })),
+            };
 
-          messagesWithSystemPrompt.push(assistantToolMessage);
+            messagesWithSystemPrompt.push(assistantToolMessage);
 
-          // Process tool calls and add their results to the history
-          const toolResults = await this.processToolCalls(
-            currentToolCalls,
-            userAuth,
-            controller.signal
-          );
-          messagesWithSystemPrompt.push(...toolResults);
+            const toolResults = await this.processToolCalls(
+              currentToolCalls,
+              userAuth,
+              controller.signal
+            );
+            messagesWithSystemPrompt.push(...toolResults);
 
-          // Create continuation with the updated message history
-          const continuationResponse =
-            await this.openai.chat.completions.create({
-              model: newMessageDto.model || 'gpt-4o-mini',
-              messages: messagesWithSystemPrompt,
-              max_tokens: 16384,
-              temperature: newMessageDto.temperature,
-              stream: true,
-            });
+            const continuationResponse =
+              await this.openai.chat.completions.create({
+                model: newMessageDto.model || 'gpt-4o-mini',
+                messages: messagesWithSystemPrompt,
+                max_tokens: 16384,
+                temperature: newMessageDto.temperature,
+                stream: true,
+              });
 
-          shouldStopStream = this.shouldStopStream.get(userAuth.address);
+            shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
-          for await (const continuationChunk of continuationResponse) {
-            // Check if we should stop during continuation
-            if (shouldStopStream) {
-              this.shouldStopStream.set(userAuth.address, false);
-              this.logger.log('Stream stopped during continuation');
-              res.write(
-                `data: ${JSON.stringify({
-                  final_message: {
-                    content: assistantMessage.content,
-                    images: assistantMessage.images,
-                  },
-                })}\n\n`
-              );
-              res.write('data: [DONE]\n\n');
-              res.end();
-              return;
+            for await (const continuationChunk of continuationResponse) {
+              if (shouldStopStream) {
+                this.shouldStopStream.set(userAuth.address, false);
+                this.logger.log('Stream stopped during continuation');
+                res.write(
+                  `data: ${JSON.stringify({
+                    final_message: {
+                      content: assistantMessage.content,
+                      images: assistantMessage.images,
+                    },
+                  })}\n\n`
+                );
+                res.write('data: [DONE]\n\n');
+                res.end();
+                return;
+              }
+
+              if (continuationChunk.choices[0]?.delta?.content) {
+                assistantMessage.content +=
+                  continuationChunk.choices[0].delta.content;
+                this.writeResponseChunk(continuationChunk, res);
+              }
             }
 
-            if (continuationChunk.choices[0]?.delta?.content) {
-              assistantMessage.content +=
-                continuationChunk.choices[0].delta.content;
-              this.writeResponseChunk(continuationChunk, res);
-            }
+            currentToolCalls = [];
           }
-
-          currentToolCalls = [];
         } else if (chunk.choices[0]?.finish_reason === 'stop') {
           if (assistantMessage.content) {
             messagesWithSystemPrompt.push({
@@ -237,7 +257,6 @@ export class AgentController {
         }
       }
 
-      // Normal stream completion
       if (!res.writableEnded) {
         this.logger.log('Normal stream completion');
 
