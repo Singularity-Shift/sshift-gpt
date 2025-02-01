@@ -13,7 +13,7 @@ import {
   UserAuth,
   UserService,
 } from '@nest-modules';
-import { IUserAuth } from '@helpers';
+import { AIModel, IUserAuth } from '@helpers';
 import { AgentGuard } from './agent.guard';
 import { Response } from 'express-stream';
 import { OpenAI } from 'openai';
@@ -44,6 +44,12 @@ export class AgentController {
     const controller = new AbortController();
     this.controller.set(userAuth.address, controller);
 
+    const reasoning = [AIModel.GPTo3Mini];
+    const modelWithCallFeature = [AIModel.GPT4o, AIModel.GPT4oMini];
+
+    const isRareasoning = reasoning.includes(newMessageDto.model);
+    const iscallingTools = modelWithCallFeature.includes(newMessageDto.model);
+
     const chat = await this.userService.updateChat(
       userAuth.address,
       newMessageDto
@@ -52,11 +58,9 @@ export class AgentController {
     let currentToolCalls = [];
     const assistantMessage = { content: '', images: [] };
 
-    const isO3Mini = newMessageDto.model === 'o3-mini';
-
     // Update message formatting: for o3-mini, ignore images
     const formattedMessages = chat.messages.map((msg) => {
-      if (isO3Mini) {
+      if (isRareasoning) {
         return {
           role: msg.role || 'user',
           content: msg.content || '',
@@ -93,12 +97,17 @@ export class AgentController {
     const adminConfig = await this.adminConfigService.findAdminConfig();
 
     // Use reasoningPrompt instead of systemPrompt for o3-mini
-    const systemMessageContent = isO3Mini ? adminConfig.reasoningPrompt : adminConfig.systemPrompt;
+    const systemMessageContent = isRareasoning
+      ? adminConfig.reasoningPrompt
+      : adminConfig.systemPrompt;
     const messagesWithSystemPrompt = [
       {
         role: 'developer',
         content:
-          systemMessageContent || (isO3Mini ? 'Provide high reasoning.' : 'You are a helpful assistant.'),
+          systemMessageContent ||
+          (isRareasoning
+            ? 'Provide high reasoning.'
+            : 'You are a helpful assistant.'),
       },
       ...formattedMessages,
     ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[];
@@ -111,28 +120,21 @@ export class AgentController {
     });
 
     try {
-      let stream;
-      if (isO3Mini) {
-        stream = await this.openai.chat.completions.create({
-          model: 'o3-mini',
-          messages: messagesWithSystemPrompt,
-          max_completion_tokens: 30000,
-          temperature: newMessageDto.temperature,
-          stream: true,
-          reasoning_effort: 'high'
-        });
-      } else {
-        stream = await this.openai.chat.completions.create({
-          model: newMessageDto.model || 'gpt-4o-mini',
-          messages: messagesWithSystemPrompt,
-          max_completion_tokens: 16384,
-          temperature: newMessageDto.temperature,
-          stream: true,
-          tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-          tool_choice: 'auto',
-          parallel_tool_calls: true,
-        });
-      }
+      const stream = await this.openai.chat.completions.create({
+        model: newMessageDto.model,
+        messages: messagesWithSystemPrompt,
+        max_completion_tokens: isRareasoning ? 30000 : 16384,
+        temperature: newMessageDto.temperature,
+        stream: true,
+        reasoning_effort: isRareasoning ? 'high' : undefined,
+        ...(iscallingTools
+          ? {
+              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+              tool_choice: 'auto',
+              parallel_tool_calls: true,
+            }
+          : undefined),
+      });
 
       let shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
@@ -164,7 +166,7 @@ export class AgentController {
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
           // For non-o3-mini models, handle tool calls as before
-          if (!isO3Mini) {
+          if (!reasoning) {
             const assistantToolMessage: ChatCompletionMessageParam = {
               role: 'assistant',
               content: assistantMessage.content,
@@ -187,13 +189,14 @@ export class AgentController {
             );
             messagesWithSystemPrompt.push(...toolResults);
 
-            const continuationResponse = await this.openai.chat.completions.create({
-              model: newMessageDto.model || 'gpt-4o-mini',
-              messages: messagesWithSystemPrompt,
-              max_tokens: 16384,
-              temperature: newMessageDto.temperature,
-              stream: true,
-            });
+            const continuationResponse =
+              await this.openai.chat.completions.create({
+                model: newMessageDto.model || 'gpt-4o-mini',
+                messages: messagesWithSystemPrompt,
+                max_tokens: 16384,
+                temperature: newMessageDto.temperature,
+                stream: true,
+              });
 
             shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
@@ -215,7 +218,8 @@ export class AgentController {
               }
 
               if (continuationChunk.choices[0]?.delta?.content) {
-                assistantMessage.content += continuationChunk.choices[0].delta.content;
+                assistantMessage.content +=
+                  continuationChunk.choices[0].delta.content;
                 this.writeResponseChunk(continuationChunk, res);
               }
             }

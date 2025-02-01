@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
 import {
+  IsEnum,
   IsNumber,
   IsOptional,
   IsString,
@@ -8,6 +9,7 @@ import {
 import { ChatMessagesDto } from './chat-messages.dto';
 import { Transform, Type } from 'class-transformer';
 import { ChatUsageDto } from './chat-usage.dto';
+import { AIModel } from '@helpers';
 
 export class NewMessageDto {
   @ApiProperty({
@@ -29,8 +31,8 @@ export class NewMessageDto {
     description: 'AI model used in this chat',
     example: 'gpt-4o-mini"',
   })
-  @IsString()
-  model: string;
+  @IsEnum(AIModel)
+  model: AIModel;
 
   @ApiProperty({
     description: 'Messages of the chat',
