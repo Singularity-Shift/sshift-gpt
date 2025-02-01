@@ -68,7 +68,7 @@ export default function ChatPage() {
         id: uuidv4(),
         title: `New Chat ${chats.length + 1}`,
         messages: [],
-        model: 'gpt-4o-mini', // Set default model for new chats
+        model: 'gpt-4o-mini',
         createdAt: currentTime,
         lastUpdated: currentTime,
       };
@@ -80,7 +80,7 @@ export default function ChatPage() {
       });
       setChats([...chats, response.data]);
       setCurrentChatId(response.data.id);
-      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+      setSelectedModel('gpt-4o-mini');
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -93,7 +93,7 @@ export default function ChatPage() {
         id: uuidv4(),
         title: `New Chat 1`,
         messages: [],
-        model: 'gpt-4o-mini', // Set default model for new chats
+        model: 'gpt-4o-mini',
         createdAt: currentTime,
         lastUpdated: currentTime,
       };
@@ -106,7 +106,7 @@ export default function ChatPage() {
 
       setChats([{ ...response.data }]);
       setCurrentChatId(response.data.id);
-      setSelectedModel('gpt-4o-mini'); // Reset selected model for new chats
+      setSelectedModel('gpt-4o-mini');
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -156,6 +156,11 @@ export default function ChatPage() {
   };
 
   const handleModelChange = (model: string) => {
+    // Prevent selecting o3-mini model
+    if (model === 'o3-mini') {
+      return;
+    }
+    
     setSelectedModel(model);
     if (currentChatId) {
       setChats((prevChats) =>
@@ -403,27 +408,19 @@ export default function ChatPage() {
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
-      // Find the index of the assistant message to regenerate
-
-      const messageIndex = currentChat.messages.findIndex(
-        (msg) => msg.id === assistantMessage.id
-      );
+      const messageIndex = currentChat.messages.findIndex((msg) => msg.id === assistantMessage.id);
       if (messageIndex === -1) return;
 
-      const lastMessage = currentChat.messages[messageIndex];
-      if (!lastMessage) return;
-
-      // Get all messages up to and including the previous user message
-      const messagesUpToLastUser = currentChat.messages.slice(0, messageIndex);
+      const userMessageIndex = messageIndex - 1;
+      if (userMessageIndex < 0) return; // no preceding message available
+      const userMessageForRegeneration = currentChat.messages[userMessageIndex];
+      if (userMessageForRegeneration.role !== 'user') return;
 
       // Update the chat to remove the regenerated message and all subsequent messages
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === currentChatId
-            ? {
-                ...chat,
-                messages: [...messagesUpToLastUser],
-              }
+            ? { ...chat, messages: chat.messages.slice(0, messageIndex) }
             : chat
         )
       );
@@ -431,7 +428,7 @@ export default function ChatPage() {
       const newMessage: NewMessage = {
         ...currentChat,
         model: selectedModel,
-        message: lastMessage,
+        message: userMessageForRegeneration,
       };
 
       // Call the API with formatted messages
@@ -941,6 +938,7 @@ export default function ChatPage() {
           <ChatInput
             onSendMessage={handleSendMessage}
             isGenerating={isAssistantResponding}
+            selectedModel={selectedModel}
           />
         </div>
       </div>
