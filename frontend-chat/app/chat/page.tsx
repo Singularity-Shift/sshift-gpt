@@ -601,11 +601,13 @@ export default function ChatPage() {
   const currentChat = chats.find((chat) => chat.id === currentChatId);
 
   const handleEdit = (editedMessage: IMessage, newContent: string) => {
+    if (!currentChat?.messages?.length) return;
+
     const editedMessageIndex = currentChat?.messages.findIndex(
       (msg) => msg.id === editedMessage.id
     );
 
-    if (!editedMessageIndex || editedMessageIndex === -1) return;
+    if (editedMessageIndex === -1) return;
 
     const messageToUpdate = currentChat?.messages[editedMessageIndex];
 
