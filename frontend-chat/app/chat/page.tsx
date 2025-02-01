@@ -156,11 +156,6 @@ export default function ChatPage() {
   };
 
   const handleModelChange = (model: string) => {
-    // Prevent selecting o3-mini model
-    if (model === 'o3-mini') {
-      return;
-    }
-    
     setSelectedModel(model);
     if (currentChatId) {
       setChats((prevChats) =>
