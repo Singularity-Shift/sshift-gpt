@@ -28,6 +28,7 @@ module sshift_dao_addr::subscription_v3 {
     const EEXTENSION_NOT_EXISTS: u64 = 12;
     const EHAS_HAS_EXTENSION_ACTIVE: u64 = 13;
     const ENOT_SUBSCRIPTION_ACTIVE: u64 = 14;
+    const ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION: u64 = 8;
 
 
     struct CollectionAddressDiscount has key, store, drop, copy {
@@ -128,21 +129,18 @@ module sshift_dao_addr::subscription_v3 {
 
         subscription_plan.move_bot_id = option::some(move_token_id);
 
-        let collections_discount = vector::map(
-            collection_addresses,
-            |c| {
-                let (_, i) = vector::index_of(&collection_addresses, &c);
+        let collections_discount = collection_addresses.map(|c| {
+            let (_, i) = collection_addresses.index_of(&c);
 
-                let dpd = vector::borrow(&discounts_per_day, i);
+            let dpd = discounts_per_day.borrow(i);
 
-                let collection_discount = CollectionAddressDiscount {
-                    collection_addr: c,
-                    discount_per_day: *dpd
-                };
+            let collection_discount = CollectionAddressDiscount {
+                collection_addr: c,
+                discount_per_day: *dpd
+            };
 
-                collection_discount
-            }
-        );
+            collection_discount
+        });
 
         subscription_plan.collections_discount = collections_discount
     }
@@ -158,7 +156,7 @@ module sshift_dao_addr::subscription_v3 {
             credits,
         };
 
-        vector::push_back(&mut subscription_plan.extensions, extension);
+        subscription_plan.extensions.push_back(extension);
     }
 
 
@@ -167,11 +165,11 @@ module sshift_dao_addr::subscription_v3 {
 
         let subscription_plan = borrow_global_mut<SubscriptionPlan>(@sshift_dao_addr);
 
-        let (has_extension, index) = vector::find(&subscription_plan.extensions, |e| e.name == name);
+        let (has_extension, index) = subscription_plan.extensions.find(|e| &e.name == &name);
 
         assert!(has_extension, EEXTENSION_NOT_EXISTS);
 
-        vector::remove(&mut subscription_plan.extensions, index);
+        subscription_plan.extensions.remove(index);
     }
 
     public entry fun gift_subscription(sender: &signer, account: address, duration: u64) acquires SubscriptionsGifted, UserSubscription {
@@ -183,7 +181,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
 
-        let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
+        let (has_free_subscription, index) = free_subscriptions.subscriptions.find(|s| {
             let FreeSubscription {
                 account: account_addr,
                 duration: _duration,
@@ -193,7 +191,7 @@ module sshift_dao_addr::subscription_v3 {
         });
 
         if(has_free_subscription) {
-            let subscription_to_update = vector::borrow_mut(&mut free_subscriptions.subscriptions, index);
+            let subscription_to_update = free_subscriptions.subscriptions.borrow_mut(index);
 
             subscription_to_update.account = account;
             subscription_to_update.duration = duration;
@@ -203,7 +201,7 @@ module sshift_dao_addr::subscription_v3 {
                 duration,
             };
 
-            vector::push_back(&mut free_subscriptions.subscriptions, subscription);
+            free_subscriptions.subscriptions.push_back(subscription);
         };
     }
 
@@ -212,10 +210,10 @@ module sshift_dao_addr::subscription_v3 {
 
         let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
 
-        let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions, |s| {
+        let (has_free_subscription, index) = free_subscriptions.subscriptions.find(|s| {
             let FreeSubscription {
                 account,
-                duration: duration,
+                duration,
             }= *s;
 
             account == account_addr && duration > 0
@@ -223,9 +221,11 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(has_free_subscription, ENOT__FREE_SUBSCRIPTION_TO_CLAIM);
 
-        let subscription = vector::borrow_mut<FreeSubscription>(&mut free_subscriptions.subscriptions, index);
+        let subscription = free_subscriptions.subscriptions.borrow_mut::<FreeSubscription>(index);
 
         let start_time = timestamp::now_seconds();
+
+        let end_time = start_time + subscription.duration;
 
         if(exists<UserSubscription>(account_addr)) {
             let subscription_obj = borrow_global_mut<UserSubscription>(account_addr);
@@ -250,7 +250,7 @@ module sshift_dao_addr::subscription_v3 {
             UserSubscribed {
                 account: account_addr,
                 start_time,
-                end_time: start_time + subscription.duration,
+                end_time,
                 price: 0,
                 created_at: timestamp::now_seconds(),
                 upgrades: vector::empty()
@@ -274,40 +274,42 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
 
+        assert!(days <= 30, ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
+
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
-        assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
+        assert!(plan.move_bot_id.is_some(), ENOT_SET_MOVE_BOT_ID);
 
         let currencies_addr = fees_v3::get_currencies_addr();
 
-        let (has_currency, _) = vector::find(&currencies_addr, |c| c == &currency);
+        let (has_currency, _) = currencies_addr.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
+        let move_bot_id = plan.move_bot_id.borrow();
 
         let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
 
         let resource_account_addr = fees_v3::get_resource_account_address();
 
-        let extensions_price = vector::fold<u64, Extension>(plan.extensions, 0, |acc, curr| {
+        let extensions_price = plan.extensions.fold::<u64, Extension>(0, |acc, curr| {
             let Extension {
                 name,
                 prices,
                 credits: _
             } = curr;
 
-            let (has_extension, _) = vector::find(&extensions, |e| e == &name);
+            let (has_extension, _) = extensions.find(|e| e == &name);
 
             if(!has_extension) {
                 acc
             } else {
-                acc + *vector::borrow(&prices, days)
+                acc + prices[days]
             }
         });
 
-        let price = *vector::borrow(&plan.prices, days - 1);
+        let price = plan.prices[days - 1];
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
 
@@ -323,14 +325,14 @@ module sshift_dao_addr::subscription_v3 {
 
         let start_time = timestamp::now_seconds();
 
-        let filtered_extensions = vector::filter(extensions, |e| vector::any(&plan.extensions, |ext| &ext.name == e));
+        let filtered_extensions = extensions.filter(|e| plan.extensions.any(|ext| &ext.name == e));
 
-        let upgrades = vector::map<String, Upgrade>(filtered_extensions, |f| {
-            let (_, i) = vector::index_of(&filtered_extensions, &f);
+        let upgrades = filtered_extensions.map::<String, Upgrade>(|f| {
+            let (_, i) = filtered_extensions.index_of(&f);
 
             Upgrade {
                 name: f,
-                credits: *vector::borrow(&credits, i),
+                credits: credits[i],
             }
         });
 
@@ -374,20 +376,20 @@ module sshift_dao_addr::subscription_v3 {
 
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
-        let extensions_to_buy = vector::filter(extensions, |e| {
-            vector::any(&plan.extensions, |ext| &ext.name == e) && !has_extension_active(buyer_addr, *e)
+        let extensions_to_buy = extensions.filter(|e| {
+            plan.extensions.any(|ext| &ext.name == e) && !has_extension_active(buyer_addr, *e)
         });
 
-        assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
+        assert!(plan.move_bot_id.is_some(), ENOT_SET_MOVE_BOT_ID);
 
         let currencies_addr = fees_v3::get_currencies_addr();
 
-        let (has_currency, _) = vector::find(&currencies_addr, |c| c == &currency);
+        let (has_currency, _) = currencies_addr.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
+        let move_bot_id = plan.move_bot_id.borrow();
 
         let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
 
@@ -403,12 +405,12 @@ module sshift_dao_addr::subscription_v3 {
             days = 1;
         };
 
-        let extensions_price = vector::fold<u64, String>(extensions_to_buy, 0, |acc, curr|{
-            let (_,i) = vector::find(&plan.extensions, |ext| &ext.name == &curr);
+        let extensions_price = extensions_to_buy.fold::<u64, String>(0, |acc, curr|{
+            let (_,i) = plan.extensions.find(|ext| &ext.name == &curr);
 
-            let extension = vector::borrow(&plan.extensions, i); 
+            let extension = plan.extensions.borrow(i);
 
-            acc + *vector::borrow(&extension.prices, days)
+            acc + extension.prices[days]
         });
 
 
@@ -424,10 +426,10 @@ module sshift_dao_addr::subscription_v3 {
 
         primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
 
-        let upgrades_bought = vector::map<String, Upgrade>(extensions_to_buy, |e| {
-            let (_,i) = vector::find(&plan.extensions, |ext| &ext.name == &e);
+        let upgrades_bought = extensions_to_buy.map::<String, Upgrade>(|e| {
+            let (_,i) = plan.extensions.find(|ext| &ext.name == &e);
 
-            let extension = vector::borrow(&plan.extensions, i); 
+            let extension = plan.extensions.borrow(i);
 
             Upgrade {
                 name: e,
@@ -435,7 +437,7 @@ module sshift_dao_addr::subscription_v3 {
             }
         });
 
-        vector::append<Upgrade>(&mut user_subscription.upgrades, upgrades_bought);
+        user_subscription.upgrades.append::<Upgrade>(upgrades_bought);
 
         event::emit(
             UserSubscribed {
@@ -463,18 +465,20 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
 
+        assert!(days <= 30, ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
+
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
-        assert!(option::is_some(&plan.move_bot_id), ENOT_SET_MOVE_BOT_ID);
+        assert!(plan.move_bot_id.is_some(), ENOT_SET_MOVE_BOT_ID);
 
         let currencies_addr = fees_v3::get_currencies_addr();
 
-        let (has_currency, _) = vector::find(&currencies_addr, |c| c == &currency);
+        let (has_currency, _) = currencies_addr.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
+        let move_bot_id = plan.move_bot_id.borrow();
 
         let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
 
@@ -484,19 +488,19 @@ module sshift_dao_addr::subscription_v3 {
 
         let duration = user_subscription.end_time - timestamp::now_seconds();
 
-        let price = *vector::borrow(&plan.prices, days - 1);
+        let price = plan.prices[days - 1];
 
-        let extensions_price = vector::fold<u64, Upgrade>(user_subscription.upgrades, 0, |acc, curr|{
+        let extensions_price = user_subscription.upgrades.fold::<u64, Upgrade>(0, |acc, curr|{
             let Upgrade {
                 name,
                 credits: _,
             }  = curr;
 
-            let (_,i) = vector::find(&plan.extensions, |ext| &ext.name == &name);
+            let (_,i) = plan.extensions.find(|ext| &ext.name == &name);
 
-            let extension = vector::borrow(&plan.extensions, i); 
+            let extension = plan.extensions.borrow(i);
 
-            acc + *vector::borrow(&extension.prices, days)
+            acc + extension.prices[days]
         });
 
         let discount_per_day = get_highest_hold(sender, nfts_holding, plan);
@@ -511,7 +515,7 @@ module sshift_dao_addr::subscription_v3 {
 
         primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
 
-        user_subscription.end_time = user_subscription.end_time + duration;
+        user_subscription.end_time += duration;
 
         event::emit(
             UserSubscribed {
@@ -534,9 +538,9 @@ module sshift_dao_addr::subscription_v3 {
     public fun get_move_bot_fields(): MoveBotFields acquires SubscriptionPlan {
         let config = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
-        assert!(option::is_some(&config.move_bot_id), ESUBSCRIPTION_PLAN_NOT_EXISTS);
+        assert!(config.move_bot_id.is_some(), ESUBSCRIPTION_PLAN_NOT_EXISTS);
 
-        let move_bot_id = option::borrow(&config.move_bot_id);
+        let move_bot_id = config.move_bot_id.borrow();
 
         let token_data_id = token_v1::get_tokendata_id(*move_bot_id);
 
@@ -590,7 +594,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let user_subsciption = borrow_global<UserSubscription>(account);
 
-        let (has_extension, _) = vector::find(&user_subsciption.upgrades, |u| u.name == extension);
+        let (has_extension, _) = user_subsciption.upgrades.find(|u| &u.name == &extension);
 
         has_extension
     }
@@ -599,7 +603,7 @@ module sshift_dao_addr::subscription_v3 {
     public fun has_subscription_to_claim(account: address): bool acquires SubscriptionsGifted {
         let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
 
-        let (has_free_subscription, _index) = vector::find(&free_subscriptions.subscriptions,|s| {
+        let (has_free_subscription, _index) = free_subscriptions.subscriptions.find(|s| {
             let FreeSubscription {
                 account: account_addr,
                 duration,
@@ -617,7 +621,7 @@ module sshift_dao_addr::subscription_v3 {
     public fun get_subscription_to_claim(account_addr: address): FreeSubscription acquires SubscriptionsGifted {
         let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
 
-        let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
+        let (has_free_subscription, index) = free_subscriptions.subscriptions.find(|s| {
             let FreeSubscription {
                 account,
                 duration: _duration,
@@ -628,7 +632,7 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(has_free_subscription, ENOT__FREE_SUBSCRIPTION_TO_CLAIM);
 
-        *vector::borrow<FreeSubscription>(&free_subscriptions.subscriptions, index)
+        free_subscriptions.subscriptions[index]
     }
 
 
@@ -644,59 +648,49 @@ module sshift_dao_addr::subscription_v3 {
         account: &signer, tokens: vector<address>, plan: &SubscriptionPlan
     ): u64 {
         let account_address = signer::address_of(account);
+
+        let is_owner = tokens.all::<address>(|token_addr| {
+            let token = object::address_to_object<Token>(*token_addr);
+            object::owns(token, account_address)
+        });
+
         assert!(
-            vector::all<address>(
-                &tokens,
-                |token_addr| {
-                    let token = object::address_to_object<Token>(*token_addr);
-                    object::owns(token, account_address)
-                }
-            ),
+            is_owner,
             ENOT_OWNER
         );
 
-        let discounts = vector::map<CollectionAddressDiscount, u64>(
-            plan.collections_discount,
-            |cd| {
-                let CollectionAddressDiscount { collection_addr, discount_per_day } = cd;
+        let discounts = plan.collections_discount.map::<CollectionAddressDiscount, u64>(|cd| {
+            let CollectionAddressDiscount { collection_addr, discount_per_day } = cd;
 
-                let fit_tokens = vector::filter<address>(
-                    tokens,
-                    |token_addr| {
-                        let token = object::address_to_object<Token>(*token_addr);
+            let fit_tokens = tokens.filter::<address>(|token_addr| {
+                let token = object::address_to_object<Token>(*token_addr);
 
-                        let belong_collection_object = token::collection_object(token);
+                let belong_collection_object = token::collection_object(token);
 
-                        let belong_collection_addr =
-                            object::object_address(&belong_collection_object);
+                let belong_collection_addr =
+                    object::object_address(&belong_collection_object);
 
-                        collection_addr == belong_collection_addr
-                    }
-                );
+                collection_addr == belong_collection_addr
+            });
 
-                vector::length(&fit_tokens) * discount_per_day
-            }
-        );
+            fit_tokens.length() * discount_per_day
+        });
 
-        vector::fold<u64, u64>(
-            discounts,
-            0,
-            |curr, prev| {
-                if (curr > prev) { curr }
-                else { prev }
-            }
-        )
+        discounts.fold::<u64, u64>(0, |curr, prev| {
+            if (curr > prev) { curr }
+            else { prev }
+        })
+    }
+
+    fun min_u64(a: u64, b: u64): u64 {
+        if (a < b) { a } else { b }
     }
 
     fun get_discount(price: u64, days: u64, discount_per_day: u64, hold_move_token: u64): u64 {
         if (hold_move_token > 0) {
             price / 2
         } else {
-            if (price / 2 < discount_per_day * days) {
-                price / 2
-            } else {
-                discount_per_day * days
-            }
+            min_u64(price / 2, discount_per_day * days)
         }
     }
 
@@ -801,7 +795,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let fa_obj_constructor_ref = &object::create_named_object(
             fa_owner_obj_signer,
-            *string::bytes(&name),
+            *name.bytes(),
         );
 
         let fa_obj_signer = &object::generate_signer(fa_obj_constructor_ref);
@@ -907,12 +901,12 @@ module sshift_dao_addr::subscription_v3 {
         );
 
         let collections_v2 = vector::empty();
-        vector::push_back(&mut collections_v2, collection_addr_1);
-        vector::push_back(&mut collections_v2, collection_addr_2);
+        collections_v2.push_back(collection_addr_1);
+        collections_v2.push_back(collection_addr_2);
 
         let discounts = vector::empty();
-        vector::push_back(&mut discounts, 1000000);
-        vector::push_back(&mut discounts, 2000000);
+        discounts.push_back(1000000);
+        discounts.push_back(2000000);
 
         init_module(sender);
 
@@ -997,7 +991,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let prices_list = get_prices();
 
-        assert!(vector::length(&prices_list) == 30, EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS);
+        assert!(prices_list.length() == 30, EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1081,7 +1075,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let token_holding = vector::empty();
 
-        vector::push_back(&mut token_holding, token_addr);
+        token_holding.push_back(token_addr);
 
         let fa_obj = create_fa();
 
@@ -1134,9 +1128,9 @@ module sshift_dao_addr::subscription_v3 {
 
         let token_holding = vector::empty();
 
-        vector::push_back(&mut token_holding, token_addr_1);
-        vector::push_back(&mut token_holding, token_addr_2);
-        vector::push_back(&mut token_holding, token_addr_3);
+        token_holding.push_back(token_addr_1);
+        token_holding.push_back(token_addr_2);
+        token_holding.push_back(token_addr_3);
 
         let fa_obj = create_fa();
 
@@ -1200,9 +1194,9 @@ module sshift_dao_addr::subscription_v3 {
 
         let token_holding = vector::empty();
 
-        vector::push_back(&mut token_holding, token_addr_1);
-        vector::push_back(&mut token_holding, token_addr_2);
-        vector::push_back(&mut token_holding, token_addr_3);
+        token_holding.push_back(token_addr_1);
+        token_holding.push_back(token_addr_2);
+        token_holding.push_back(token_addr_3);
 
         buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
 
@@ -1301,7 +1295,7 @@ module sshift_dao_addr::subscription_v3 {
 
         for(i in 0..100) {
             let token_addr = mint_nft(admin, collection_addr_1, string_utils::format1(&b"Sshift token n{} v1", i), string_utils::format1(&b"Sshift token n{}", i), string::utf8(b"Sshift"), user_addr);
-            vector::push_back(&mut token_holding, token_addr);
+            token_holding.push_back(token_addr);
         };
 
         buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
@@ -1681,12 +1675,12 @@ module sshift_dao_addr::subscription_v3 {
         );
 
         let collections_v2 = vector::empty();
-        vector::push_back(&mut collections_v2, collection_addr_1);
-        vector::push_back(&mut collections_v2, collection_addr_2);
+        collections_v2.push_back(collection_addr_1);
+        collections_v2.push_back(collection_addr_2);
 
         let discounts = vector::empty();
-        vector::push_back(&mut discounts, 3000);
-        vector::push_back(&mut discounts, 4000);
+        discounts.push_back(3000);
+        discounts.push_back(4000);
         
 
         init_module(owner);
@@ -1787,7 +1781,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let token_holding = vector::empty();
 
-        vector::push_back(&mut token_holding, token_addr_1);
+        token_holding.push_back(token_addr_1);
 
         buy_plan(user2, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
 

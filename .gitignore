@@ -58,3 +58,4 @@ contracts/**/build
 
 keyfile.json
 .idea
+contracts/**/.idea

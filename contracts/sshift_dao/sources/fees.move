@@ -30,20 +30,26 @@ module sshift_dao_addr::fees_v3 {
         currencies: vector<address>,
     }
 
+    struct CurrencyFees has store {
+        token: address,
+        amount: u64,
+    }
+
     struct FeesAdmin has key {
         signer_cap: Option<SignerCapability>,
-        fees_not_claimed: u64,
+        fees_not_claimed: vector<CurrencyFees>,
         collectors: vector<address>,
     }
 
     struct FeesToClaim has key {
-        amount: u64
+        currencies: vector<CurrencyFees>,
     }
 
     #[event]
     struct Claimed has store, drop {
         collector: address,
-        amount: u64
+        amount: u64,
+        currency: address,
     }
 
     fun init_module(sender: &signer) {
@@ -62,7 +68,7 @@ module sshift_dao_addr::fees_v3 {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                fees_not_claimed: 0,
+                fees_not_claimed: vector::empty(),
                 signer_cap: option::none(),
             }
         );
@@ -86,12 +92,9 @@ module sshift_dao_addr::fees_v3 {
 
         fees_admin.signer_cap = option::some(signer_cap);
 
-        vector::for_each<address>(
-            collectors,
-            |account| {
-                vector::push_back(&mut fees_admin.collectors, account);
-            }
-        );
+        collectors.for_each::<address>(|account| {
+            fees_admin.collectors.push_back(account);
+        });
     }
 
     public entry fun remove_resource_account(
@@ -113,16 +116,30 @@ module sshift_dao_addr::fees_v3 {
     public entry fun create_collector_object(account: &signer) acquires FeesAdmin {
         let account_addr = signer::address_of(account);
 
-        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+        let fees_admin = borrow_global<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, _index) = vector::find(
-            &fees_admin.collectors, |collector| collector == &account_addr
-        );
+        let (is_found, _index) = fees_admin.collectors.find(|collector| collector == &account_addr);
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
-        move_to(account, FeesToClaim { amount: 0 });
+        move_to(account, FeesToClaim { currencies: vector::empty() });
     }
+
+    public entry fun add_currency(sender: &signer, currency: address) acquires Config, FeesAdmin {
+        let sender_addr = signer::address_of(sender);
+        let config = borrow_global_mut<Config>(@sshift_dao_addr);
+        assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+
+        fees_admin.fees_not_claimed.push_back(CurrencyFees {
+            amount: 0,
+            token: currency,
+        });
+
+        config.currencies.push_back(currency);
+    }
+
 
     public entry fun add_collector(
         account: &signer, reviewer: &signer, collector: address
@@ -136,7 +153,7 @@ module sshift_dao_addr::fees_v3 {
         );
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        vector::push_back(&mut fees_admin.collectors, collector);
+        fees_admin.collectors.push_back(collector);
     }
 
     public entry fun remove_collector(
@@ -152,13 +169,11 @@ module sshift_dao_addr::fees_v3 {
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, index) = vector::find<address>(
-            &fees_admin.collectors, |c| { c == &collector }
-        );
+        let (is_found, index) = fees_admin.collectors.find::<address>(|c| { c == &collector });
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
-        vector::remove<address>(&mut fees_admin.collectors, index);
+        fees_admin.collectors.remove::<address>(index);
     }
 
     public entry fun claim_fees(account: &signer, currency: address) acquires FeesAdmin, FeesToClaim, Config {
@@ -166,20 +181,24 @@ module sshift_dao_addr::fees_v3 {
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, _index) = vector::find<address>(
-            &fees_admin.collectors, |c| { c == &account_addr }
-        );
+        let (is_found, _index) = fees_admin.collectors.find::<address>(|c| { c == &account_addr });
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
         let config = borrow_global<Config>(@sshift_dao_addr);
 
-        let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
+        let (has_currency, _) = config.currencies.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
         let salary_to_claim = borrow_global_mut<FeesToClaim>(account_addr);
 
-        assert!(salary_to_claim.amount > 0, error::invalid_state(ENOTHING_TO_CLAIM));
+        let (has_currency, index_currency) = salary_to_claim.currencies.find(|c| c.token == currency);
+
+        assert!(has_currency, EWRONG_CURRENCY);
+
+        let currency_to_claim = salary_to_claim.currencies.borrow_mut(index_currency);
+
+        assert!(currency_to_claim.amount > 0, error::invalid_state(ENOTHING_TO_CLAIM));
 
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
 
@@ -188,17 +207,22 @@ module sshift_dao_addr::fees_v3 {
         let metadata = object::address_to_object<Metadata>(currency);
 
         primary_fungible_store::transfer(
-            &resource_signer, metadata, account_addr, salary_to_claim.amount 
+            &resource_signer, metadata, account_addr, currency_to_claim.amount
         );
 
-        fees_admin.fees_not_claimed = fees_admin.fees_not_claimed
-            - salary_to_claim.amount;
+        let (has_not_claimed_currency, index_not_claimed_currency) = fees_admin.fees_not_claimed.find(|f| f.token == currency );
+
+        assert!(has_not_claimed_currency, EWRONG_CURRENCY);
+
+        let not_claimed_currency = fees_admin.fees_not_claimed.borrow_mut(index_not_claimed_currency);
+
+        not_claimed_currency.amount -= currency_to_claim.amount;
 
         event::emit(
-            Claimed { collector: account_addr, amount: salary_to_claim.amount }
+            Claimed { collector: account_addr, amount: currency_to_claim.amount, currency }
         );
 
-        salary_to_claim.amount = 0;
+        currency_to_claim.amount = 0;
     }
 
     public entry fun payment(
@@ -213,43 +237,56 @@ module sshift_dao_addr::fees_v3 {
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
 
-        let (is_found, _index) = vector::find<address>(
-            &fees_admin.collectors,
-            |c| {
-                vector::any(&collectors, |e| e == c)
-            }
-        );
+        let (is_found, _index) = fees_admin.collectors.find::<address>(|c| {
+            collectors.any(|e| e == c)
+        });
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
+        let (has_currency, _) = config.currencies.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
 
         let metadata = object::address_to_object<Metadata>(currency);
 
+        let (has_currency, index_currency) = fees_admin.fees_not_claimed.find(|f| f.token == currency);
+
+        assert!(has_currency, EWRONG_CURRENCY);
+
+        let currency_not_claimed = fees_admin.fees_not_claimed.borrow_mut(index_currency);
+
         assert!(
             primary_fungible_store::balance(signer::address_of(&resource_signer), metadata)
                 > vector::fold(amounts, 0, |curr, acc| acc + curr)
-                    + fees_admin.fees_not_claimed,
+                    + currency_not_claimed.amount,
             error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE)
         );
 
-        vector::for_each(
-            collectors,
+        collectors.for_each(
             |e| {
-                let (_has_amount, index) = vector::index_of(&collectors, &e);
+                let (_has_amount, index) = collectors.index_of(&e);
 
-                let amount = *vector::borrow<u64>(&amounts, index);
+                let amount = amounts[index];
 
                 let salary_to_claim = borrow_global_mut<FeesToClaim>(e);
 
-                salary_to_claim.amount = amount;
+                let (has_currency_to_claim, index_currency_to_claim) = salary_to_claim.currencies.find(|c| c.token == currency);
 
-                fees_admin.fees_not_claimed = fees_admin.fees_not_claimed + amount;
+                if(!has_currency_to_claim) {
+                    salary_to_claim.currencies.push_back(CurrencyFees {
+                        amount,
+                        token: currency
+                    })
+                } else {
+                    let currency_to_claim = salary_to_claim.currencies.borrow_mut(index_currency_to_claim);
+
+                    currency_to_claim.amount = amount;
+                };
+
+                currency_not_claimed.amount += amount;
             }
         );
     }
@@ -293,24 +330,16 @@ module sshift_dao_addr::fees_v3 {
         config.pending_reviewer_addr = option::none();
     }
 
-    public entry fun add_currency(sender: &signer, currency: address) acquires Config {
-        let sender_addr = signer::address_of(sender);
-        let config = borrow_global_mut<Config>(@sshift_dao_addr);
-        assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
-        
-        vector::push_back(&mut config.currencies, currency);
-    }
-
     public entry fun remove_currency(sender: &signer, currency: address) acquires Config {
         let sender_addr = signer::address_of(sender);
         let config = borrow_global_mut<Config>(@sshift_dao_addr);
         assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
 
 
-        let (has_currency, index) = vector::find(&config.currencies, |c| c == &currency);
+        let (has_currency, index) = config.currencies.find(|c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
-        vector::remove(&mut config.currencies, index);
+        config.currencies.remove(index);
     }
 
     #[view]
@@ -359,9 +388,9 @@ module sshift_dao_addr::fees_v3 {
     public fun get_resource_balances(): (vector<address>, vector<u64>) acquires FeesAdmin, Config {
         let config = borrow_global<Config>(@sshift_dao_addr);
 
-        assert!(vector::length(&config.currencies) > 0, ENOT_CURRENCIES_SET);
+        assert!(config.currencies.length() > 0, ENOT_CURRENCIES_SET);
 
-        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+        let fees_admin = borrow_global<FeesAdmin>(@sshift_dao_addr);
 
         let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
 
@@ -369,11 +398,11 @@ module sshift_dao_addr::fees_v3 {
 
         let resource_signer_addr = signer::address_of(&resource_signer);
 
-        let metadatas = vector::map<address, Object<Metadata>>(config.currencies, |currency|{
+        let metadatas = config.currencies.map::<address, Object<Metadata>>(|currency|{
             object::address_to_object<Metadata>(currency)
         });
 
-        let balances = vector::map<Object<Metadata>, u64>(metadatas, |metadata| {
+        let balances = metadatas.map::<Object<Metadata>, u64>(|metadata| {
             primary_fungible_store::balance(resource_signer_addr, metadata)
         });
 
@@ -386,15 +415,22 @@ module sshift_dao_addr::fees_v3 {
     }
 
     #[view]
-    public fun get_balance_to_claim(account_addr: address): u64 acquires FeesToClaim {
+    public fun get_balance_to_claim(account_addr: address, currency: address): u64 acquires FeesToClaim {
         let fees_to_claim = borrow_global<FeesToClaim>(account_addr);
-        fees_to_claim.amount
+
+        let (has_currency, index) = fees_to_claim.currencies.find(|f| f.token == currency);
+
+        assert!(has_currency, EWRONG_CURRENCY);
+
+        let currency_to_claim = fees_to_claim.currencies.borrow(index);
+
+        currency_to_claim.amount
     }
 
     #[view]
     public fun resource_account_exists(): bool acquires FeesAdmin {
         let fees_admin = borrow_global<FeesAdmin>(@sshift_dao_addr);
-        option::is_some(&fees_admin.signer_cap)
+        fees_admin.signer_cap.is_some()
     }
 
     #[view]
@@ -410,21 +446,19 @@ module sshift_dao_addr::fees_v3 {
     }
 
     fun is_admin(config: &Config, sender: address): bool {
-        if (sender == config.admin_addr) { true }
-        else { false }
+        sender == config.admin_addr
     }
 
     fun is_reviewer(config: &Config, sender: address): bool {
-        if (sender == config.reviewer_addr) { true }
-        else { false }
+        sender == config.reviewer_addr
     }
 
     fun get_signer_cap(signer_cap_opt: &Option<SignerCapability>): &SignerCapability {
         assert!(
-            option::is_some<SignerCapability>(signer_cap_opt),
+            signer_cap_opt.is_some::<SignerCapability>(),
             error::not_implemented(ENOT_RESOURCE_ACCOUNT_ADDED)
         );
-        option::borrow<SignerCapability>(signer_cap_opt)
+        signer_cap_opt.borrow::<SignerCapability>()
     }
 
     #[test_only]
@@ -466,8 +500,6 @@ module sshift_dao_addr::fees_v3 {
         transfer_ref: TransferRef,
     }
 
-
-
     #[test_only]
     public fun initialize_for_test(sender: &signer) {
         move_to(
@@ -485,7 +517,7 @@ module sshift_dao_addr::fees_v3 {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                fees_not_claimed: 0,
+                fees_not_claimed: vector::empty(),
                 signer_cap: option::none()
             }
         );
@@ -522,6 +554,44 @@ module sshift_dao_addr::fees_v3 {
         let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
 
         move_to(fa_obj_signer, FAController {
+            mint_ref,
+            transfer_ref,
+        });
+
+        fa_obj
+    }
+
+    #[test_only]
+    fun create_fa_2(): Object<Metadata> {
+        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_dao_addr);
+        let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
+
+        let name = string::utf8(b"usdt test");
+
+        let fa_obj_constructor_ref = &object::create_named_object(
+            fa_owner_obj_signer,
+            *string::bytes(&name),
+        );
+
+        let fa_obj_signer = &object::generate_signer(fa_obj_constructor_ref);
+
+
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            fa_obj_constructor_ref,
+            option::none(),
+            name,
+            string::utf8(b"USDT"),
+            8,
+            string::utf8(b"test"),
+            string::utf8(b"usdt_project"),
+        );
+
+        let fa_obj = object::object_from_constructor_ref<Metadata>(fa_obj_constructor_ref);
+
+        let mint_ref = fungible_asset::generate_mint_ref(fa_obj_constructor_ref);
+        let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
+
+        move_to(fa_obj_signer, FAController2 {
             mint_ref,
             transfer_ref,
         });
@@ -627,9 +697,9 @@ module sshift_dao_addr::fees_v3 {
             vector[2000000, 1000000, 1500000]
         );
 
-        let user2_addr_balance = get_balance_to_claim(user2_addr);
-        let user3_addr_balance = get_balance_to_claim(user3_addr);
-        let user4_addr_balance = get_balance_to_claim(user4_addr);
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr);
 
         assert!(user2_addr_balance == 2000000, EBALANCE_NOT_EQUAL);
         assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
@@ -638,9 +708,9 @@ module sshift_dao_addr::fees_v3 {
         claim_fees(user3, fa_addr);
 
         let (_, resource_balances_after_user3_claimed) = get_resource_balances();
-        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr);
-        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
-        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr);
 
         assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
@@ -653,13 +723,193 @@ module sshift_dao_addr::fees_v3 {
 
         claim_fees(user4, fa_addr);
 
-        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr);
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr);
         let (_,resource_balances_after_user4_claimed) = get_resource_balances();
 
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
             resource_balances_after_user4_claimed[0]
                 == resource_balances[0] - (user3_addr_balance + user4_addr_balance),
+            EBALANCE_NOT_EQUAL
+        );
+
+        assert!(primary_fungible_store::balance(user2_addr, fa_obj) == 0, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user3_addr, fa_obj) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user4_addr, fa_obj) == 1500000, EBALANCE_NOT_EQUAL);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
+    fun test_payment_diffent_currencies(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+        user3: &signer,
+        user4: &signer
+    ) acquires Config, FeesAdmin, FeesToClaim, FAController, FAController2 {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+        let user3_addr = signer::address_of(user3);
+        let user4_addr = signer::address_of(user4);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+        account::create_account_for_test(user3_addr);
+        account::create_account_for_test(user4_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        set_pending_reviewer(sender, user4_addr);
+        accept_reviewer(user4);
+
+        create_resource_account(user1, b"test", vector[user3_addr, user4_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(&resource_signer, &fa_controller.mint_ref, 20000000);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(&resource_signer, &fa_controller_2.mint_ref, 2000000000);
+
+        add_currency(user1, fa_addr);
+        add_currency(user1, fa_addr_2);
+
+        let (_, resource_balances) = get_resource_balances();
+
+        assert!(resource_balances[0] == 20000000, EBALANCE_NOT_EQUAL);
+
+        add_collector(user1, user4, user2_addr);
+        create_collector_object(user2);
+        add_collector(user1, user4, user3_addr);
+        create_collector_object(user3);
+        add_collector(user1, user4, user4_addr);
+        create_collector_object(user4);
+
+        payment(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            fa_addr,
+            vector[2000000, 1000000, 1500000]
+        );
+
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr);
+
+        assert!(user2_addr_balance == 2000000, EBALANCE_NOT_EQUAL);
+        assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(user4_addr_balance == 1500000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user3, fa_addr);
+
+        let (_, resource_balances_after_user3_claimed) = get_resource_balances();
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr);
+
+        assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balances_after_user3_claimed[0]
+                == resource_balances[0] - user3_addr_balance,
+            EBALANCE_NOT_EQUAL
+        );
+        assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
+        assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user4, fa_addr);
+
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let (_,resource_balances_after_user4_claimed) = get_resource_balances();
+
+        assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balances_after_user4_claimed[0]
+                == resource_balances[0] - (user3_addr_balance + user4_addr_balance),
+            EBALANCE_NOT_EQUAL
+        );
+
+        assert!(primary_fungible_store::balance(user2_addr, fa_obj) == 0, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user3_addr, fa_obj) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user4_addr, fa_obj) == 1500000, EBALANCE_NOT_EQUAL);
+
+        payment(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            fa_addr_2,
+            vector[10000000, 20000000, 30000000]
+        );
+
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr_2);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr_2);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr_2);
+
+        assert!(user2_addr_balance == 10000000, EBALANCE_NOT_EQUAL);
+        assert!(user3_addr_balance == 20000000, EBALANCE_NOT_EQUAL);
+        assert!(user4_addr_balance == 30000000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user3, fa_addr_2);
+
+        let (_, resource_balances_after_user3_claimed) = get_resource_balances();
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr_2);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr_2);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr_2);
+
+        assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balances_after_user3_claimed[1]
+                == resource_balances[1] - user3_addr_balance,
+            EBALANCE_NOT_EQUAL
+        );
+        assert!(user4_addr_balance_after_user3_claimed == 30000000, EBALANCE_NOT_EQUAL);
+        assert!(user2_addr_balance_after_user3_claimed == 10000000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user4, fa_addr_2);
+
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr_2);
+        let (_,resource_balances_after_user4_claimed) = get_resource_balances();
+
+        assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            resource_balances_after_user4_claimed[1]
+                == resource_balances[1] - (user3_addr_balance + user4_addr_balance),
             EBALANCE_NOT_EQUAL
         );
 
@@ -718,9 +968,7 @@ module sshift_dao_addr::fees_v3 {
 
         let collectors = get_collectors();
 
-        let (is_found, _index) = vector::find<address>(
-            &collectors, |c| { c == &user4_addr }
-        );
+        let (is_found, _index) = collectors.find::<address>(|c| { c == &user4_addr });
 
         assert!(is_found, ECOLLECTOR_NOT_FOUND);
     }
@@ -771,9 +1019,7 @@ module sshift_dao_addr::fees_v3 {
 
         let collectors = get_collectors();
 
-        let (is_found, _index) = vector::find<address>(
-            &collectors, |c| { c == &user4_addr }
-        );
+        let (is_found, _index) = collectors.find::<address>(|c| { c == &user4_addr });
 
         assert!(!is_found, Ecollector_SHOULD_NOT_EXISTS);
     }
@@ -1346,5 +1592,147 @@ module sshift_dao_addr::fees_v3 {
         accept_admin(user1);
 
         remove_resource_account(user2, user4);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_dao_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+        )
+    ]
+    #[expected_failure(abort_code = 12, location = Self)]
+    fun test_payment_with_not_registered_currency(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+    ) acquires Config, FeesAdmin, FeesToClaim, FAController2 {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        create_resource_account(user1, b"test", vector[user2_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(&resource_signer, &fa_controller_2.mint_ref, 2000000000);
+
+        create_collector_object(user2);
+
+        payment(
+            user1,
+            vector[user2_addr],
+            fa_addr_2,
+            vector[2000000]
+        );
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+    test(
+        aptos_framework = @0x1,
+        sender = @sshift_dao_addr,
+        user1 = @0x200,
+        user2 = @0x201,
+    )
+    ]
+    #[expected_failure(abort_code = 12, location = Self)]
+    fun test_claim_with_not_registered_currency(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+    ) acquires Config, FeesAdmin, FeesToClaim, FAController, FAController2 {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        create_resource_account(user1, b"test", vector[user2_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_dao_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(&resource_signer, &fa_controller.mint_ref, 20000000);
+
+        add_currency(user1, fa_addr);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(&resource_signer, &fa_controller_2.mint_ref, 2000000000);
+
+        let (_, resource_balances) = get_resource_balances();
+
+        assert!(resource_balances[0] == 20000000, EBALANCE_NOT_EQUAL);
+
+        create_collector_object(user2);
+
+        payment(
+            user1,
+            vector[user2_addr],
+            fa_addr,
+            vector[2000000]
+        );
+
+        claim_fees(user2, fa_addr_2);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
     }
 }
