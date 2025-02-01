@@ -393,7 +393,7 @@ module sshift_dao_addr::subscription_v3 {
 
         let resource_account_addr = fees_v3::get_resource_account_address();
 
-        let user_subscription = borrow_global<UserSubscription>(buyer_addr);
+        let user_subscription = borrow_global_mut<UserSubscription>(buyer_addr);
 
         let duration = user_subscription.end_time - timestamp::now_seconds();
 
@@ -424,7 +424,29 @@ module sshift_dao_addr::subscription_v3 {
 
         primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
 
-        
+        let upgrades_bought = vector::map<String, Upgrade>(extensions_to_buy, |e| {
+            let (_,i) = vector::find(&plan.extensions, |ext| &ext.name == &e);
+
+            let extension = vector::borrow(&plan.extensions, i); 
+
+            Upgrade {
+                name: e,
+                credits: extension.credits
+            }
+        });
+
+        vector::append<Upgrade>(&mut user_subscription.upgrades, upgrades_bought);
+
+        event::emit(
+            UserSubscribed {
+                account: buyer_addr,
+                start_time: user_subscription.start_time,
+                end_time: user_subscription.end_time,
+                price: final_price - discount,
+                created_at: timestamp::now_seconds(),
+                upgrades: user_subscription.upgrades,
+            }
+        );
     }
 
     public entry fun buy_duration(
