@@ -28,7 +28,7 @@ export function AssistantButtonArray({ onCopy, onRegenerate, content }: Assistan
       <Button
         variant="ghost"
         size="icon"
-        className="active:bg-gray-300 hover:scale-105 transition-transform duration-150 active:scale-95"
+        className="active:bg-gray-300"
         onClick={handleCopy}
       >
         <Copy className="h-4 w-4" />
@@ -41,7 +41,7 @@ export function AssistantButtonArray({ onCopy, onRegenerate, content }: Assistan
       <Button
         variant="ghost"
         size="icon"
-        className="active:bg-gray-300 hover:scale-105 transition-transform duration-150 active:scale-95"
+        className="active:bg-gray-300"
         onClick={onRegenerate}
       >
         <RefreshCw className="h-4 w-4" />
@@ -50,7 +50,7 @@ export function AssistantButtonArray({ onCopy, onRegenerate, content }: Assistan
         <Button 
           variant="ghost" 
           size="icon" 
-          className="active:bg-gray-300 hover:scale-105 transition-transform duration-150 active:scale-95"
+          className="active:bg-gray-300"
           onClick={handleAudioClick}
         >
           <Volume2 className="h-4 w-4" />
