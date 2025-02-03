@@ -47,7 +47,7 @@ export class AgentController {
     const reasoning = [AIModel.GPTo3Mini];
     const modelWithCallFeature = [AIModel.GPT4o, AIModel.GPT4oMini];
 
-    const isRareasoning = reasoning.includes(newMessageDto.model);
+    const isReasoning = reasoning.includes(newMessageDto.model);
     const iscallingTools = modelWithCallFeature.includes(newMessageDto.model);
 
     const chat = await this.userService.updateChat(
@@ -60,7 +60,7 @@ export class AgentController {
 
     // Update message formatting: for o3-mini, ignore images
     const formattedMessages = chat.messages.map((msg) => {
-      if (isRareasoning) {
+      if (isReasoning) {
         return {
           role: msg.role || 'user',
           content: msg.content || '',
@@ -97,7 +97,7 @@ export class AgentController {
     const adminConfig = await this.adminConfigService.findAdminConfig();
 
     // Use reasoningPrompt instead of systemPrompt for o3-mini
-    const systemMessageContent = isRareasoning
+    const systemMessageContent = isReasoning
       ? adminConfig.reasoningPrompt
       : adminConfig.systemPrompt;
     const messagesWithSystemPrompt = [
@@ -105,7 +105,7 @@ export class AgentController {
         role: 'developer',
         content:
           systemMessageContent ||
-          (isRareasoning
+          (isReasoning
             ? 'Provide high reasoning.'
             : 'You are a helpful assistant.'),
       },
@@ -123,10 +123,10 @@ export class AgentController {
       const stream = await this.openai.chat.completions.create({
         model: newMessageDto.model,
         messages: messagesWithSystemPrompt,
-        max_completion_tokens: isRareasoning ? 30000 : 16384,
+        max_completion_tokens: isReasoning ? 30000 : 16384,
         temperature: newMessageDto.temperature,
         stream: true,
-        reasoning_effort: isRareasoning ? 'high' : undefined,
+        reasoning_effort: isReasoning ? 'high' : undefined,
         ...(iscallingTools
           ? {
               tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
@@ -166,7 +166,7 @@ export class AgentController {
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
           // For non-o3-mini models, handle tool calls as before
-          if (!reasoning) {
+          if (!isReasoning) {
             const assistantToolMessage: ChatCompletionMessageParam = {
               role: 'assistant',
               content: assistantMessage.content,
