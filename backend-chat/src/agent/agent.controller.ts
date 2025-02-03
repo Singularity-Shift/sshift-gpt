@@ -100,14 +100,17 @@ export class AgentController {
     const systemMessageContent = isReasoning
       ? adminConfig.reasoningPrompt
       : adminConfig.systemPrompt;
+
+    // Prepend the developer message with today's date
+    const todaysDate = new Date().toLocaleDateString();
+    const developerMessageContent = `Todays daye is: ${todaysDate}\n\n${
+      systemMessageContent || (isReasoning ? 'Provide high reasoning.' : 'You are a helpful assistant.')
+    }`;
+
     const messagesWithSystemPrompt = [
       {
         role: 'developer',
-        content:
-          systemMessageContent ||
-          (isReasoning
-            ? 'Provide high reasoning.'
-            : 'You are a helpful assistant.'),
+        content: developerMessageContent,
       },
       ...formattedMessages,
     ] as OpenAI.Chat.Completions.ChatCompletionMessageParam[];

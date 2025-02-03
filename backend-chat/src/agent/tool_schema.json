@@ -32,7 +32,7 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Performs a web search for the given query.",
+      "description": "Performs a web search for the given query and returns text content with an array of citations.",
       "parameters": {
         "type": "object",
         "properties": {
