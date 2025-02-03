@@ -28,8 +28,15 @@ module sshift_dao_addr::subscription_v3 {
     const EEXTENSION_NOT_EXISTS: u64 = 12;
     const EHAS_HAS_EXTENSION_ACTIVE: u64 = 13;
     const ENOT_SUBSCRIPTION_ACTIVE: u64 = 14;
-    const ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION: u64 = 8;
+    const ESHOULD_NOT_BE_MORE_THAN_30_DAYS_SUBSCRIPTION: u64 = 15;
+    const EHAS_NOT_DAYS_TO_TRY: u64 = 16;
+    const EHAS_SUBSCRIPTION_OBJECT: u64 = 17;
+    const EAPP_IS_STOPPED: u64 = 18;
 
+    struct SubscriptionConfig has key {
+        stop_app: bool,
+        test_free_days: u64,
+    }
 
     struct CollectionAddressDiscount has key, store, drop, copy {
         collection_addr: address,
@@ -73,7 +80,8 @@ module sshift_dao_addr::subscription_v3 {
     struct UserSubscription has key {
         start_time: u64,
         end_time: u64,
-        upgrades: vector<Upgrade>, 
+        upgrades: vector<Upgrade>,
+        test_version: bool,
     }
 
     #[event]
@@ -83,7 +91,8 @@ module sshift_dao_addr::subscription_v3 {
         end_time: u64,
         price: u64,
         created_at: u64,
-        upgrades: vector<Upgrade>, 
+        upgrades: vector<Upgrade>,
+        test_version: bool,
     }
 
     fun init_module(sender: &signer) {
@@ -102,6 +111,11 @@ module sshift_dao_addr::subscription_v3 {
                 subscriptions: vector::empty(),
             }
         );
+
+        move_to(sender, SubscriptionConfig {
+            stop_app: false,
+            test_free_days: 0,
+        })
     }
 
     public entry fun set_plan(
@@ -205,7 +219,10 @@ module sshift_dao_addr::subscription_v3 {
         };
     }
 
-    public entry fun claim_subscription(sender: &signer) acquires SubscriptionsGifted, UserSubscription {
+    public entry fun claim_subscription(sender: &signer) acquires SubscriptionsGifted, UserSubscription, SubscriptionConfig {
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_dao_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
+
         let account_addr = signer::address_of(sender);
 
         let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
@@ -239,7 +256,8 @@ module sshift_dao_addr::subscription_v3 {
                 UserSubscription {
                     start_time,
                     end_time: start_time + subscription.duration,
-                    upgrades: vector::empty()
+                    upgrades: vector::empty(),
+                    test_version: false,
                 }
             );
         };
@@ -253,7 +271,45 @@ module sshift_dao_addr::subscription_v3 {
                 end_time,
                 price: 0,
                 created_at: timestamp::now_seconds(),
-                upgrades: vector::empty()
+                upgrades: vector::empty(),
+                test_version: false,
+            }
+        );
+    }
+
+    public entry fun test_free_subscription(
+        sender: &signer,
+    ) acquires SubscriptionConfig {
+        let account_addr = signer::address_of(sender);
+        assert!(!exists<UserSubscription>(account_addr), EHAS_SUBSCRIPTION_OBJECT);
+
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_dao_addr);
+
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
+        assert!(subscription_config.test_free_days > 0, EHAS_NOT_DAYS_TO_TRY);
+
+        let start_time = timestamp::now_seconds();
+        let duration = subscription_config.test_free_days * 24 * 60 * 60;
+
+        move_to(
+            sender,
+            UserSubscription {
+                start_time,
+                end_time: start_time + duration,
+                upgrades: vector::empty(),
+                test_version: true,
+            }
+        );
+
+        event::emit(
+            UserSubscribed {
+                account: account_addr,
+                start_time,
+                end_time: start_time + duration,
+                price: 0,
+                created_at: timestamp::now_seconds(),
+                upgrades: vector::empty(),
+                test_version: true,
             }
         );
     }
@@ -265,8 +321,11 @@ module sshift_dao_addr::subscription_v3 {
         extensions: vector<String>,
         credits: vector<u64>,
         currency: address,
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let buyer_addr = signer::address_of(sender);
+
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_dao_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
         assert!(!has_subscription_active(buyer_addr), EHAS_SUBSCRIPTION_ACTIVE);
 
@@ -274,7 +333,7 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
 
-        assert!(days <= 30, ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
+        assert!(days <= 30, ESHOULD_NOT_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
 
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
@@ -350,6 +409,7 @@ module sshift_dao_addr::subscription_v3 {
                     start_time,
                     end_time: start_time + duration,
                     upgrades,
+                    test_version: false,
                 }
             );
         };
@@ -362,6 +422,7 @@ module sshift_dao_addr::subscription_v3 {
                 price: final_price - discount,
                 created_at: timestamp::now_seconds(),
                 upgrades,
+                test_version: false
             }
         );
     }
@@ -371,8 +432,11 @@ module sshift_dao_addr::subscription_v3 {
         nfts_holding: vector<address>,
         extensions: vector<String>,
         currency: address,
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let buyer_addr = signer::address_of(sender);
+
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_dao_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
@@ -438,6 +502,7 @@ module sshift_dao_addr::subscription_v3 {
         });
 
         user_subscription.upgrades.append::<Upgrade>(upgrades_bought);
+        user_subscription.test_version = false;
 
         event::emit(
             UserSubscribed {
@@ -447,6 +512,7 @@ module sshift_dao_addr::subscription_v3 {
                 price: final_price - discount,
                 created_at: timestamp::now_seconds(),
                 upgrades: user_subscription.upgrades,
+                test_version: false,
             }
         );
     }
@@ -456,8 +522,11 @@ module sshift_dao_addr::subscription_v3 {
         nfts_holding: vector<address>,
         duration: u64,
         currency: address
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let buyer_addr = signer::address_of(sender);
+
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_dao_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
         assert!(has_subscription_active(buyer_addr), ENOT_SUBSCRIPTION_ACTIVE);
 
@@ -465,7 +534,7 @@ module sshift_dao_addr::subscription_v3 {
 
         assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
 
-        assert!(days <= 30, ESHOULD_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
+        assert!(days <= 30, ESHOULD_NOT_BE_MORE_THAN_30_DAYS_SUBSCRIPTION);
 
         let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
 
@@ -516,6 +585,7 @@ module sshift_dao_addr::subscription_v3 {
         primary_fungible_store::transfer(sender, currency_metadata, resource_account_addr, final_price);
 
         user_subscription.end_time += duration;
+        user_subscription.test_version = false;
 
         event::emit(
             UserSubscribed {
@@ -525,6 +595,7 @@ module sshift_dao_addr::subscription_v3 {
                 price: final_price - discount,
                 created_at: timestamp::now_seconds(),
                 upgrades: user_subscription.upgrades,
+                test_version: false,
             }
         );
     }
@@ -956,7 +1027,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1005,7 +1076,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_if_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_if_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1054,7 +1125,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1105,7 +1176,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1160,7 +1231,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1217,7 +1288,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1264,7 +1335,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1316,7 +1387,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1350,7 +1421,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1395,7 +1466,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1442,7 +1513,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
           let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1478,7 +1549,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_be_able_to_gift_again_after_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_be_able_to_gift_again_after_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1524,7 +1595,7 @@ module sshift_dao_addr::subscription_v3 {
             user = @0x300
         )
     ]
-    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1593,7 +1664,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 8, location = Self)]
-    fun should_not_buy_subscription_for_less_one_day(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_not_buy_subscription_for_less_one_day(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1742,7 +1813,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 4, location = Self)]
-    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1827,7 +1898,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 9, location = Self)]
-    fun should_not_gift_subscription_an_account_which_has_on_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_gift_subscription_an_account_which_has_on_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1871,7 +1942,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 9, location = Self)]
-    fun should_not_buy_subscription_when_account_has_one_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_buy_subscription_when_account_has_one_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1915,7 +1986,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 6, location = Self)]
-    fun should_not_claim_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_claim_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1952,7 +2023,7 @@ module sshift_dao_addr::subscription_v3 {
         )
     ]
     #[expected_failure(abort_code = 6, location = Self)]
-    fun should_not_claim_active_free_subscription_if_already_claimed(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_claim_active_free_subscription_if_already_claimed(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
