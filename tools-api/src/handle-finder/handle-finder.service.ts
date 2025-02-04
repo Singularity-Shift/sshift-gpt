@@ -2,12 +2,12 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { TopicDto } from './dto/topic.dto';
 import { firstValueFrom } from 'rxjs';
-import { ConfigService } from '../../../lib/nest-modules/src/config/config.service';
-import { TokenDto } from './dto/token.dto';
+import { ConfigService } from '@nest-modules';
 import { CategoryDto } from './dto/category.dto';
 import { PublicationDto } from './dto/publication.dto';
 import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
+import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
 
 @Injectable()
 export class HandleFinderService {
@@ -40,23 +40,20 @@ export class HandleFinderService {
     return response.data;
   }
 
-  async findTokensMentioned(
+  async findTrendingTokenStats(
     limit: number,
-    page: number,
-    date: string
-  ): Promise<TokenDto[]> {
+    page: number
+  ): Promise<TrendingTokensStatsDto[]> {
     const response = await firstValueFrom(
-      await this.httpService.get<TokenDto[]>(
-        `${this.url}/llm/tokens/mentions`,
+      await this.httpService.get<TrendingTokensStatsDto[]>(
+        `${this.url}/trending/token-stats`,
         {
           headers: {
             ApiKey: this.apiKey,
-            Address: this.address,
           },
           params: {
             limit,
             page,
-            date,
           },
         }
       )
