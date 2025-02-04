@@ -646,10 +646,13 @@ export class ToolsService {
     const data = await response.data;
     this.logger.log('Perplexity API response data:', data);
 
-    return {
+    const responseDto = {
       error: false,
-      result: data.choices[0].message.content,
+      result: data.choices && data.choices.length > 0 ? data.choices[0].message.content : '',
+      message: data.message || '',
+      citations: data.citations || []
     };
+    return responseDto;
   }
 
   async queryArxiv(searchQueryDto: SearchArxivDto) {

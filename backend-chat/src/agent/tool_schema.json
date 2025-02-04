@@ -32,7 +32,7 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Performs a web search for the given query and returns text content with an array of citations.",
+      "description": "Performs a web search for the given query and returns text content with an array of citations. The returned content is comprehensive and should be provided in full to the user (DO NOT SUMMERIZE IT), with only additonal thoughts and commentary to the response content in your unique style.",
       "parameters": {
         "type": "object",
         "properties": {
