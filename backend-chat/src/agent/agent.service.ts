@@ -397,7 +397,7 @@ export class AgentService {
     }
   }
 
-  async getTrendingTokenStats(limit, page, auth, signal) {
+  async getTokenStats(limit, page, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(

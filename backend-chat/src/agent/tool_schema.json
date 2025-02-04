@@ -154,7 +154,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptocurrencies.",
+      "description": "Fetches trending tokens.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -286,8 +286,8 @@
   {
     "type": "function",
     "function": {
-      "name": "getTrendingTokenStats",
-      "description": "Fetches trending tokens stats.",
+      "name": "getTokenStats",
+      "description": "Fetches token stats.",
       "parameters": {
         "type": "object",
         "properties": {
