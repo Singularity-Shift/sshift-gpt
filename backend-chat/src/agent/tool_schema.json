@@ -286,8 +286,8 @@
   {
     "type": "function",
     "function": {
-      "name": "getTokensMentioned",
-      "description": "Fetches tokens more mentioned.",
+      "name": "getTrendingTokenStats",
+      "description": "Fetches trending tokens stats.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -299,13 +299,9 @@
           "page": {
             "type": "integer",
             "description": "The page number for pagination."
-          },
-          "date": {
-            "type": "string",
-            "description": "The date to fetch tokens mentions with format YYYY-MM-DD."
           }
         },
-        "required": ["limit", "page", "date"],
+        "required": ["limit", "page"],
         "additionalProperties": false
       },
       "strict": true
