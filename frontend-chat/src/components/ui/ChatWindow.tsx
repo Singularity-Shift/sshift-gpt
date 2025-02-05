@@ -134,7 +134,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           threshold={100}
           initialLoad={false}
         >
-          <div className="w-full space-y-3 md:space-y-4 bg-transparent px-4">
+          <div className="w-full space-y-3 md:space-y-4 bg-transparent px-4 pt-4">
             {messages.map((message, index) => (
               <div
                 key={`${message.id}-${index}`}
