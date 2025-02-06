@@ -58,40 +58,46 @@ export class AgentController {
     let currentToolCalls = [];
     const assistantMessage = { content: '', images: [] };
 
-    // Update message formatting: for o3-mini, ignore images
+    // Update message formatting: only ignore images for o3-mini
     const formattedMessages = chat.messages.map((msg) => {
+      // For o3-mini, strip out images and only use text content
       if (isReasoning) {
         return {
           role: msg.role || 'user',
           content: msg.content || '',
         };
-      } else {
-        if (msg.role === 'user' && msg.images?.length) {
-          return {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: msg.content || "Here's an image.",
-              },
-              ...msg.images.map((image) => ({
-                type: 'image_url',
-                image_url: {
-                  url: image,
-                  detail: 'auto',
-                },
-              })),
-            ],
-          };
-        }
-        if (msg.role === 'user' && Array.isArray(msg.content)) {
-          return msg;
-        }
+      }
+      
+      // For all other models, properly format images if present
+      if (msg.role === 'user' && msg.images?.length) {
         return {
-          role: msg.role || 'user',
-          content: msg.content || '',
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: msg.content || "Here's an image.",
+            },
+            ...msg.images.map((image) => ({
+              type: 'image_url',
+              image_url: {
+                url: image,
+                detail: 'auto',
+              },
+            })),
+          ],
         };
       }
+      
+      // Handle array content (for existing vision responses)
+      if (msg.role === 'user' && Array.isArray(msg.content)) {
+        return msg;
+      }
+      
+      // Default case for text-only messages
+      return {
+        role: msg.role || 'user',
+        content: msg.content || '',
+      };
     });
 
     const adminConfig = await this.adminConfigService.findAdminConfig();
