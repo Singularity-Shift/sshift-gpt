@@ -11,6 +11,7 @@ import {
   AuthModule,
   ConfigService,
   AdminConfigModule,
+  BucketModule,
 } from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
 import { MultisignModule } from './multisign/multising.module';
@@ -46,6 +47,7 @@ import { AgentModule } from './agent/agent.module';
     AdminConfigModule,
     MultisignModule,
     AgentModule,
+    BucketModule,
   ],
   controllers: [],
   providers: [

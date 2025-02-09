@@ -60,4 +60,15 @@ export class BucketService {
 
     return response;
   }
+
+  async downloadImageFromBucket(filename: string): Promise<NodeJS.ReadableStream> {
+    const bucketName = 'sshift-gpt-bucket';
+    const bucket = this.storage.bucket(bucketName);
+    const file = bucket.file(filename);
+    const [exists] = await file.exists();
+    if (!exists) {
+      throw new Error('File not found');
+    }
+    return file.createReadStream();
+  }
 }
