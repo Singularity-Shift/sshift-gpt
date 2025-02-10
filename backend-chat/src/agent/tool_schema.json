@@ -9,7 +9,7 @@
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "The detailed description of the image to generate."
+            "description": "The detailed description of the image to generate. You must create a perfect prompt based on the users request or description. Think about the appropiate style and size of the image based on the final prompt."
           },
           "size": {
             "type": "string",
@@ -51,7 +51,7 @@
     "type": "function",
     "function": {
       "name": "wikiSearch",
-      "description": "Searches Wikipedia for the given query.",
+      "description": "Searches Wikipedia for the given query. Taylor the search based on the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -74,7 +74,7 @@
     "type": "function",
     "function": {
       "name": "getStockInfo",
-      "description": "Fetches financial data about specified stocks.",
+      "description": "Fetches detailed financial data about specified stocks.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -121,7 +121,7 @@
     "type": "function",
     "function": {
       "name": "queryArxiv",
-      "description": "Fetches academic papers from arXiv.",
+      "description": "Fetches academic papers from arXiv. Taylor  the search and number of results to return based on the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -154,7 +154,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptocurrencies.",
+      "description": "Fetches trending cryptocurrencies from coingecko.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -228,7 +228,7 @@
     "type": "function",
     "function": {
       "name": "createSoundEffect",
-      "description": "Generates a sound effect based on a provided descriptive prompt.",
+      "description": "Generates a sound effect based on a provided descriptive prompt that you must create based on the users request. Think about and use the duration and prompt influence to create a sound effect that is unique, creative, and appropiate for the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -287,7 +287,7 @@
     "type": "function",
     "function": {
       "name": "getTokensMentioned",
-      "description": "Fetches tokens more mentioned.",
+      "description": "Fetches the most mentioned tokens from handlefinder.",
       "parameters": {
         "type": "object",
         "properties": {
