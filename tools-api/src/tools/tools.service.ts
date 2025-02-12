@@ -8,6 +8,14 @@ import {
   COLLECTION_SEARCH_QUERY,
   COLLECTION_STATS_QUERY,
   TRENDING_COLLECTIONS_QUERY,
+  SUI_COLLECTION_SEARCH_QUERY,
+  SUI_COLLECTION_STATS_QUERY,
+  SUI_COLLECTION_DETAILS_QUERY,
+  SUI_TRENDING_COLLECTIONS_QUERY,
+  MOVEMENT_COLLECTION_SEARCH_QUERY,
+  MOVEMENT_COLLECTION_STATS_QUERY,
+  MOVEMENT_COLLECTION_DETAILS_QUERY,
+  MOVEMENT_TRENDING_COLLECTIONS_QUERY,
   WALLET_COLLECTIONS_QUERY,
   BucketService,
   ConfigService,
@@ -315,11 +323,34 @@ export class ToolsService {
     return trendingList;
   }
 
-  async searchNFTCollection(collectionName: string) {
+  async searchNFTCollection(collectionName: string, chain: string) {
     try {
+      const queries = {
+        aptos: {
+          search: COLLECTION_SEARCH_QUERY,
+          stats: COLLECTION_STATS_QUERY,
+          details: COLLECTION_DETAILS_QUERY
+        },
+        sui: {
+          search: SUI_COLLECTION_SEARCH_QUERY,
+          stats: SUI_COLLECTION_STATS_QUERY,
+          details: SUI_COLLECTION_DETAILS_QUERY
+        },
+        movement: {
+          search: MOVEMENT_COLLECTION_SEARCH_QUERY,
+          stats: MOVEMENT_COLLECTION_STATS_QUERY,
+          details: MOVEMENT_COLLECTION_DETAILS_QUERY
+        }
+      };
+
+      const chainQueries = queries[chain];
+      if (!chainQueries) {
+        throw new Error(`Unsupported chain: ${chain}`);
+      }
+
       // Initial collection search
       const { data: searchData } = await this.indexer.query({
-        query: COLLECTION_SEARCH_QUERY,
+        query: chainQueries.search,
         variables: {
           text: collectionName,
           offset: 0,
@@ -334,8 +365,8 @@ export class ToolsService {
         .replace(/\s+/g, '-')
         .trim();
 
-      // Find the first matching verified collection
-      const foundCollection = searchData.aptos.collections.find((c) => {
+      const chainRoot = chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
+      const foundCollection = searchData[chainRoot].collections.find((c) => {
         if (!c.verified) return false;
 
         const normalizedTitle = c.title
@@ -359,7 +390,7 @@ export class ToolsService {
       if (!foundCollection) {
         return {
           status: 'not_found',
-          message: `No verified collection found matching "${collectionName}". Please check the collection name and try again.`,
+          message: `No verified collection found matching "${collectionName}" on ${chain}. Please check the collection name and try again.`,
           search_term: collectionName,
         };
       }
@@ -367,28 +398,31 @@ export class ToolsService {
       // Create a mutable copy of the collection with converted values
       const collection = {
         ...foundCollection,
-        floor: foundCollection.floor * Math.pow(10, -8), // Convert to APT
-        volume: foundCollection.volume * Math.pow(10, -8), // Convert to APT
+        floor: foundCollection.floor * Math.pow(10, -8), // Convert to chain-specific token
+        volume: foundCollection.volume * Math.pow(10, -8), // Convert to chain-specific token
       };
 
       // Fetch stats and details in parallel
       const [statsResult, detailsResult] = await Promise.all([
         this.indexer.query({
-          query: COLLECTION_STATS_QUERY,
+          query: chainQueries.stats,
           variables: {
             slug: collection.slug,
           },
         }),
         this.indexer.query({
-          query: COLLECTION_DETAILS_QUERY,
+          query: chainQueries.details,
           variables: {
             slug: collection.slug,
           },
         }),
       ]);
 
-      const stats = statsResult.data.aptos.collection_stats;
-      const details = detailsResult.data.aptos.collections[0] || {};
+      const stats = statsResult.data[chainRoot].collection_stats;
+      const details = detailsResult.data[chainRoot].collections[0] || {};
+
+      // Get chain-specific token symbol
+      const tokenSymbol = chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
 
       // Add stats to collection object
       collection.stats = {
@@ -409,8 +443,8 @@ export class ToolsService {
       // Add formatted fields
       collection.formatted = {
         title: collection.title,
-        floor_price: `${collection.floor} APT`,
-        total_volume: `${collection.volume} APT`,
+        floor_price: `${collection.floor} ${tokenSymbol}`,
+        total_volume: `${collection.volume} ${tokenSymbol}`,
         usd_volume: `$${collection.usd_volume.toLocaleString(undefined, {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
@@ -423,7 +457,7 @@ export class ToolsService {
         total_mints: `${stats.total_mints || 0} mints`,
         total_mint_volume: `${
           (stats.total_mint_volume || 0) * Math.pow(10, -8)
-        } APT`,
+        } ${tokenSymbol}`,
         total_mint_usd_volume: `$${(
           stats.total_mint_usd_volume || 0
         ).toLocaleString(undefined, {
@@ -432,7 +466,7 @@ export class ToolsService {
         })}`,
 
         day_stats: {
-          volume: `${collection.stats.day_volume} APT`,
+          volume: `${collection.stats.day_volume} ${tokenSymbol}`,
           sales: collection.stats.day_sales,
           usd_volume: `$${collection.stats.day_usd_volume.toLocaleString(
             undefined,
@@ -450,13 +484,14 @@ export class ToolsService {
         slug: collection.slug,
         semantic_slug: collection.semantic_slug,
 
-        marketplaces: {
-          tradeport: `https://www.tradeport.xyz/aptos/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
-          wapal: `https://wapal.io/collection/${collection.title.replace(
-            /\s+/g,
-            '-'
-          )}`,
-        },
+        marketplaces: chain === 'aptos' 
+          ? {
+              tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
+              wapal: `https://wapal.io/collection/${collection.title.replace(/\s+/g, '-')}`
+            }
+          : {
+              tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`
+            }
       };
 
       this.logger.log('NFT collection fetched successfully:', collection);
@@ -479,48 +514,75 @@ export class ToolsService {
     period = 'days_1',
     trendingBy = 'crypto_volume',
     limit = 10,
+    chain = 'aptos'
   }) {
-    const allowedLimits = [5, 10, 20, 40];
-    if (!allowedLimits.includes(limit)) {
-      return {
-        status: 'error',
-        message: 'Invalid limit parameter. Allowed values are: 5, 10, 20, 40',
-      };
-    }
+    try {
+      const allowedLimits = [5, 10, 20, 40];
+      if (!allowedLimits.includes(limit)) {
+        return {
+          status: 'error',
+          message: 'Invalid limit parameter. Allowed values are: 5, 10, 20, 40',
+        };
+      }
 
-    const { data, error } = await this.indexer.query({
-      query: TRENDING_COLLECTIONS_QUERY,
-      variables: {
+      const queries = {
+        aptos: TRENDING_COLLECTIONS_QUERY,
+        sui: SUI_TRENDING_COLLECTIONS_QUERY,
+        movement: MOVEMENT_TRENDING_COLLECTIONS_QUERY
+      };
+
+      const query = queries[chain];
+      if (!query) {
+        return {
+          status: 'error',
+          message: `Unsupported chain: ${chain}. Supported chains are: aptos, sui, movement`,
+        };
+      }
+
+      const { data, error } = await this.indexer.query({
+        query,
+        variables: {
+          period,
+          trending_by: trendingBy,
+          limit,
+          offset: 0,
+        },
+      });
+
+      if (error) {
+        throw new Error(`GraphQL Error: ${error.message}`);
+      }
+
+      const chainRoot = chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
+      const tokenSymbol = chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
+
+      const trendingCollections = data[chainRoot].collections_trending.map((item) => {
+        const collection = item.collection;
+        const floor = collection.floor * Math.pow(10, -8);
+
+        return {
+          title: collection.title,
+          floor_price: `${floor} ${tokenSymbol}`
+        };
+      });
+
+      this.logger.log('Trending collection', trendingCollections);
+
+      return {
+        status: 'success',
         period,
         trending_by: trendingBy,
         limit,
-        offset: 0,
-      },
-    });
-
-    if (error) {
-      throw new Error(`GraphQL Error: ${error.message}`);
-    }
-
-    const trendingCollections = data.aptos.collections_trending.map((item) => {
-      const collection = item.collection;
-      const floor = collection.floor * Math.pow(10, -8); // Convert to APT
-
-      return {
-        title: collection.title,
-        floor_price: `${floor} APT`,
+        chain,
+        data: trendingCollections,
       };
-    });
-
-    this.logger.log('Trending collection', trendingCollections);
-
-    return {
-      status: 'success',
-      period,
-      trending_by: trendingBy,
-      limit,
-      data: trendingCollections,
-    };
+    } catch (error) {
+      this.logger.error('Error in searchTrendingNFT:', error);
+      return {
+        status: 'error',
+        message: `Failed to fetch trending NFTs: ${error.message}`,
+      };
+    }
   }
 
   async searchWiki(action: string, searchString: string) {

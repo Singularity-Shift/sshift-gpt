@@ -239,7 +239,7 @@ export class AgentService {
     }
   }
 
-  async searchNftCollection(collection_name, auth, signal) {
+  async searchNftCollection(collection_name, chain, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
@@ -248,17 +248,24 @@ export class AgentService {
           )}/tools/search-nft-collection/${collection_name}`,
           {
             headers: {
-              Authorization: `Bearer ${auth}`,
               'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
             },
+            params: { chain },
             timeout: 30000,
-            signal,
+            signal: signal instanceof AbortSignal ? signal : undefined
           }
         )
       );
 
       return response.data;
     } catch (error) {
+      if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+        return {
+          error: true,
+          message: 'Request was cancelled or timed out',
+        };
+      }
       console.error('Error in searchNftCollection:', error);
       return {
         error: true,
@@ -267,27 +274,36 @@ export class AgentService {
     }
   }
 
-  async searchTrendingNFT(period, trending_by, limit, auth, signal) {
+  async searchTrendingNFT({ period, trending_by, limit, chain }, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `${this.configService.get(
-            'serverToolsApi.uri'
-          )}/tools/search-trending-nft`,
+          `${this.configService.get('serverToolsApi.uri')}/tools/search-trending-nft`,
           {
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${auth}`,
             },
-            params: { period, trending_by, limit },
+            params: {
+              period,
+              trending_by,
+              limit,
+              chain
+            },
             timeout: 30000,
-            signal,
+            signal: signal instanceof AbortSignal ? signal : undefined
           }
         )
       );
 
       return response.data;
     } catch (error) {
+      if (error.name === 'AbortError' || error.code === 'ECONNABORTED') {
+        return {
+          error: true,
+          message: 'Request was cancelled or timed out',
+        };
+      }
       console.error('Error in searchTrendingNFT:', error);
       return {
         error: true,

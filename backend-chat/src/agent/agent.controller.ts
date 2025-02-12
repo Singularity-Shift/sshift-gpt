@@ -374,11 +374,30 @@ export class AgentController {
             args
           );
 
-          const result = await this.agentService[toolCall.function.name](
-            ...Object.values(args),
-            userConfig.auth,
-            signal
-          );
+          let result;
+          if (toolCall.function.name === 'searchNftCollection') {
+            result = await toolFunction.call(
+              this.agentService,
+              args.collection_name,
+              args.chain,
+              userConfig.auth,
+              signal
+            );
+          } else if (toolCall.function.name === 'searchTrendingNFT') {
+            result = await toolFunction.call(
+              this.agentService,
+              args,
+              userConfig.auth,
+              signal
+            );
+          } else {
+            result = await toolFunction.call(
+              this.agentService,
+              ...Object.values(args),
+              userConfig.auth,
+              signal
+            );
+          }
 
           if (result.error) {
             this.logger.error(

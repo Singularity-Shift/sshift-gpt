@@ -179,16 +179,21 @@
     "type": "function",
     "function": {
       "name": "searchNftCollection",
-      "description": "Searches for an NFT collection on the Aptos blockchain.",
+      "description": "Searches for an NFT collection on specified blockchain.",
       "parameters": {
         "type": "object",
         "properties": {
           "collection_name": {
             "type": "string",
             "description": "The name of the NFT collection to search for."
+          },
+          "chain": {
+            "type": "string",
+            "enum": ["aptos", "sui", "movement"],
+            "description": "The blockchain to search on."
           }
         },
-        "required": ["collection_name"],
+        "required": ["collection_name", "chain"],
         "additionalProperties": false
       },
       "strict": true
@@ -216,9 +221,14 @@
             "type": "integer",
             "enum": [5, 10, 20, 40],
             "description": "The number of results to return."
+          },
+          "chain": {
+            "type": "string",
+            "enum": ["aptos", "sui", "movement"],
+            "description": "The blockchain to fetch trending collections from."
           }
         },
-        "required": ["period", "trending_by", "limit"],
+        "required": ["period", "trending_by", "limit", "chain"],
         "additionalProperties": false
       },
       "strict": true

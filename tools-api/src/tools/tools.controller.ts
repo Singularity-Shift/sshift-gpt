@@ -226,6 +226,13 @@ export class ToolsController {
     required: true,
     example: 'Qribbles',
   })
+  @ApiParam({
+    name: 'chain',
+    description: 'Blockchain to search on (aptos, sui, or movement)',
+    type: String,
+    required: true,
+    example: 'aptos',
+  })
   @ApiOperation({ summary: 'Search NFT collection' })
   @ApiResponse({
     description: 'NFT collection items',
@@ -233,10 +240,11 @@ export class ToolsController {
     type: GetNFTCollectionDto,
   })
   searchNFTCollection(
-    @Param('collectionName') collectionName: string
+    @Param('collectionName') collectionName: string,
+    @Query('chain') chain: string = 'aptos'
   ): Promise<GetNFTCollectionDto> {
     try {
-      return this.toolsService.searchNFTCollection(collectionName);
+      return this.toolsService.searchNFTCollection(collectionName, chain);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -261,15 +269,21 @@ export class ToolsController {
     type: String,
     required: true,
     description: 'Period to filter results',
-    example: 'week',
+    example: 'days_7',
   })
   @ApiQuery({
     name: 'trending_by',
     type: String,
     required: true,
-    description:
-      'Trending by (highest_price, highest_volume, highest_market_cap)',
-    example: '0x312343422f',
+    description: 'Trending by (crypto_volume, usd_volume, trades_count, average_trade)',
+    example: 'crypto_volume',
+  })
+  @ApiQuery({
+    name: 'chain',
+    type: String,
+    required: true,
+    description: 'Blockchain to search on (aptos, sui, or movement)',
+    example: 'aptos',
   })
   @ApiOperation({ summary: 'Search trending NFTs' })
   @ApiResponse({
@@ -280,10 +294,11 @@ export class ToolsController {
   searchTrendingNFTs(
     @Query('limit', ParseIntPipe) limit = 10,
     @Query('period') period: string,
-    @Query('trending_by') trendingBy: string
+    @Query('trending_by') trendingBy: string,
+    @Query('chain') chain: string = 'aptos'
   ): Promise<GetTrendingNFTDto> {
     try {
-      return this.toolsService.searchTrendingNFT({ period, trendingBy, limit });
+      return this.toolsService.searchTrendingNFT({ period, trendingBy, limit, chain });
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
