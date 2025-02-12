@@ -154,7 +154,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptocurrencies from coingecko.",
+      "description": "Fetches trending tokens.",
       "parameters": {
         "type": "object",
         "properties": {
