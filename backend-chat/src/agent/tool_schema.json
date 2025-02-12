@@ -286,7 +286,7 @@
   {
     "type": "function",
     "function": {
-      "name": "getTokensMentioned",
+      "name": "getTokenStats",
       "description": "Fetches token stats.",
       "parameters": {
         "type": "object",
