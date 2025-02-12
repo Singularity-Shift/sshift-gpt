@@ -154,7 +154,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending tokens.",
+      "description": "Fetches trending tokens from coingecko.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -297,7 +297,7 @@
     "type": "function",
     "function": {
       "name": "getTokenStats",
-      "description": "Fetches token stats.",
+      "description": "Fetches token stats from handlefinder.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -325,7 +325,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingUsers",
-      "description": "Fetches trending users based on specified query",
+      "description": "Fetches trending users from handlefinder based on specified query",
       "parameters": {
         "type": "object",
         "properties": {
