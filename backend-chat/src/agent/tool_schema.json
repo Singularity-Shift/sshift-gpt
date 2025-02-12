@@ -309,13 +309,9 @@
           "page": {
             "type": "integer",
             "description": "The page number for pagination."
-          },
-          "date": {
-            "type": "string",
-            "description": "The date to fetch tokens mentions with format YYYY-MM-DD."
           }
         },
-        "required": ["limit", "page", "date"],
+        "required": ["limit", "page"],
         "additionalProperties": false
       },
       "strict": true

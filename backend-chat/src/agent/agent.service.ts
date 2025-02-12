@@ -423,19 +423,19 @@ export class AgentService {
     }
   }
 
-  async getTokensMentioned(limit, page, date, auth, signal) {
+  async getTokenStats(limit, page, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
           `${this.configService.get(
             'serverToolsApi.uri'
-          )}/handle-finder/tokens/mentions`,
+          )}/handle-finder/tokens/stats`,
           {
             headers: {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${auth}`,
             },
-            params: { limit, page, date },
+            params: { limit, page },
             timeout: 30000,
             signal,
           }

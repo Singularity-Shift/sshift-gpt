@@ -7,12 +7,12 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { TopicDto } from './dto/topic.dto';
-import { TokenDto } from './dto/token.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { PublicationDto } from './dto/publication.dto';
 import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
 import { TrendingDto } from './dto/trending.dto';
+import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
@@ -32,22 +32,20 @@ export class HandleFinderController {
     return this.handleFinderService.findAllTopics(date);
   }
 
-  @Get('tokens/mentions')
+  @Get('tokens/stats')
   @ApiQuery({ name: 'limit', type: 'number', required: false, example: 15 })
   @ApiQuery({ name: 'page', type: 'number', required: false, example: 1 })
-  @ApiQuery({ name: 'date', type: Date, required: true })
   @ApiOperation({ summary: 'Get token' })
   @ApiResponse({
     description: 'find tokens mentioned',
-    type: [TokenDto],
+    type: [TrendingTokensStatsDto],
     status: 200,
   })
-  async findTokensMentioned(
+  async findTrendingTokenStats(
     @Query('limit') limit = 15,
-    @Query('page') page = 1,
-    @Query('date') date: string
-  ): Promise<TokenDto[]> {
-    return this.handleFinderService.findTokensMentioned(limit, page, date);
+    @Query('page') page = 1
+  ): Promise<TrendingTokensStatsDto[]> {
+    return this.handleFinderService.findTrendingTokenStats(limit, page);
   }
 
   @Get('categories')
