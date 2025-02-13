@@ -188,6 +188,8 @@ export default function ChatPage() {
         timestamp: Date.now(),
       };
 
+      console.log('[handleSendMessage] Before updating chat title');
+      
       setChats((prevChats) => {
         const currentTime = Date.now();
         return prevChats.map((chat) => {
@@ -197,6 +199,20 @@ export default function ChatPage() {
               updatedMessages.length === 1
                 ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
                 : chat.title;
+            
+            console.log('[handleSendMessage] Chat title update:', {
+              chatId: chat.id,
+              oldTitle: chat.title,
+              newTitle: updatedTitle,
+              isFirstMessage: updatedMessages.length === 1
+            });
+            
+            // If this is the first message, persist the auto-generated title
+            if (updatedMessages.length === 1) {
+              console.log('[handleSendMessage] First message - calling handleRenameChat');
+              handleRenameChat(chat.id, updatedTitle, true);
+            }
+            
             return {
               ...chat,
               messages: updatedMessages,
@@ -323,8 +339,14 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleRenameChat = async (chatId: string, newTitle: string) => {
+  const handleRenameChat = async (chatId: string, newTitle: string, isAutoRename: boolean = false) => {
     try {
+      console.log('[handleRenameChat] Starting rename operation:', {
+        chatId,
+        newTitle,
+        isAutoRename
+      });
+
       await backend.patch(
         `/history/${chatId}/${newTitle}`,
         {},
@@ -335,18 +357,27 @@ export default function ChatPage() {
         }
       );
 
+      console.log('[handleRenameChat] Backend request successful');
+
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === chatId ? { ...chat, title: newTitle } : chat
         )
       );
 
-      toast({
-        variant: 'default',
-        title: 'Chat renamed',
-        description: 'Chat title has been updated.',
-      });
+      console.log('[handleRenameChat] State updated successfully');
+
+      // Only show toast for manual renames
+      if (!isAutoRename) {
+        toast({
+          variant: 'default',
+          title: 'Chat renamed',
+          description: 'Chat title has been updated.',
+        });
+      }
     } catch (error) {
+      console.error('[handleRenameChat] Error:', error);
+      // Still show error toast even for auto-rename since it indicates a problem
       toast({
         variant: 'destructive',
         title: 'Error renaming chat',
@@ -533,6 +564,7 @@ export default function ChatPage() {
 
     (async () => {
       try {
+        console.log('[Initial Load] Starting to load chats');
         // First get the chat list
         const chatResponse = await backend.get('/history', {
           headers: {
@@ -541,6 +573,15 @@ export default function ChatPage() {
         });
 
         const savedChats = chatResponse.data;
+        console.log('[Initial Load] Loaded chats:', {
+          chatCount: savedChats?.chats?.length,
+          chats: savedChats?.chats?.map((c: IChat) => ({
+            id: c.id,
+            title: c.title,
+            messageCount: c.messages?.length
+          }))
+        });
+
         if (savedChats && savedChats.chats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
           const mostRecentChat = savedChats.chats.reduce(
@@ -549,6 +590,12 @@ export default function ChatPage() {
                 ? current
                 : latest
           );
+
+          console.log('[Initial Load] Most recent chat:', {
+            id: mostRecentChat.id,
+            title: mostRecentChat.title,
+            lastUpdated: mostRecentChat.lastUpdated
+          });
 
           // Get initial messages for the most recent chat
           const messagesResponse = await backend.get(

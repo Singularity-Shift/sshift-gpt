@@ -8,12 +8,25 @@ import {
   Post,
   UploadedFile,
   UseInterceptors,
+  Get,
+  Param,
+  Res,
+  UseGuards,
+  Logger,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { BucketService } from './bucket.service';
+import { Response } from 'express';
+import { AuthGuard, UserAuth } from '@nest-modules';
+import { IUserAuth } from '@helpers';
+import { ApiBearerAuth } from '@nestjs/swagger';
 
 @Controller('bucket')
+@UseGuards(AuthGuard)
+@ApiBearerAuth('Authorization')
 export class BucketController {
+  private readonly logger = new Logger(BucketController.name);
+
   constructor(private readonly bucketService: BucketService) {}
 
   @Post()
@@ -40,5 +53,26 @@ export class BucketController {
 
     return response;
   }
+
+  @Get('download/:filename')
+  async downloadImage(
+    @Param('filename') filename: string,
+    @Res() res: Response,
+    @UserAuth() userAuth: IUserAuth
+  ) {
+    this.logger.debug(`Download request for ${filename} by user ${userAuth.address}`);
+    try {
+      const stream = await this.bucketService.downloadImageFromBucket(filename);
+      res.set({
+        'Content-Disposition': `attachment; filename=${filename}`,
+        'Content-Type': 'application/octet-stream'
+      });
+      stream.pipe(res);
+    } catch (error) {
+      this.logger.error(`Error downloading file: ${error.message}`);
+      res.status(404).json({ message: 'File not found' });
+    }
+  }
+
   // Implement bucket creation logic
 }

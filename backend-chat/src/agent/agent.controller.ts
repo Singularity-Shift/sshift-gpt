@@ -48,7 +48,8 @@ export class AgentController {
     const modelWithCallFeature = [AIModel.GPT4o, AIModel.GPT4oMini];
 
     const isReasoning = reasoning.includes(newMessageDto.model);
-    const iscallingTools = modelWithCallFeature.includes(newMessageDto.model);
+    const isParallelToolCalling = modelWithCallFeature.includes(newMessageDto.model);
+    const isSequentialToolCalling = reasoning.includes(newMessageDto.model);
 
     const chat = await this.userService.updateChat(
       userAuth.address,
@@ -58,40 +59,46 @@ export class AgentController {
     let currentToolCalls = [];
     const assistantMessage = { content: '', images: [] };
 
-    // Update message formatting: for o3-mini, ignore images
+    // Update message formatting: only ignore images for o3-mini
     const formattedMessages = chat.messages.map((msg) => {
+      // For o3-mini, strip out images and only use text content
       if (isReasoning) {
         return {
           role: msg.role || 'user',
           content: msg.content || '',
         };
-      } else {
-        if (msg.role === 'user' && msg.images?.length) {
-          return {
-            role: 'user',
-            content: [
-              {
-                type: 'text',
-                text: msg.content || "Here's an image.",
-              },
-              ...msg.images.map((image) => ({
-                type: 'image_url',
-                image_url: {
-                  url: image,
-                  detail: 'auto',
-                },
-              })),
-            ],
-          };
-        }
-        if (msg.role === 'user' && Array.isArray(msg.content)) {
-          return msg;
-        }
+      }
+      
+      // For all other models, properly format images if present
+      if (msg.role === 'user' && msg.images?.length) {
         return {
-          role: msg.role || 'user',
-          content: msg.content || '',
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text: msg.content || "Here's an image.",
+            },
+            ...msg.images.map((image) => ({
+              type: 'image_url',
+              image_url: {
+                url: image,
+                detail: 'auto',
+              },
+            })),
+          ],
         };
       }
+      
+      // Handle array content (for existing vision responses)
+      if (msg.role === 'user' && Array.isArray(msg.content)) {
+        return msg;
+      }
+      
+      // Default case for text-only messages
+      return {
+        role: msg.role || 'user',
+        content: msg.content || '',
+      };
     });
 
     const adminConfig = await this.adminConfigService.findAdminConfig();
@@ -130,11 +137,11 @@ export class AgentController {
         temperature: newMessageDto.temperature,
         stream: true,
         reasoning_effort: isReasoning ? 'high' : undefined,
-        ...(iscallingTools
+        tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+        tool_choice: 'auto',
+        ...(isParallelToolCalling || isSequentialToolCalling
           ? {
-              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-              tool_choice: 'auto',
-              parallel_tool_calls: true,
+              parallel_tool_calls: isParallelToolCalling,
             }
           : undefined),
       });
@@ -168,67 +175,70 @@ export class AgentController {
             res.write(`data: ${JSON.stringify({ tool_call: true })}\n\n`);
           }
         } else if (chunk.choices[0]?.finish_reason === 'tool_calls') {
-          // For non-o3-mini models, handle tool calls as before
-          if (!isReasoning) {
-            const assistantToolMessage: ChatCompletionMessageParam = {
-              role: 'assistant',
-              content: assistantMessage.content,
-              tool_calls: currentToolCalls.map((call) => ({
-                id: call.id,
-                type: 'function',
-                function: {
-                  name: call.function.name,
-                  arguments: call.function.arguments,
-                },
-              })),
-            };
+          const assistantToolMessage: ChatCompletionMessageParam = {
+            role: 'assistant',
+            content: assistantMessage.content,
+            tool_calls: currentToolCalls.map((call) => ({
+              id: call.id,
+              type: 'function',
+              function: {
+                name: call.function.name,
+                arguments: call.function.arguments,
+              },
+            })),
+          };
 
-            messagesWithSystemPrompt.push(assistantToolMessage);
+          messagesWithSystemPrompt.push(assistantToolMessage);
 
-            const toolResults = await this.processToolCalls(
-              currentToolCalls,
-              userAuth,
-              controller.signal
-            );
-            messagesWithSystemPrompt.push(...toolResults);
+          const toolResults = await this.processToolCalls(
+            currentToolCalls,
+            userAuth,
+            controller.signal
+          );
+          messagesWithSystemPrompt.push(...toolResults);
 
-            const continuationResponse =
-              await this.openai.chat.completions.create({
-                model: newMessageDto.model || 'gpt-4o-mini',
-                messages: messagesWithSystemPrompt,
-                max_tokens: 16384,
-                temperature: newMessageDto.temperature,
-                stream: true,
-              });
+          const continuationResponse = await this.openai.chat.completions.create({
+            model: newMessageDto.model || 'gpt-4o-mini',
+            messages: messagesWithSystemPrompt,
+            max_completion_tokens: 16384,
+            temperature: newMessageDto.temperature,
+            stream: true,
+            tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+            tool_choice: 'auto',
+            ...(isParallelToolCalling || isSequentialToolCalling
+              ? {
+                  parallel_tool_calls: isParallelToolCalling,
+                }
+              : undefined),
+          });
 
-            shouldStopStream = this.shouldStopStream.get(userAuth.address);
+          shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
-            for await (const continuationChunk of continuationResponse) {
-              if (shouldStopStream) {
-                this.shouldStopStream.set(userAuth.address, false);
-                this.logger.log('Stream stopped during continuation');
-                res.write(
-                  `data: ${JSON.stringify({
-                    final_message: {
-                      content: assistantMessage.content,
-                      images: assistantMessage.images,
-                    },
-                  })}\n\n`
-                );
-                res.write('data: [DONE]\n\n');
-                res.end();
-                return;
-              }
-
-              if (continuationChunk.choices[0]?.delta?.content) {
-                assistantMessage.content +=
-                  continuationChunk.choices[0].delta.content;
-                this.writeResponseChunk(continuationChunk, res);
-              }
+          for await (const continuationChunk of continuationResponse) {
+            if (shouldStopStream) {
+              this.shouldStopStream.set(userAuth.address, false);
+              this.logger.log('Stream stopped during continuation');
+              res.write(
+                `data: ${JSON.stringify({
+                  final_message: {
+                    content: assistantMessage.content,
+                    images: assistantMessage.images,
+                  },
+                })}\n\n`
+              );
+              res.write('data: [DONE]\n\n');
+              res.end();
+              return;
             }
 
-            currentToolCalls = [];
+            if (continuationChunk.choices[0]?.delta?.content) {
+              assistantMessage.content +=
+                continuationChunk.choices[0].delta.content;
+              this.writeResponseChunk(continuationChunk, res);
+            }
           }
+
+          currentToolCalls = [];
         } else if (chunk.choices[0]?.finish_reason === 'stop') {
           if (assistantMessage.content) {
             messagesWithSystemPrompt.push({
@@ -354,11 +364,30 @@ export class AgentController {
             args
           );
 
-          const result = await this.agentService[toolCall.function.name](
-            ...Object.values(args),
-            userConfig.auth,
-            signal
-          );
+          let result;
+          if (toolCall.function.name === 'searchNftCollection') {
+            result = await toolFunction.call(
+              this.agentService,
+              args.collection_name,
+              args.chain,
+              userConfig.auth,
+              signal
+            );
+          } else if (toolCall.function.name === 'searchTrendingNFT') {
+            result = await toolFunction.call(
+              this.agentService,
+              args,
+              userConfig.auth,
+              signal
+            );
+          } else {
+            result = await toolFunction.call(
+              this.agentService,
+              ...Object.values(args),
+              userConfig.auth,
+              signal
+            );
+          }
 
           if (result.error) {
             this.logger.error(
@@ -369,7 +398,8 @@ export class AgentController {
               role: 'tool',
               content: JSON.stringify({
                 error: true,
-                message: result.message || 'Tool call failed',
+                message: `Tool call failed: ${result.message || 'An error occurred while processing your request. Please try rephrasing your request to avoid any potentially problematic content.'}`,
+                original_request: args
               }),
               tool_call_id: toolCall.id,
             });
@@ -410,7 +440,8 @@ export class AgentController {
           role: 'tool',
           content: JSON.stringify({
             error: true,
-            message: `Tool call failed: ${error.message}`,
+            message: `Tool call failed: ${error.message}. Please try rephrasing your request to avoid any potentially problematic content.`,
+            original_request: JSON.parse(toolCall.function.arguments)
           }),
           tool_call_id: toolCall.id,
         });
