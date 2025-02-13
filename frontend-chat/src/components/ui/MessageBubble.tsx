@@ -103,7 +103,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (isUser) {
       return (
         <>
-          <div className="whitespace-pre-wrap break-all text-sm min-[768px]:text-base overflow-x-auto max-w-full">
+          <div className="whitespace-pre-wrap break-words text-sm min-[768px]:text-base overflow-x-auto max-w-full">
             {parsedContent.text}
           </div>
 
@@ -269,7 +269,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
           isUser ? 'bg-[#B7D6E9] text-black' : 'bg-gray-200 text-gray-800'
         } text-sm min-[768px]:text-base overflow-hidden overflow-x-auto`}
       >
-        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base [&_code]:break-all [&_code]:whitespace-pre-wrap [&_p]:break-all [&_p]:whitespace-pre-wrap">
+        <div className="prose prose-sm max-w-none min-[768px]:prose-base !prose-h1:text-base !prose-h2:text-sm !prose-h3:text-sm !prose-p:text-sm min-[768px]:!prose-h1:text-2xl min-[768px]:!prose-h2:text-xl min-[768px]:!prose-h3:text-lg min-[768px]:!prose-p:text-base [&_code]:break-words [&_code]:whitespace-pre-wrap [&_p]:break-words [&_p]:whitespace-pre-wrap">
           {renderContent()}
         </div>
 
