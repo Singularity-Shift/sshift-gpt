@@ -253,7 +253,7 @@ export class AgentService {
             },
             params: { chain },
             timeout: 30000,
-            signal: signal instanceof AbortSignal ? signal : undefined
+            signal,
           }
         )
       );
@@ -291,7 +291,7 @@ export class AgentService {
               chain
             },
             timeout: 30000,
-            signal: signal instanceof AbortSignal ? signal : undefined
+            signal,
           }
         )
       );

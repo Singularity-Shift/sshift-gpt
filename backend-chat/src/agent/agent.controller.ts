@@ -137,16 +137,11 @@ export class AgentController {
         temperature: newMessageDto.temperature,
         stream: true,
         reasoning_effort: isReasoning ? 'high' : undefined,
-        ...(isParallelToolCalling
+        tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+        tool_choice: 'auto',
+        ...(isParallelToolCalling || isSequentialToolCalling
           ? {
-              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-              tool_choice: 'auto',
-              parallel_tool_calls: true,
-            }
-          : isSequentialToolCalling
-          ? {
-              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-              tool_choice: 'auto',
+              parallel_tool_calls: isParallelToolCalling,
             }
           : undefined),
       });
@@ -208,16 +203,11 @@ export class AgentController {
             max_completion_tokens: 16384,
             temperature: newMessageDto.temperature,
             stream: true,
-            ...(isParallelToolCalling
+            tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+            tool_choice: 'auto',
+            ...(isParallelToolCalling || isSequentialToolCalling
               ? {
-                  tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-                  tool_choice: 'auto',
-                  parallel_tool_calls: true,
-                }
-              : isSequentialToolCalling
-              ? {
-                  tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-                  tool_choice: 'auto',
+                  parallel_tool_calls: isParallelToolCalling,
                 }
               : undefined),
           });
