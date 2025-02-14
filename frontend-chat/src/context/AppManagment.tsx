@@ -243,64 +243,66 @@ export const AppManagementProvider = ({
           accountAddress: walletAddress as string,
         });
 
-        const moveBotFieldsResult = await abi
-          ?.useABI(SubscriptionABI)
-          .view.get_move_bot_fields({
-            typeArguments: [],
-            functionArguments: [],
-          });
+        if (!aptos.config.fullnode?.includes('movement')) {
+          const moveBotFieldsResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_move_bot_fields({
+              typeArguments: [],
+              functionArguments: [],
+            });
 
-        const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+          const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
 
-        const movebotsHolding = nftsHolding.filter(
-          (nft) =>
-            nft.current_token_data?.token_name === moveBotFields.token_name &&
-            nft.current_token_data.current_collection?.creator_address ===
-              moveBotFields.token_creator &&
-            nft.property_version_v1?.toString() ===
-              moveBotFields.token_property_version &&
-            nft.current_token_data?.current_collection?.collection_name ===
-              moveBotFields.token_collection
-        );
+          const movebotsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.token_name === moveBotFields.token_name &&
+              nft.current_token_data.current_collection?.creator_address ===
+                moveBotFields.token_creator &&
+              nft.property_version_v1?.toString() ===
+                moveBotFields.token_property_version &&
+              nft.current_token_data?.current_collection?.collection_name ===
+                moveBotFields.token_collection
+          );
 
-        setMoveBotsOwned(movebotsHolding.length || 0);
+          setMoveBotsOwned(movebotsHolding.length || 0);
 
-        const configResult = await abi
-          ?.useABI(SubscriptionABI)
-          .view.get_subscription_config({
-            typeArguments: [],
-            functionArguments: [],
-          });
+          const configResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_subscription_config({
+              typeArguments: [],
+              functionArguments: [],
+            });
 
-        const config = configResult?.[0] as ISubscription;
+          const config = configResult?.[0] as ISubscription;
 
-        const qribbleNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
-        );
+          const qribbleNFTCollection = config.collections_discount.find(
+            (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
+          );
 
-        const qribbleNFTsHolding = nftsHolding.filter(
-          (nft) =>
-            nft.current_token_data?.collection_id ===
-            qribbleNFTCollection?.collection_addr
-        );
+          const qribbleNFTsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.collection_id ===
+              qribbleNFTCollection?.collection_addr
+          );
 
-        setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
+          setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
 
-        const sshiftRecordsNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
-        );
+          const sshiftRecordsNFTCollection = config.collections_discount.find(
+            (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
+          );
 
-        const sshiftRecordsHolding = nftsHolding.filter(
-          (nft) =>
-            nft.current_token_data?.collection_id ===
-            sshiftRecordsNFTCollection?.collection_addr
-        );
+          const sshiftRecordsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.collection_id ===
+              sshiftRecordsNFTCollection?.collection_addr
+          );
 
-        setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
-        setNftAddressesRequiredOwned([
-          ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
-          ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
-        ]);
+          setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
+          setNftAddressesRequiredOwned([
+            ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
+            ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
+          ]);
+        }
 
         const hasSubscriptionActiveResult = await abi
           ?.useABI(SubscriptionABI)
