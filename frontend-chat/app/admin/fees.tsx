@@ -356,7 +356,6 @@ export const Fees = () => {
               value={newAddress}
               onChange={(e) => setNewAddress(e.target.value as `0x${string}`)}
               type="text"
-              readOnly
             />
             <Button
               className="w-full"

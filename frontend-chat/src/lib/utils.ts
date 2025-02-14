@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
-import { APTOS_NETWORK } from '../../config/env';
+import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -91,9 +91,13 @@ export function calculateMaxDiscount(
   return Math.min(discountPercentage, config.MAX_DISCOUNT);
 }
 
-export function aptosClient() {
+export const aptosClient = () => {
   const aptos = new Aptos(
-    new AptosConfig({ network: APTOS_NETWORK as Network })
+    new AptosConfig({
+      network: APTOS_NETWORK as Network,
+      fullnode: APTOS_NODE_URL,
+      indexer: APTOS_INDEXER,
+    })
   );
   return aptos;
-}
+};

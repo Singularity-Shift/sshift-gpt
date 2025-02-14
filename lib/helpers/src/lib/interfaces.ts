@@ -6,7 +6,7 @@ export interface IAuth {
   message: string;
   address: string;
   publicKey: string;
-  signature: string;
+  signature: unknown;
 }
 
 export interface IJwt {

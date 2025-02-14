@@ -54,6 +54,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         nonce: Math.random().toString(),
       });
 
+      if (
+        (messageResp.signature as any)?.data &&
+        (messageResp.signature as any)?.data?.data instanceof Uint8Array ===
+          false
+      ) {
+        const dataSignature = new Uint8Array(
+          Object.values((messageResp.signature as any).data.data)
+        );
+
+        messageResp.signature = Buffer.from(dataSignature).toString('hex');
+      }
+
       const payload: IAuth = {
         message: messageResp.fullMessage,
         signature: `${messageResp.signature}`,

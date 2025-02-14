@@ -1,4 +1,6 @@
 export const APTOS_NETWORK = process.env.NEXT_PUBLIC_APTOS_NETWORK || 'testnet';
+export const APTOS_NODE_URL = process.env.NEXT_PUBLIC_APTOS_NODE_URL;
+export const APTOS_INDEXER = process.env.NEXT_PUBLIC_APTOS_INDEXER || '';
 export const RESOURCE_ACCOUNT_SEED =
   process.env.NEXT_PUBLIC_RESOURCE_ACCOUNT_SEED || '';
 export const COIN_DECIMALS = parseInt(
