@@ -64,73 +64,75 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
         </div>
       </div>
 
-      {!aptos.config.fullnode?.includes('movement') && (
-        <div className="flex-grow mt-16 space-y-4">
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-sm font-medium text-gray-700">
-                Move Bot owned:
-              </span>
-              <Link
-                href={config.MOVEBOT_BUY}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-600 hover:text-gray-800 underline block"
-              >
-                Buy
-              </Link>
+      <div className="flex-grow mt-16 space-y-4">
+        {!aptos.config.fullnode?.includes('movement') && (
+          <>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Move Bot owned:
+                </span>
+                <Link
+                  href={config.MOVEBOT_BUY}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                >
+                  Buy
+                </Link>
+              </div>
+              <Input
+                type="number"
+                value={moveBotsOwned}
+                className="w-20 text-right bg-gray-100"
+                readOnly
+              />
             </div>
-            <Input
-              type="number"
-              value={moveBotsOwned}
-              className="w-20 text-right bg-gray-100"
-              readOnly
-            />
-          </div>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-sm font-medium text-gray-700">
-                Qribble NFT owned:
-              </span>
-              <Link
-                href={config.QRIBBLE_BUY}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-600 hover:text-gray-800 underline block"
-              >
-                Buy
-              </Link>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  SShift Records owned:
+                </span>
+                <Link
+                  href={config.SSHIFT_RECORDS_BUY}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                >
+                  Buy
+                </Link>
+              </div>
+              <Input
+                type="number"
+                value={sshiftRecordsOwned}
+                className="w-20 text-right bg-gray-100"
+                readOnly
+              />
             </div>
-            <Input
-              type="number"
-              value={qribbleNFTsOwned}
-              className="w-20 text-right bg-gray-100"
-              readOnly
-            />
+          </>
+        )}
+        <div className="flex justify-between items-center">
+          <div>
+            <span className="text-sm font-medium text-gray-700">
+              Qribble NFT owned:
+            </span>
+            <Link
+              href={config.QRIBBLE_BUY}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs text-gray-600 hover:text-gray-800 underline block"
+            >
+              Buy
+            </Link>
           </div>
-          <div className="flex justify-between items-center">
-            <div>
-              <span className="text-sm font-medium text-gray-700">
-                SShift Records owned:
-              </span>
-              <Link
-                href={config.SSHIFT_RECORDS_BUY}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-xs text-gray-600 hover:text-gray-800 underline block"
-              >
-                Buy
-              </Link>
-            </div>
-            <Input
-              type="number"
-              value={sshiftRecordsOwned}
-              className="w-20 text-right bg-gray-100"
-              readOnly
-            />
-          </div>
+          <Input
+            type="number"
+            value={qribbleNFTsOwned}
+            className="w-20 text-right bg-gray-100"
+            readOnly
+          />
         </div>
-      )}
+      </div>
 
       <Button
         variant="default"

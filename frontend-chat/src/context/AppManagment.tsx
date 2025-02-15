@@ -243,6 +243,15 @@ export const AppManagementProvider = ({
           accountAddress: walletAddress as string,
         });
 
+        const configResult = await abi
+          ?.useABI(SubscriptionABI)
+          .view.get_subscription_config({
+            typeArguments: [],
+            functionArguments: [],
+          });
+
+        const config = configResult?.[0] as ISubscription;
+
         if (!aptos.config.fullnode?.includes('movement')) {
           // const moveBotFieldsResult = await abi
           //   ?.useABI(SubscriptionABI)
@@ -266,27 +275,6 @@ export const AppManagementProvider = ({
 
           // setMoveBotsOwned(movebotsHolding.length || 0);
 
-          const configResult = await abi
-            ?.useABI(SubscriptionABI)
-            .view.get_subscription_config({
-              typeArguments: [],
-              functionArguments: [],
-            });
-
-          const config = configResult?.[0] as ISubscription;
-
-          const qribbleNFTCollection = config.collections_discount.find(
-            (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
-          );
-
-          const qribbleNFTsHolding = nftsHolding.filter(
-            (nft) =>
-              nft.current_token_data?.collection_id ===
-              qribbleNFTCollection?.collection_addr
-          );
-
-          setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
-
           const sshiftRecordsNFTCollection = config.collections_discount.find(
             (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
           );
@@ -298,11 +286,24 @@ export const AppManagementProvider = ({
           );
 
           setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
-          setNftAddressesRequiredOwned([
-            ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
-            ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
-          ]);
         }
+
+        const qribbleNFTCollection = config.collections_discount.find(
+          (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
+        );
+
+        const qribbleNFTsHolding = nftsHolding.filter(
+          (nft) =>
+            nft.current_token_data?.collection_id ===
+            qribbleNFTCollection?.collection_addr
+        );
+
+        setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
+
+        setNftAddressesRequiredOwned([
+          ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
+          // ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
+        ]);
 
         const hasSubscriptionActiveResult = await abi
           ?.useABI(SubscriptionABI)

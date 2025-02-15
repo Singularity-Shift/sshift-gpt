@@ -42,9 +42,9 @@ export const Subscription = () => {
     // !subscription.token_name ||
     // subscription.token_property_version === undefined ||
     // subscription.token_property_version < 0 ||
-    subscription.max_days <= 0;
-  // || !subscription.collections_discount?.[0]?.collection_addr ||
-  // subscription.collections_discount?.some((c) => c.discount_per_day <= 0)
+    subscription.max_days <= 0 ||
+    !subscription.collections_discount?.[0]?.collection_addr ||
+    subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
   const onAddCollectionDiscount = () => {
     setSubscription({
       ...subscription,
@@ -137,7 +137,16 @@ export const Subscription = () => {
 
       const response = await client?.useABI(SubscriptionABI).set_plan({
         type_arguments: [],
-        arguments: [prices, [], []],
+        arguments: [
+          prices,
+          subscription.collections_discount.map((c) => c.collection_addr),
+          subscription.collections_discount.map((c) =>
+            convertAmountFromHumanReadableToOnChain(
+              c.discount_per_day,
+              COIN_DECIMALS
+            )
+          ),
+        ],
       });
 
       const committedTransactionResponse =
