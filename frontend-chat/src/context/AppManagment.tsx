@@ -244,27 +244,27 @@ export const AppManagementProvider = ({
         });
 
         if (!aptos.config.fullnode?.includes('movement')) {
-          const moveBotFieldsResult = await abi
-            ?.useABI(SubscriptionABI)
-            .view.get_move_bot_fields({
-              typeArguments: [],
-              functionArguments: [],
-            });
+          // const moveBotFieldsResult = await abi
+          //   ?.useABI(SubscriptionABI)
+          //   .view.get_move_bot_fields({
+          //     typeArguments: [],
+          //     functionArguments: [],
+          //   });
 
-          const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+          // const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
 
-          const movebotsHolding = nftsHolding.filter(
-            (nft) =>
-              nft.current_token_data?.token_name === moveBotFields.token_name &&
-              nft.current_token_data.current_collection?.creator_address ===
-                moveBotFields.token_creator &&
-              nft.property_version_v1?.toString() ===
-                moveBotFields.token_property_version &&
-              nft.current_token_data?.current_collection?.collection_name ===
-                moveBotFields.token_collection
-          );
+          // const movebotsHolding = nftsHolding.filter(
+          //   (nft) =>
+          //     nft.current_token_data?.token_name === moveBotFields.token_name &&
+          //     nft.current_token_data.current_collection?.creator_address ===
+          //       moveBotFields.token_creator &&
+          //     nft.property_version_v1?.toString() ===
+          //       moveBotFields.token_property_version &&
+          //     nft.current_token_data?.current_collection?.collection_name ===
+          //       moveBotFields.token_collection
+          // );
 
-          setMoveBotsOwned(movebotsHolding.length || 0);
+          // setMoveBotsOwned(movebotsHolding.length || 0);
 
           const configResult = await abi
             ?.useABI(SubscriptionABI)

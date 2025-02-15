@@ -129,10 +129,10 @@ export const Subscription = () => {
               COIN_DECIMALS
             )
           ),
-          subscription.token_creator as `0x${string}`,
-          subscription.token_collection,
-          subscription.token_name,
-          subscription.token_property_version,
+          // subscription.token_creator as `0x${string}`,
+          // subscription.token_collection,
+          // subscription.token_name,
+          // subscription.token_property_version,
         ],
       });
 
@@ -191,18 +191,18 @@ export const Subscription = () => {
 
         const subscriptionCopy = subscriptionResult?.[0] as ISubscription;
 
-        try {
-          const moveBotFieldsResult = await abi
-            ?.useABI(SubscriptionABI)
-            .view.get_move_bot_fields({
-              functionArguments: [],
-              typeArguments: [],
-            });
+        // try {
+        //   const moveBotFieldsResult = await abi
+        //     ?.useABI(SubscriptionABI)
+        //     .view.get_move_bot_fields({
+        //       functionArguments: [],
+        //       typeArguments: [],
+        //     });
 
-          moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
-        } catch (error) {
-          console.error('Move bot fields are not set yet', error);
-        }
+        //   moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+        // } catch (error) {
+        //   console.error('Move bot fields are not set yet', error);
+        // }
 
         if (!subscriptionCopy.collections_discount?.length) {
           subscriptionCopy.collections_discount = [
@@ -229,13 +229,13 @@ export const Subscription = () => {
 
         subscriptionCopy.max_days = subscriptionCopy.prices.length || 0;
 
-        if (moveBotFields) {
-          subscriptionCopy.token_creator = moveBotFields.token_creator;
-          subscriptionCopy.token_collection = moveBotFields.token_collection;
-          subscriptionCopy.token_name = moveBotFields.token_name;
-          subscriptionCopy.token_property_version =
-            moveBotFields.token_property_version;
-        }
+        // if (moveBotFields) {
+        //   subscriptionCopy.token_creator = moveBotFields.token_creator;
+        //   subscriptionCopy.token_collection = moveBotFields.token_collection;
+        //   subscriptionCopy.token_name = moveBotFields.token_name;
+        //   subscriptionCopy.token_property_version =
+        //     moveBotFields.token_property_version;
+        // }
 
         setSubscription(subscriptionCopy);
       } catch (error) {
@@ -373,15 +373,19 @@ export const Subscription = () => {
                   Amount: {c.discount_per_day}
                 </p>
               ))}
-              <br />
-              Token creator: {truncateAddress(subscription.token_creator)}
-              <br />
-              Token collection: {subscription.token_collection}
-              <br />
-              Token name: {subscription.token_name}
-              <br />
-              Token property version: {subscription.token_property_version}
-              <br />
+              {!aptos.account.config.fullnode?.includes('movement') && (
+                <>
+                  <br />
+                  Token creator: {truncateAddress(subscription.token_creator)}
+                  <br />
+                  Token collection: {subscription.token_collection}
+                  <br />
+                  Token name: {subscription.token_name}
+                  <br />
+                  Token property version: {subscription.token_property_version}
+                  <br />
+                </>
+              )}
               Do you agree?
             </p>
           }
