@@ -11,6 +11,7 @@ import {
 } from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
+import { ElfaModule } from './elfa/elfa.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { APP_GUARD } from '@nestjs/core';
     StorageModule,
     ConfigModule,
     UserModule,
+    ElfaModule,
   ],
   controllers: [],
   providers: [

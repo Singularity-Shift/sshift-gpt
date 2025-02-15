@@ -278,7 +278,7 @@
     "type": "function",
     "function": {
       "name": "getAllTopics",
-      "description": "Fetches all available topics from blockchain social network.",
+      "description": "Fetches all available topics from lens.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -297,7 +297,7 @@
     "type": "function",
     "function": {
       "name": "getTokenStats",
-      "description": "Fetches token stats from handlefinder.",
+      "description": "Fetches token stats from lens.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -321,7 +321,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingUsers",
-      "description": "Fetches trending users from handlefinder based on specified query",
+      "description": "Fetches trending users from lens based on specified query",
       "parameters": {
         "type": "object",
         "properties": {
@@ -346,6 +346,97 @@
         "additionalProperties": false,
         "required": ["page", "limit", "ratio", "protocol"]
         
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getMentionsTwitter",
+      "description": "Fetches recent mentions from Twitter.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "The number of results to return."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The offset for pagination."
+          }
+        },
+        "required": ["limit", "offset"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTopMentionsTwitter",
+      "description": "Fetches the most significant mentions from Twitter according to specified cashtag or ticker.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "description": "The ticker symbol to get mentions for. Prefixing with $ will only return cashtag matches."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "includeAccountDetails": {
+            "type": "boolean",
+            "description": "Include account details (username, description, profile image url)."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["ticker", "timeWindow", "page", "pageSize", "includeAccountDetails"]
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTrendingTokensTwitter",
+      "description": "Retrieve trending tokens in twitter based on highest mentions count, filtered by a minimum mention threshold over a specified time period.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "minMentions": {
+            "type": "integer",
+            "description": "Minimum mention count for a token to be considered."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["minMentions", "timeWindow", "page", "pageSize"]
       },
       "strict": true
     }

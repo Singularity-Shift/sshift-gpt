@@ -71,7 +71,12 @@ export class AgentService {
       );
 
       const data = response.data;
-      if (data && data.result && Array.isArray(data.citations) && data.citations.length > 0) {
+      if (
+        data &&
+        data.result &&
+        Array.isArray(data.citations) &&
+        data.citations.length > 0
+      ) {
         data.result = data.result.replace(/\[(\d+)\]/g, (match, p1) => {
           const index = parseInt(p1, 10);
           if (index >= 1 && index <= data.citations.length) {
@@ -278,7 +283,9 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `${this.configService.get('serverToolsApi.uri')}/tools/search-trending-nft`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tools/search-trending-nft`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -288,7 +295,7 @@ export class AgentService {
               period,
               trending_by,
               limit,
-              chain
+              chain,
             },
             timeout: 30000,
             signal,
@@ -418,7 +425,7 @@ export class AgentService {
       console.error('Error in getAllTopics:', error);
       return {
         error: true,
-        message: 'Failed to fetch all topics',
+        message: 'Failed to fetch all topics in lens',
       };
     }
   }
@@ -447,7 +454,7 @@ export class AgentService {
       console.error('Error in getTokensMentioned:', error);
       return {
         error: true,
-        message: 'Failed to fetch tokens mentioned',
+        message: 'Failed to fetch tokens mentioned in lens',
       };
     }
   }
@@ -479,6 +486,121 @@ export class AgentService {
       return {
         error: true,
         message: 'Failed to fetch trending users',
+      };
+    }
+  }
+
+  async getMentionsTwitter(limit, offset, auth, signal) {
+    const query = { limit, offset };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/elfa/mentions`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in getMentions:', error);
+      return {
+        error: true,
+        message: 'Failed to fetch mentions in twitter',
+      };
+    }
+  }
+
+  async getTopMentionsTwitter(
+    ticker,
+    timeWindow,
+    page,
+    pageSize,
+    includeAccountDetails,
+    auth,
+    signal
+  ) {
+    const query = {
+      ticker,
+      timeWindow,
+      page,
+      pageSize,
+      includeAccountDetails,
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/elfa/top-mentions`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in getTopMentions:', error);
+      return {
+        error: true,
+        message: 'Failed to fetch top mentions in twitter',
+      };
+    }
+  }
+
+  async getTrendingTokensTwitter(
+    timeWindow,
+    page,
+    pageSize,
+    minMentions,
+    auth,
+    signal
+  ) {
+    const query = {
+      timeWindow,
+      page,
+      pageSize,
+      minMentions,
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/elfa/trending-tokens`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in getTrendingTokens:', error);
+      return {
+        error: true,
+        message: 'Failed to fetch trending tokens in twitter',
       };
     }
   }

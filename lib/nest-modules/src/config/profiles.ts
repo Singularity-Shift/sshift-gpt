@@ -55,6 +55,10 @@ export const Profiles = {
       baseUrl: process.env.HANDLE_FINDER_BASE_URL,
       address: process.env.HANDLE_FINDER_ADDRESS,
     },
+    elfa: {
+      apiKey: process.env.ELFA_API_KEY,
+      baseUrl: process.env.ELFA_BASE_URL,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,
@@ -111,6 +115,10 @@ export const Profiles = {
       apiKey: process.env.HANDLE_FINDER_API_KEY,
       baseUrl: process.env.HANDLE_FINDER_BASE_URL,
       address: process.env.HANDLE_FINDER_ADDRESS,
+    },
+    elfa: {
+      apiKey: process.env.ELFA_API_KEY,
+      baseUrl: process.env.ELFA_BASE_URL,
     },
   },
 };
