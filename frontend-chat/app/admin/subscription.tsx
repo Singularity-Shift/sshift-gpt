@@ -37,15 +37,14 @@ export const Subscription = () => {
   });
 
   const disableSubmitCoinfigButton =
-    !subscription.token_creator ||
-    !subscription.token_collection ||
-    !subscription.token_name ||
-    subscription.token_property_version === undefined ||
-    subscription.token_property_version < 0 ||
-    subscription.max_days <= 0 ||
-    !subscription.collections_discount?.[0]?.collection_addr ||
-    subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
-
+    // !subscription.token_creator ||
+    // !subscription.token_collection ||
+    // !subscription.token_name ||
+    // subscription.token_property_version === undefined ||
+    // subscription.token_property_version < 0 ||
+    subscription.max_days <= 0;
+  // || !subscription.collections_discount?.[0]?.collection_addr ||
+  // subscription.collections_discount?.some((c) => c.discount_per_day <= 0)
   const onAddCollectionDiscount = () => {
     setSubscription({
       ...subscription,
@@ -118,22 +117,27 @@ export const Subscription = () => {
         );
       }
 
+      // const response = await client?.useABI(SubscriptionABI).set_plan({
+      //   type_arguments: [],
+      //   arguments: [
+      //     prices,
+      //     subscription.collections_discount.map((c) => c.collection_addr),
+      //     subscription.collections_discount.map((c) =>
+      //       convertAmountFromHumanReadableToOnChain(
+      //         c.discount_per_day,
+      //         COIN_DECIMALS
+      //       )
+      //     ),
+      //     // subscription.token_creator as `0x${string}`,
+      //     // subscription.token_collection,
+      //     // subscription.token_name,
+      //     // subscription.token_property_version,
+      //   ],
+      // });
+
       const response = await client?.useABI(SubscriptionABI).set_plan({
         type_arguments: [],
-        arguments: [
-          prices,
-          subscription.collections_discount.map((c) => c.collection_addr),
-          subscription.collections_discount.map((c) =>
-            convertAmountFromHumanReadableToOnChain(
-              c.discount_per_day,
-              COIN_DECIMALS
-            )
-          ),
-          // subscription.token_creator as `0x${string}`,
-          // subscription.token_collection,
-          // subscription.token_name,
-          // subscription.token_property_version,
-        ],
+        arguments: [prices, [], []],
       });
 
       const committedTransactionResponse =
@@ -292,67 +296,69 @@ export const Subscription = () => {
         ))}
       </div>
 
-      <div className="space-y-4">
-        <LabeledInput
-          label="Token Creator"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_creator: e.target.value as `0x${string}`,
-            })
-          }
-          value={subscription.token_creator}
-          type="text"
-          id="subscription-token-creator"
-          required
-          tooltip="Set the Move Bot ID creator"
-        />
+      {!aptos.config.fullnode?.includes('movement') && (
+        <div className="space-y-4">
+          <LabeledInput
+            label="Token Creator"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_creator: e.target.value as `0x${string}`,
+              })
+            }
+            value={subscription.token_creator}
+            type="text"
+            id="subscription-token-creator"
+            required
+            tooltip="Set the Move Bot ID creator"
+          />
 
-        <LabeledInput
-          label="Token Collection Name"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_collection: e.target.value,
-            })
-          }
-          value={subscription.token_collection}
-          type="text"
-          id="subscription-token-collection"
-          required
-          tooltip="Set the Move Bot ID collection name"
-        />
+          <LabeledInput
+            label="Token Collection Name"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_collection: e.target.value,
+              })
+            }
+            value={subscription.token_collection}
+            type="text"
+            id="subscription-token-collection"
+            required
+            tooltip="Set the Move Bot ID collection name"
+          />
 
-        <LabeledInput
-          label="Token Name"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_name: e.target.value,
-            })
-          }
-          value={subscription.token_name}
-          type="text"
-          id="subscription-token-name"
-          required
-          tooltip="Set the Move Bot ID token name"
-        />
+          <LabeledInput
+            label="Token Name"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_name: e.target.value,
+              })
+            }
+            value={subscription.token_name}
+            type="text"
+            id="subscription-token-name"
+            required
+            tooltip="Set the Move Bot ID token name"
+          />
 
-        <LabeledInput
-          label="Token Property Version"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_property_version: parseInt(e.target.value),
-            })
-          }
-          value={subscription.token_property_version}
-          type="number"
-          id="subscription-token-property-version"
-          required
-          tooltip="Set the Move Bot ID property version"
-        />
-      </div>
+          <LabeledInput
+            label="Token Property Version"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_property_version: parseInt(e.target.value),
+              })
+            }
+            value={subscription.token_property_version}
+            type="number"
+            id="subscription-token-property-version"
+            required
+            tooltip="Set the Move Bot ID property version"
+          />
+        </div>
+      )}
 
       <div className="pt-4">
         <ConfirmButton
