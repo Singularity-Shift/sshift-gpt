@@ -241,7 +241,7 @@ export class ToolsController {
   })
   searchNFTCollection(
     @Param('collectionName') collectionName: string,
-    @Query('chain') chain: string = 'aptos'
+    @Query('chain') chain = 'aptos'
   ): Promise<GetNFTCollectionDto> {
     try {
       return this.toolsService.searchNFTCollection(collectionName, chain);
@@ -275,7 +275,8 @@ export class ToolsController {
     name: 'trending_by',
     type: String,
     required: true,
-    description: 'Trending by (crypto_volume, usd_volume, trades_count, average_trade)',
+    description:
+      'Trending by (crypto_volume, usd_volume, trades_count, average_trade)',
     example: 'crypto_volume',
   })
   @ApiQuery({
@@ -295,10 +296,15 @@ export class ToolsController {
     @Query('limit', ParseIntPipe) limit = 10,
     @Query('period') period: string,
     @Query('trending_by') trendingBy: string,
-    @Query('chain') chain: string = 'aptos'
+    @Query('chain') chain = 'aptos'
   ): Promise<GetTrendingNFTDto> {
     try {
-      return this.toolsService.searchTrendingNFT({ period, trendingBy, limit, chain });
+      return this.toolsService.searchTrendingNFT({
+        period,
+        trendingBy,
+        limit,
+        chain,
+      });
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

@@ -71,7 +71,12 @@ export class AgentService {
       );
 
       const data = response.data;
-      if (data && data.result && Array.isArray(data.citations) && data.citations.length > 0) {
+      if (
+        data &&
+        data.result &&
+        Array.isArray(data.citations) &&
+        data.citations.length > 0
+      ) {
         data.result = data.result.replace(/\[(\d+)\]/g, (match, p1) => {
           const index = parseInt(p1, 10);
           if (index >= 1 && index <= data.citations.length) {
@@ -278,7 +283,9 @@ export class AgentService {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
-          `${this.configService.get('serverToolsApi.uri')}/tools/search-trending-nft`,
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/tools/search-trending-nft`,
           {
             headers: {
               'Content-Type': 'application/json',
@@ -288,7 +295,7 @@ export class AgentService {
               period,
               trending_by,
               limit,
-              chain
+              chain,
             },
             timeout: 30000,
             signal,
@@ -479,6 +486,33 @@ export class AgentService {
       return {
         error: true,
         message: 'Failed to fetch trending users',
+      };
+    }
+  }
+
+  async getOnchainActions(prompt, auth, signal) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.configService.get('serverToolsApi.uri')}/onchain-agent`,
+          { prompt },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error('Error in getOnchainActions:', error);
+      return {
+        error: true,
+        message: 'Failed to fetch onchain actions',
       };
     }
   }

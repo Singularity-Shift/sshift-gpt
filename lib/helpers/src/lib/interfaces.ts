@@ -297,3 +297,8 @@ export interface IChat {
   lastUpdated?: number;
   model: string;
 }
+
+export interface IActionFunction {
+  name: string;
+  arguments: string;
+}

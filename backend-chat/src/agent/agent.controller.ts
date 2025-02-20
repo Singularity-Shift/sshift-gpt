@@ -48,7 +48,9 @@ export class AgentController {
     const modelWithCallFeature = [AIModel.GPT4o, AIModel.GPT4oMini];
 
     const isReasoning = reasoning.includes(newMessageDto.model);
-    const isParallelToolCalling = modelWithCallFeature.includes(newMessageDto.model);
+    const isParallelToolCalling = modelWithCallFeature.includes(
+      newMessageDto.model
+    );
 
     const chat = await this.userService.updateChat(
       userAuth.address,
@@ -67,7 +69,7 @@ export class AgentController {
           content: msg.content || '',
         };
       }
-      
+
       // For all other models, properly format images if present
       if (msg.role === 'user' && msg.images?.length) {
         return {
@@ -87,12 +89,12 @@ export class AgentController {
           ],
         };
       }
-      
+
       // Handle array content (for existing vision responses)
       if (msg.role === 'user' && Array.isArray(msg.content)) {
         return msg;
       }
-      
+
       // Default case for text-only messages
       return {
         role: msg.role || 'user',
@@ -110,7 +112,8 @@ export class AgentController {
     // Prepend the developer message with today's date
     const todaysDate = new Date().toLocaleDateString();
     const developerMessageContent = `Todays daye is: ${todaysDate}\n\n${
-      systemMessageContent || (isReasoning ? 'Provide high reasoning.' : 'You are a helpful assistant.')
+      systemMessageContent ||
+      (isReasoning ? 'Provide high reasoning.' : 'You are a helpful assistant.')
     }`;
 
     const messagesWithSystemPrompt = [
@@ -196,20 +199,36 @@ export class AgentController {
           );
           messagesWithSystemPrompt.push(...toolResults);
 
-          const continuationResponse = await this.openai.chat.completions.create({
-            model: newMessageDto.model || 'gpt-4o-mini',
-            messages: messagesWithSystemPrompt,
-            max_completion_tokens: 16384,
-            temperature: newMessageDto.temperature,
-            stream: true,
-            tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
-            tool_choice: 'auto',
-            ...(isParallelToolCalling
-              ? {
-                  parallel_tool_calls: true,
-                }
-              : undefined),
+          toolResults.forEach((result) => {
+            const content = JSON.parse(result.content);
+            const actions = content.filter((c) => c.onchain);
+
+            if (actions.length) {
+              res.write(
+                `data: ${JSON.stringify({
+                  tool_response: {
+                    actions,
+                  },
+                })}\n\n`
+              );
+            }
           });
+
+          const continuationResponse =
+            await this.openai.chat.completions.create({
+              model: newMessageDto.model || 'gpt-4o-mini',
+              messages: messagesWithSystemPrompt,
+              max_completion_tokens: 16384,
+              temperature: newMessageDto.temperature,
+              stream: true,
+              tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
+              tool_choice: 'auto',
+              ...(isParallelToolCalling
+                ? {
+                    parallel_tool_calls: true,
+                  }
+                : undefined),
+            });
 
           shouldStopStream = this.shouldStopStream.get(userAuth.address);
 
@@ -397,8 +416,11 @@ export class AgentController {
               role: 'tool',
               content: JSON.stringify({
                 error: true,
-                message: `Tool call failed: ${result.message || 'An error occurred while processing your request. Please try rephrasing your request to avoid any potentially problematic content.'}`,
-                original_request: args
+                message: `Tool call failed: ${
+                  result.message ||
+                  'An error occurred while processing your request. Please try rephrasing your request to avoid any potentially problematic content.'
+                }`,
+                original_request: args,
               }),
               tool_call_id: toolCall.id,
             });
@@ -440,7 +462,7 @@ export class AgentController {
           content: JSON.stringify({
             error: true,
             message: `Tool call failed: ${error.message}. Please try rephrasing your request to avoid any potentially problematic content.`,
-            original_request: JSON.parse(toolCall.function.arguments)
+            original_request: JSON.parse(toolCall.function.arguments),
           }),
           tool_call_id: toolCall.id,
         });
