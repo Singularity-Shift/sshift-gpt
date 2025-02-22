@@ -1,7 +1,8 @@
 import { IActionFunction } from '@helpers';
+import { ToolsNameList } from 'move-agent-kit_spiel';
 
 export class GetActionDto {
-  name: string;
+  name: ToolsNameList;
   args: any[];
   onchain: boolean;
 
@@ -9,7 +10,7 @@ export class GetActionDto {
     return new GetActionDto(json.name, json.arguments);
   }
 
-  constructor(name: string, args: string) {
+  constructor(name: ToolsNameList, args: string) {
     this.name = name;
     const values = JSON.parse(JSON.parse(args).input);
     this.args = Object.values(values);
