@@ -22,6 +22,7 @@ interface NewMessage {
   id: string;
   title: string;
   message: IMessage;
+  messages?: IMessage[];
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -189,7 +190,7 @@ export default function ChatPage() {
       };
 
       console.log('[handleSendMessage] Before updating chat title');
-      
+
       setChats((prevChats) => {
         const currentTime = Date.now();
         return prevChats.map((chat) => {
@@ -199,20 +200,22 @@ export default function ChatPage() {
               updatedMessages.length === 1
                 ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
                 : chat.title;
-            
+
             console.log('[handleSendMessage] Chat title update:', {
               chatId: chat.id,
               oldTitle: chat.title,
               newTitle: updatedTitle,
-              isFirstMessage: updatedMessages.length === 1
+              isFirstMessage: updatedMessages.length === 1,
             });
-            
+
             // If this is the first message, persist the auto-generated title
             if (updatedMessages.length === 1) {
-              console.log('[handleSendMessage] First message - calling handleRenameChat');
+              console.log(
+                '[handleSendMessage] First message - calling handleRenameChat'
+              );
               handleRenameChat(chat.id, updatedTitle, true);
             }
-            
+
             return {
               ...chat,
               messages: updatedMessages,
@@ -233,6 +236,8 @@ export default function ChatPage() {
         model: selectedModel,
         message: userMessage,
       };
+
+      delete newMessage.messages;
 
       try {
         const response = await fetch(`${API_BACKEND_URL}/agent`, {
@@ -339,12 +344,16 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleRenameChat = async (chatId: string, newTitle: string, isAutoRename: boolean = false) => {
+  const handleRenameChat = async (
+    chatId: string,
+    newTitle: string,
+    isAutoRename: boolean = false
+  ) => {
     try {
       console.log('[handleRenameChat] Starting rename operation:', {
         chatId,
         newTitle,
-        isAutoRename
+        isAutoRename,
       });
 
       await backend.patch(
@@ -434,7 +443,9 @@ export default function ChatPage() {
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
-      const messageIndex = currentChat.messages.findIndex((msg) => msg.id === assistantMessage.id);
+      const messageIndex = currentChat.messages.findIndex(
+        (msg) => msg.id === assistantMessage.id
+      );
       if (messageIndex === -1) return;
 
       const userMessageIndex = messageIndex - 1;
@@ -456,6 +467,8 @@ export default function ChatPage() {
         model: selectedModel,
         message: userMessageForRegeneration,
       };
+
+      delete newMessage.messages;
 
       // Call the API with formatted messages
       const response = await fetch(`${API_BACKEND_URL}/agent`, {
@@ -578,8 +591,8 @@ export default function ChatPage() {
           chats: savedChats?.chats?.map((c: IChat) => ({
             id: c.id,
             title: c.title,
-            messageCount: c.messages?.length
-          }))
+            messageCount: c.messages?.length,
+          })),
         });
 
         if (savedChats && savedChats.chats.length > 0) {
@@ -594,7 +607,7 @@ export default function ChatPage() {
           console.log('[Initial Load] Most recent chat:', {
             id: mostRecentChat.id,
             title: mostRecentChat.title,
-            lastUpdated: mostRecentChat.lastUpdated
+            lastUpdated: mostRecentChat.lastUpdated,
           });
 
           // Get initial messages for the most recent chat
@@ -680,6 +693,8 @@ export default function ChatPage() {
         message: { ...editedMessage, content: newContent },
         model: selectedModel,
       };
+
+      delete newMessage.messages;
 
       // Regenerate the conversation from this point forward
       setStatus('thinking');
