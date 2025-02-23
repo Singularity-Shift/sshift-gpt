@@ -12,6 +12,7 @@ import {
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
 import { ElfaModule } from './elfa/elfa.module';
+import { IdeogramModule } from './ideogram/ideogram.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { ElfaModule } from './elfa/elfa.module';
     ConfigModule,
     UserModule,
     ElfaModule,
+    IdeogramModule,
   ],
   controllers: [],
   providers: [

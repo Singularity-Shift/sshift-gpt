@@ -11,19 +11,33 @@ export class AgentService {
     private httpService: HttpService,
     private readonly configService: ConfigService
   ) {}
-  async generateImage(prompt, size, style, auth, signal) {
+  async generateImage(
+    prompt,
+    aspect_ratio,
+    model,
+    magic_prompt_option,
+    style_type,
+    auth,
+    signal
+  ) {
     try {
-      this.logger.log('Generating image with params:', { prompt, size, style });
+      this.logger.log('Generating image with params:', {
+        prompt,
+        aspect_ratio,
+        model,
+        magic_prompt_option,
+        style_type,
+      });
 
       const result = await firstValueFrom(
         this.httpService.post(
-          `${this.configService.get(
-            'serverToolsApi.uri'
-          )}/tools/generate-image`,
+          `${this.configService.get('serverToolsApi.uri')}/ideogram/generate`,
           {
             prompt,
-            size,
-            style,
+            aspect_ratio,
+            model,
+            magic_prompt_option,
+            style_type,
           },
           {
             headers: {
