@@ -24,8 +24,6 @@
  * A copy of the GNU GPL v3.0 is available at:
  *   https://www.gnu.org/licenses/gpl-3.0.en.html
  *
- * (Alternatively, include a copy of the license in a file named LICENSE_GPL.txt
- * in your distribution.)
  *
  * ----------------------------------------------------------------------------
  *
