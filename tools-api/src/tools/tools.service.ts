@@ -160,41 +160,6 @@ export class ToolsService {
       cover_url: transformCoverUrl(collection.cover_url),
     }));
   }
-  async generateImage(generateImageDto: GenerateImageDto): Promise<IImage> {
-    const { prompt, size, style } = generateImageDto;
-
-    this.logger.log('Generating image with prompt:', prompt);
-    this.logger.log('Size:', size);
-    this.logger.log('Style:', style);
-
-    const response = await this.openApi.images.generate({
-      model: 'dall-e-3',
-      prompt: prompt,
-      n: 1, // Hardcoded to 1 image only
-      size: size,
-      style: style,
-      response_format: 'url',
-    });
-
-    this.logger.log('OpenAI API response:', JSON.stringify(response, null, 2));
-
-    if (!response.data || response.data.length === 0) {
-      throw new Error('No image generated');
-    }
-
-    const imageUrl = response.data[0].url;
-
-    this.logger.log('Image generated successfully:', imageUrl);
-
-    const bucketUrl = await this.bucketService.uploadImageToBucket(imageUrl);
-
-    this.logger.log('Image uploaded to bucket:', bucketUrl);
-
-    return {
-      url: bucketUrl.url,
-      prompt,
-    };
-  }
 
   async findCryptoInfoFromCMC(tokenSymbol: string): Promise<ICmcInfo> {
     return await this.cmcService.getFullCryptoInfo(tokenSymbol);
@@ -329,18 +294,18 @@ export class ToolsService {
         aptos: {
           search: COLLECTION_SEARCH_QUERY,
           stats: COLLECTION_STATS_QUERY,
-          details: COLLECTION_DETAILS_QUERY
+          details: COLLECTION_DETAILS_QUERY,
         },
         sui: {
           search: SUI_COLLECTION_SEARCH_QUERY,
           stats: SUI_COLLECTION_STATS_QUERY,
-          details: SUI_COLLECTION_DETAILS_QUERY
+          details: SUI_COLLECTION_DETAILS_QUERY,
         },
         movement: {
           search: MOVEMENT_COLLECTION_SEARCH_QUERY,
           stats: MOVEMENT_COLLECTION_STATS_QUERY,
-          details: MOVEMENT_COLLECTION_DETAILS_QUERY
-        }
+          details: MOVEMENT_COLLECTION_DETAILS_QUERY,
+        },
       };
 
       const chainQueries = queries[chain];
@@ -365,7 +330,8 @@ export class ToolsService {
         .replace(/\s+/g, '-')
         .trim();
 
-      const chainRoot = chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
+      const chainRoot =
+        chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
       const foundCollection = searchData[chainRoot].collections.find((c) => {
         if (!c.verified) return false;
 
@@ -422,7 +388,8 @@ export class ToolsService {
       const details = detailsResult.data[chainRoot].collections[0] || {};
 
       // Get chain-specific token symbol
-      const tokenSymbol = chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
+      const tokenSymbol =
+        chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
 
       // Add stats to collection object
       collection.stats = {
@@ -484,14 +451,18 @@ export class ToolsService {
         slug: collection.slug,
         semantic_slug: collection.semantic_slug,
 
-        marketplaces: chain === 'aptos' 
-          ? {
-              tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
-              wapal: `https://wapal.io/collection/${collection.title.replace(/\s+/g, '-')}`
-            }
-          : {
-              tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`
-            }
+        marketplaces:
+          chain === 'aptos'
+            ? {
+                tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
+                wapal: `https://wapal.io/collection/${collection.title.replace(
+                  /\s+/g,
+                  '-'
+                )}`,
+              }
+            : {
+                tradeport: `https://www.tradeport.xyz/${chain}/collection/${collection.semantic_slug}?bottomTab=trades&tab=items`,
+              },
       };
 
       this.logger.log('NFT collection fetched successfully:', collection);
@@ -514,7 +485,7 @@ export class ToolsService {
     period = 'days_1',
     trendingBy = 'crypto_volume',
     limit = 10,
-    chain = 'aptos'
+    chain = 'aptos',
   }) {
     try {
       const allowedLimits = [5, 10, 20, 40];
@@ -528,7 +499,7 @@ export class ToolsService {
       const queries = {
         aptos: TRENDING_COLLECTIONS_QUERY,
         sui: SUI_TRENDING_COLLECTIONS_QUERY,
-        movement: MOVEMENT_TRENDING_COLLECTIONS_QUERY
+        movement: MOVEMENT_TRENDING_COLLECTIONS_QUERY,
       };
 
       const query = queries[chain];
@@ -553,18 +524,22 @@ export class ToolsService {
         throw new Error(`GraphQL Error: ${error.message}`);
       }
 
-      const chainRoot = chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
-      const tokenSymbol = chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
+      const chainRoot =
+        chain === 'aptos' ? 'aptos' : chain === 'sui' ? 'sui' : 'movement';
+      const tokenSymbol =
+        chain === 'aptos' ? 'APT' : chain === 'sui' ? 'SUI' : 'MOVE';
 
-      const trendingCollections = data[chainRoot].collections_trending.map((item) => {
-        const collection = item.collection;
-        const floor = collection.floor * Math.pow(10, -8);
+      const trendingCollections = data[chainRoot].collections_trending.map(
+        (item) => {
+          const collection = item.collection;
+          const floor = collection.floor * Math.pow(10, -8);
 
-        return {
-          title: collection.title,
-          floor_price: `${floor} ${tokenSymbol}`
-        };
-      });
+          return {
+            title: collection.title,
+            floor_price: `${floor} ${tokenSymbol}`,
+          };
+        }
+      );
 
       this.logger.log('Trending collection', trendingCollections);
 
@@ -714,9 +689,12 @@ export class ToolsService {
 
     const responseDto = {
       error: false,
-      result: data.choices && data.choices.length > 0 ? data.choices[0].message.content : '',
+      result:
+        data.choices && data.choices.length > 0
+          ? data.choices[0].message.content
+          : '',
       message: data.message || '',
-      citations: data.citations || []
+      citations: data.citations || [],
     };
     return responseDto;
   }

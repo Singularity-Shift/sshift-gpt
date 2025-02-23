@@ -11,18 +11,28 @@
             "type": "string",
             "description": "The detailed description of the image to generate. You must create a perfect prompt based on the users request or description. Think about the appropiate style and size of the image based on the final prompt."
           },
-          "size": {
+          "aspect_ratio": {
             "type": "string",
-            "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "The size of the generated image."
+            "enum": ["ASPECT_1_1", "ASPECT_1_3", "ASPECT_3_1", "ASPECT_3_4", "ASPECT_4_3", "ASPECT_16_9", "ASPECT_3_2", "ASPECT_2_3", "ASPECT_9_16", "ASPECT_16_10","ASPECT_10_16"],
+            "description": " The aspect ratio to use for image generation, which determines the image’s resolution. Defaults to ASPECT_1_1."
           },
-          "style": {
+          "model": {
             "type": "string",
-            "enum": ["vivid", "natural"],
-            "description": "The artistic style of the image."
+            "enum": ["V_1", "V_1_TURBO", "V_2", "V_2_TURBO"],
+            "description": "The model used to generate an image or edit one. /generate and /remix supports all model types, however, /edit is only supported for V_2 and V_2_TURBO."
+          },
+          "magic_prompt_option": {
+            "type": "string",
+            "enum": ["AUTO", "ON", "OFF"],
+            "description": "Determine if MagicPrompt should be used in generating the request or not."
+          },
+          "style_type": {
+            "type": "string",
+            "description": "The style type to generate with; this is only applicable for models V_2 and above and should not be specified for model versions V_1.",
+            "enum": ["AUTO", "GENERAL", "REALISTIC", "DESIGN", "RENDER_3D", "ANIME"]
           }
         },
-        "required": ["prompt", "size", "style"],
+        "required": ["prompt", "aspect_ratio", "model", "magic_prompt_option", "style_type"],
         "additionalProperties": false
       },
       "strict": true

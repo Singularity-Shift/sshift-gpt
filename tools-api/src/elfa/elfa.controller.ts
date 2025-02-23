@@ -1,9 +1,11 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiResponse } from '@nestjs/swagger';
 import { ElfaService } from './elfa.service';
+import { ToolsGuard } from '../tools/tools.guard';
 
 @Controller('elfa')
 @ApiBearerAuth('Authorization')
+@UseGuards(ToolsGuard('elfa'))
 @ApiResponse({ status: 401, description: 'Unauthorized' })
 @ApiResponse({ status: 500, description: 'Internal server error' })
 export class ElfaController {
