@@ -1,6 +1,7 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
 import { MultisignAction } from './enums';
+import { ToolsNameList } from 'move-agent-kit_spiel';
 
 export interface IAuth {
   message: string;
@@ -296,4 +297,9 @@ export interface IChat {
   createdAt?: number;
   lastUpdated?: number;
   model: string;
+}
+
+export interface IActionFunction {
+  name: ToolsNameList;
+  arguments: string;
 }

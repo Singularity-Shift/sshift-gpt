@@ -8,9 +8,11 @@ import {
   ConfigService,
   StorageModule,
   UserModule,
+  OnchainAgentModule,
 } from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
+import { AptosOnchainModule } from './aptos-onchain/aptos-onchain.module';
 
 @Module({
   imports: [
@@ -29,6 +31,7 @@ import { APP_GUARD } from '@nestjs/core';
     StorageModule,
     ConfigModule,
     UserModule,
+    AptosOnchainModule,
   ],
   controllers: [],
   providers: [

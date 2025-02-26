@@ -15,6 +15,7 @@ const nextConfig = {
   env: {
     API_BACKEND_URL: process.env.API_BACKEND_URL,
     API_TOOLS_URL: process.env.URI_TOOLS,
+    PANORA_API_KEY: process.env.PANORA_API_KEY,
   }
 };
 
