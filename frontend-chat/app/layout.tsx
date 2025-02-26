@@ -9,6 +9,8 @@ import { AppManagementProvider } from '../src/context/AppManagment';
 import { AbiProvider } from '../src/context/AbiProvider';
 import { AuthProvider } from '../src/context/AuthProvider';
 import { AgentProvider } from '../src/context/AgentProvider';
+import { GoogleAnalytics } from '@next/third-parties/google'
+import { WebVitals } from '../src/components/ui/web-vitals';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -36,7 +38,10 @@ export default function RootLayout({
               <BackendProvider>
                 <AbiProvider>
                   <AppManagementProvider>
-                    <AgentProvider>{children}</AgentProvider>
+                    <AgentProvider>
+                      <WebVitals />
+                      {children}
+                    </AgentProvider>
                   </AppManagementProvider>
                 </AbiProvider>
               </BackendProvider>
@@ -44,6 +49,7 @@ export default function RootLayout({
           </WalletProvider>
         </ThemeProvider>
         <Toaster />
+        <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />
       </body>
     </html>
   );
