@@ -5,8 +5,16 @@ import { silkscreen } from './fonts';
 import { SshiftWallet } from '../src/components/SshigtWallet';
 import { GameOfLife } from '../src/components/ui/gameOfLife';
 import { IndexHeader } from '../src/components/ui/IndexHeader';
+import { NetworkToggle } from '../src/components/ui/NetworkToggle';
+import { useState } from 'react';
 
 export default function Home() {
+  const [selectedNetwork, setSelectedNetwork] = useState<'aptos' | 'movement'>('aptos');
+
+  const handleNetworkToggle = () => {
+    setSelectedNetwork(prev => prev === 'aptos' ? 'movement' : 'aptos');
+  };
+
   return (
     <div className="relative min-h-screen">
       <GameOfLife />
@@ -33,6 +41,9 @@ export default function Home() {
             </h1>
           </div>
         </div>
+        
+        <NetworkToggle selectedNetwork={selectedNetwork} onToggle={handleNetworkToggle} />
+
         <div className="flex space-x-2 md:space-x-4">
           <SshiftWallet />
         </div>
@@ -56,7 +67,18 @@ export default function Home() {
             aria-label="Join Telegram"
           >
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-              <path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/>
+              <path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm5.562 8.161c-.18 1.897-.962 6.502-1.359 8.627-.168.9-.5 1.201-.82 1.23-.697.064-1.225-.461-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.015-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.062 3.345-.48.33-.913.49-1.302.48-.428-.009-1.252-.242-1.865-.442-.752-.244-1.349-.374-1.297-.789.027-.216.324-.437.893-.663 3.498-1.524 5.831-2.529 6.998-3.014 3.333-1.386 4.025-1.627 4.477-1.635.4-.006 1.29.235 1.655.774z"/>
+            </svg>
+          </a>
+          <a
+            href={process.env.NEXT_PUBLIC_GITBOOK_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="p-2 bg-[#3884FF] text-white rounded-lg hover:bg-[#2D6ECC] transition-colors"
+            aria-label="View Documentation"
+          >
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path d="M10.802 17.77a.703.703 0 11-.002 1.406.703.703 0 01.002-1.406m11.024-4.347a.703.703 0 11.001-1.406.703.703 0 01-.001 1.406m0-2.876a2.176 2.176 0 00-2.174 2.174c0 .233.039.465.115.691l-7.181 3.823a2.165 2.165 0 00-1.784-.937c-.829 0-1.584.475-1.95 1.216l-6.451-3.402c-.682-.358-1.192-1.48-1.138-2.502.028-.533.212-.947.493-1.107.178-.1.392-.092.62.027l.042.023c1.71.9 7.304 3.847 7.54 3.956.363.169.565.237 1.185-.057l11.564-6.014c.17-.064.368-.227.368-.474 0-.342-.354-.477-.355-.477-.658-.315-1.669-.788-2.655-1.25-2.108-.987-4.497-2.105-5.546-2.655-.906-.474-1.635-.074-1.765.006l-.252.125C7.78 6.048 1.46 9.178 1.1 9.397.457 9.789.058 10.57.006 11.539c-.08 1.537.703 3.14 1.824 3.727l6.822 3.518a2.175 2.175 0 002.15 1.862 2.177 2.177 0 002.173-2.14l7.514-4.073c.38.298.853.461 1.337.461a2.176 2.176 0 000-4.352"/>
             </svg>
           </a>
         </div>
