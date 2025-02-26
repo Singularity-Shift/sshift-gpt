@@ -214,7 +214,7 @@ export class ToolsController {
   })
   searchNFTCollection(
     @Param('collectionName') collectionName: string,
-    @Query('chain') chain: string = 'aptos'
+    @Query('chain') chain = 'aptos'
   ): Promise<GetNFTCollectionDto> {
     try {
       return this.toolsService.searchNFTCollection(collectionName, chain);
@@ -269,7 +269,7 @@ export class ToolsController {
     @Query('limit', ParseIntPipe) limit = 10,
     @Query('period') period: string,
     @Query('trending_by') trendingBy: string,
-    @Query('chain') chain: string = 'aptos'
+    @Query('chain') chain = 'aptos'
   ): Promise<GetTrendingNFTDto> {
     try {
       return this.toolsService.searchTrendingNFT({

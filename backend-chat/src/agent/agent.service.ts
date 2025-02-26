@@ -59,7 +59,7 @@ export class AgentService {
         prompt,
       };
     } catch (error) {
-      console.error('Error in generateImage:', error);
+      this.logger.error('Error in generateImage:', error);
       return {
         error: true,
         message: `Failed to generate image: ${error.message}`,
@@ -101,7 +101,7 @@ export class AgentService {
       }
       return data;
     } catch (error) {
-      console.error('Error in searchWeb:', error);
+      this.logger.error('Error in searchWeb:', error);
       return {
         error: true,
         message: `Failed to search web: ${error.message}`,
@@ -128,7 +128,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in wikiSearch:', error);
+      this.logger.error('Error in wikiSearch:', error);
       return {
         error: true,
         message: `Failed to search Wikipedia: ${error.message}`,
@@ -160,7 +160,7 @@ export class AgentService {
 
       return result.data;
     } catch (error) {
-      console.error('Error in getStockInfo:', error);
+      this.logger.error('Error in getStockInfo:', error);
       return {
         error: true,
         message: `Failed to get stock info: ${error.message}`,
@@ -221,7 +221,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in queryArxiv:', error);
+      this.logger.error('Error in queryArxiv:', error);
       return {
         error: true,
         message: `Failed to query arXiv: ${error.message}`,
@@ -250,7 +250,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in getTrendingCryptos:', error);
+      this.logger.error('Error in getTrendingCryptos:', error);
       return {
         error: true,
         message: `Failed to get trending cryptos: ${error.message}`,
@@ -285,7 +285,7 @@ export class AgentService {
           message: 'Request was cancelled or timed out',
         };
       }
-      console.error('Error in searchNftCollection:', error);
+      this.logger.error('Error in searchNftCollection:', error);
       return {
         error: true,
         message: `Failed to search NFT collection: ${error.message}`,
@@ -325,7 +325,7 @@ export class AgentService {
           message: 'Request was cancelled or timed out',
         };
       }
-      console.error('Error in searchTrendingNFT:', error);
+      this.logger.error('Error in searchTrendingNFT:', error);
       return {
         error: true,
         message: `Failed to search trending NFTs: ${error.message}`,
@@ -378,7 +378,7 @@ export class AgentService {
         text,
       };
     } catch (error) {
-      console.error('Error in createSoundEffect:', error);
+      this.logger.error('Error in createSoundEffect:', error);
       return {
         error: true,
         message: `Failed to create sound effect: ${error.message}`,
@@ -407,7 +407,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in fetchUserNFTCollections:', error);
+      this.logger.error('Error in fetchUserNFTCollections:', error);
       return {
         error: true,
         message: `Failed to fetch user NFT collections: ${error.message}`,
@@ -436,7 +436,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in getAllTopics:', error);
+      this.logger.error('Error in getAllTopics:', error);
       return {
         error: true,
         message: 'Failed to fetch all topics in lens',
@@ -465,7 +465,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in getTokensMentioned:', error);
+      this.logger.error('Error in getTokensMentioned:', error);
       return {
         error: true,
         message: 'Failed to fetch tokens mentioned in lens',
@@ -496,7 +496,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in getTrendingUsers:', error);
+      this.logger.error('Error in getTrendingUsers:', error);
       return {
         error: true,
         message: 'Failed to fetch trending users',
@@ -529,6 +529,33 @@ export class AgentService {
       return {
         error: true,
         message: 'Failed to fetch mentions in twitter',
+      };
+    }
+  }
+
+  async getOnchainActions(prompt, auth, signal) {
+    try {
+      const response = await firstValueFrom(
+        this.httpService.post(
+          `${this.configService.get('serverToolsApi.uri')}/onchain-agent`,
+          { prompt },
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.error('Error in getOnchainActions:', error);
+      return {
+        error: true,
+        message: 'Failed to fetch onchain actions',
       };
     }
   }
@@ -611,7 +638,7 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      console.error('Error in getTrendingTokens:', error);
+      this.logger.error('Error in getTrendingTokens:', error);
       return {
         error: true,
         message: 'Failed to fetch trending tokens in twitter',

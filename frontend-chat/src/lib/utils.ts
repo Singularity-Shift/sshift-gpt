@@ -3,6 +3,8 @@ import { twMerge } from 'tailwind-merge';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
 import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
+import { AgentRuntime } from 'move-agent-kit_spiel';
+import { executeAction } from '@helpers';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -100,4 +102,12 @@ export const aptosClient = () => {
     })
   );
   return aptos;
+};
+
+export const executeAllActions = async (actions: any, agent: AgentRuntime) => {
+  for (const action of actions) {
+    const { name, args } = action;
+
+    await executeAction(name, args, agent);
+  }
 };

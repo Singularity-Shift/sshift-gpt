@@ -63,6 +63,12 @@ export const Profiles = {
       apiKey: process.env.IDEOGRAM_API_KEY,
       baseUrl: process.env.IDEOGRAM_BASE_URL,
     },
+    langchain: {
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    },
+    panora: {
+      apiKey: process.env.PANORA_API_KEY,
+    },
   },
   production: {
     nodeEnv: process.env.NODE_ENV,
@@ -127,6 +133,12 @@ export const Profiles = {
     ideogram: {
       apiKey: process.env.IDEOGRAM_API_KEY,
       baseUrl: process.env.IDEOGRAM_BASE_URL,
+    },
+    langchain: {
+      apiKey: process.env.ANTHROPIC_API_KEY,
+    },
+    panora: {
+      apiKey: process.env.PANORA_API_KEY,
     },
   },
 };

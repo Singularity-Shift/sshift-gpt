@@ -12,3 +12,4 @@ export const SSHIFT_RECORD_ADDRESS =
   process.env.NEXT_PUBLIC_SSHIFT_RECORD_ADDRESS || '';
 export const MODULE_ADDRESS = process.env.NEXT_PUBLIC_MODULE_ADDRESS || '';
 export const API_BACKEND_URL = process.env.API_BACKEND_URL || '';
+export const PANORA_API_KEY = process.env.PANORA_API_KEY || '';

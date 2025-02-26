@@ -17,6 +17,8 @@ import { useAuth } from '../../src/context/AuthProvider';
 import { API_BACKEND_URL } from '../../config/env';
 import { useToast } from '../../src/components/ui/use-toast';
 import { IChat, IMessage } from '@helpers';
+import { useAgent } from '../../src/context/AgentProvider';
+import { executeAllActions } from '../../src/lib/utils';
 
 interface NewMessage {
   id: string;
@@ -51,9 +53,8 @@ export default function ChatPage() {
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isPaginating, setIsPaginating] = useState(false);
   const { toast } = useToast();
-
+  const { agent } = useAgent();
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -137,7 +138,7 @@ export default function ChatPage() {
 
           console.log('Chat select messages response:', messagesResponse.data);
 
-          const { messages, total } = messagesResponse.data;
+          const { messages } = messagesResponse.data;
           const hasMoreMessages = messages.length === 10;
 
           setChats((prevChats) =>
@@ -290,17 +291,9 @@ export default function ChatPage() {
                 } else if (parsedData.tool_call) {
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
-                  if (parsedData.tool_response.name === 'generateImage') {
-                    assistantMessage.images = [
-                      ...(assistantMessage.images || []),
-                      parsedData.tool_response.result.image_url,
-                    ];
-                    updateChat(assistantMessage);
-                  } else if (parsedData.tool_response.name === 'searchWeb') {
-                    assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                    updateChat(assistantMessage);
-                  }
-                  setStatus('typing');
+                  const { actions } = parsedData.tool_response;
+
+                  executeAllActions(actions, agent);
                 } else if (parsedData.final_message) {
                   assistantMessage = {
                     ...assistantMessage,
@@ -347,7 +340,7 @@ export default function ChatPage() {
   const handleRenameChat = async (
     chatId: string,
     newTitle: string,
-    isAutoRename: boolean = false
+    isAutoRename = false
   ) => {
     try {
       console.log('[handleRenameChat] Starting rename operation:', {
@@ -518,17 +511,9 @@ export default function ChatPage() {
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
               } else if (parsedData.tool_response) {
-                if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.images = [
-                    ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url,
-                  ];
-                  updateChat(newAssistantMessage);
-                } else if (parsedData.tool_response.name === 'searchWeb') {
-                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                  updateChat(newAssistantMessage);
-                }
-                setStatus('typing');
+                const { actions } = parsedData.tool_response;
+
+                executeAllActions(actions, agent);
               } else if (parsedData.final_message) {
                 newAssistantMessage = {
                   ...newAssistantMessage,
@@ -627,7 +612,7 @@ export default function ChatPage() {
           console.log('Initial messages response:', messagesResponse.data);
 
           // Check if there are more messages based on the total count
-          const { messages, total } = messagesResponse.data;
+          const { messages } = messagesResponse.data;
           const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
 
           // Update the most recent chat with only the first 10 messages
@@ -773,16 +758,9 @@ export default function ChatPage() {
                 newAssistantMessage.content += parsedData.content;
                 setStatus('typing');
               } else if (parsedData.tool_response) {
-                if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.images = [
-                    ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url,
-                  ];
-                  setStatus('tool-calling');
-                } else if (parsedData.tool_response.name === 'searchWeb') {
-                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                  setStatus('tool-calling');
-                }
+                const { actions } = parsedData.tool_response;
+
+                executeAllActions(actions, agent);
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
               }
@@ -871,7 +849,6 @@ export default function ChatPage() {
       currentChatId
     );
     setIsLoadingMore(true);
-    setIsPaginating(true);
     try {
       const nextPage = currentPage + 1;
       console.log('[LoadMore] Requesting page:', nextPage);
@@ -905,7 +882,7 @@ export default function ChatPage() {
         return;
       }
 
-      const { messages: olderMessages, total, totalPages } = response.data;
+      const { messages: olderMessages, totalPages } = response.data;
 
       if (olderMessages && olderMessages.length > 0) {
         console.log(
@@ -948,7 +925,6 @@ export default function ChatPage() {
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);
-      setIsPaginating(false);
     }
   };
 
