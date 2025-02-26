@@ -71,7 +71,7 @@ export const executeAction = async (
           balance = balances[0].amount ?? 0;
         } else {
           balance = await aptos.getAccountCoinAmount({
-            accountAddress: walletAddress,
+            accountAddress: walletAddress as string,
             coinType: mint as MoveStructId,
           });
         }
