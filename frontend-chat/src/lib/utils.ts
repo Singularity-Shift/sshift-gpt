@@ -93,17 +93,6 @@ export function calculateMaxDiscount(
   return Math.min(discountPercentage, config.MAX_DISCOUNT);
 }
 
-export const aptosClient = () => {
-  const aptos = new Aptos(
-    new AptosConfig({
-      network: APTOS_NETWORK as Network,
-      fullnode: APTOS_NODE_URL,
-      indexer: APTOS_INDEXER,
-    })
-  );
-  return aptos;
-};
-
 export const executeAllActions = async (actions: any, agent: AgentRuntime) => {
   for (const action of actions) {
     const { name, args } = action;

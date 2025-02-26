@@ -11,12 +11,12 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { IMoveBotFields, ISubscription } from '@helpers';
-import { aptosClient } from '../lib/utils';
+import { Chain, IMoveBotFields, ISubscription } from '@helpers';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { FeesABI, SubscriptionABI } from '@aptos';
 import { useAuth } from './AuthProvider';
+import { useChain } from './ChainProvider';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -68,6 +68,7 @@ export const AppManagementProvider = ({
   const [nftAddressesRequiredOwned, setNftAddressesRequiredOwned] = useState<
     string[]
   >([]);
+
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
@@ -76,9 +77,9 @@ export const AppManagementProvider = ({
   const { abi } = useAbiClient();
   const { connected } = useWallet();
   const { toast } = useToast();
-  const aptos = aptosClient();
   const { client } = useWalletClient();
   const { walletAddress } = useAuth();
+  const { aptos, chain } = useChain();
 
   useEffect(() => {
     if (!connected) return;
@@ -235,10 +236,11 @@ export const AppManagementProvider = ({
   }, [abi]);
 
   useEffect(() => {
-    if (!walletAddress) return;
+    if (!walletAddress || !aptos) return;
 
     void (async () => {
       try {
+        let nftAddresses: string[] = [];
         const nftsHolding = await aptos.getAccountOwnedTokens({
           accountAddress: walletAddress as string,
         });
@@ -252,28 +254,28 @@ export const AppManagementProvider = ({
 
         const config = configResult?.[0] as ISubscription;
 
-        if (!aptos.config.fullnode?.includes('movement')) {
-          // const moveBotFieldsResult = await abi
-          //   ?.useABI(SubscriptionABI)
-          //   .view.get_move_bot_fields({
-          //     typeArguments: [],
-          //     functionArguments: [],
-          //   });
+        if (chain === Chain.Aptos) {
+          const moveBotFieldsResult = await abi
+            ?.useABI(SubscriptionABI)
+            .view.get_move_bot_fields({
+              typeArguments: [],
+              functionArguments: [],
+            });
 
-          // const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+          const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
 
-          // const movebotsHolding = nftsHolding.filter(
-          //   (nft) =>
-          //     nft.current_token_data?.token_name === moveBotFields.token_name &&
-          //     nft.current_token_data.current_collection?.creator_address ===
-          //       moveBotFields.token_creator &&
-          //     nft.property_version_v1?.toString() ===
-          //       moveBotFields.token_property_version &&
-          //     nft.current_token_data?.current_collection?.collection_name ===
-          //       moveBotFields.token_collection
-          // );
+          const movebotsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.token_name === moveBotFields.token_name &&
+              nft.current_token_data.current_collection?.creator_address ===
+                moveBotFields.token_creator &&
+              nft.property_version_v1?.toString() ===
+                moveBotFields.token_property_version &&
+              nft.current_token_data?.current_collection?.collection_name ===
+                moveBotFields.token_collection
+          );
 
-          // setMoveBotsOwned(movebotsHolding.length || 0);
+          setMoveBotsOwned(movebotsHolding.length || 0);
 
           const sshiftRecordsNFTCollection = config.collections_discount.find(
             (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
@@ -286,6 +288,10 @@ export const AppManagementProvider = ({
           );
 
           setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
+          nftAddresses = [
+            ...nftAddresses,
+            ...movebotsHolding.map((nft) => nft.token_data_id),
+          ];
         }
 
         const qribbleNFTCollection = config.collections_discount.find(
@@ -300,10 +306,12 @@ export const AppManagementProvider = ({
 
         setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
 
-        setNftAddressesRequiredOwned([
+        nftAddresses = [
+          ...nftAddresses,
           ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
-          // ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
-        ]);
+        ];
+
+        setNftAddressesRequiredOwned([...nftAddresses]);
 
         const hasSubscriptionActiveResult = await abi
           ?.useABI(SubscriptionABI)
@@ -348,7 +356,7 @@ export const AppManagementProvider = ({
         });
       }
     })();
-  }, [connected, walletAddress, abi, hasSubscriptionToClaim]);
+  }, [connected, walletAddress, abi, hasSubscriptionToClaim, aptos]);
 
   const onSubscribe = async (days: number) => {
     try {
@@ -360,10 +368,9 @@ export const AppManagementProvider = ({
       });
 
       // Wait for transaction to be confirmed
-      const committedTransactionResponse =
-        await aptosClient().waitForTransaction({
-          transactionHash: tx?.hash as string,
-        });
+      const committedTransactionResponse = await aptos.waitForTransaction({
+        transactionHash: tx?.hash as string,
+      });
 
       if (committedTransactionResponse.success) {
         // Check subscription status after successful purchase

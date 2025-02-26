@@ -9,6 +9,7 @@ import { AppManagementProvider } from '../src/context/AppManagment';
 import { AbiProvider } from '../src/context/AbiProvider';
 import { AuthProvider } from '../src/context/AuthProvider';
 import { AgentProvider } from '../src/context/AgentProvider';
+import { ChainProvider } from '@fn-chat/context/ChainProvider';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -31,17 +32,19 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <WalletProvider>
-            <AuthProvider>
-              <BackendProvider>
-                <AbiProvider>
-                  <AppManagementProvider>
-                    <AgentProvider>{children}</AgentProvider>
-                  </AppManagementProvider>
-                </AbiProvider>
-              </BackendProvider>
-            </AuthProvider>
-          </WalletProvider>
+          <ChainProvider>
+            <WalletProvider>
+              <AuthProvider>
+                <BackendProvider>
+                  <AbiProvider>
+                    <AppManagementProvider>
+                      <AgentProvider>{children}</AgentProvider>
+                    </AppManagementProvider>
+                  </AbiProvider>
+                </BackendProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ChainProvider>
         </ThemeProvider>
         <Toaster />
       </body>

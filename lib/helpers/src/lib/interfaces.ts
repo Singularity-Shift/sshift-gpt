@@ -1,11 +1,12 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
-import { MultisignAction } from './enums';
+import { Chain, MultisignAction } from './enums';
 import { ToolsNameList } from 'move-agent-kit_spiel';
 
 export interface IAuth {
   message: string;
   address: string;
+  chain: Chain;
   publicKey: string;
   signature: unknown;
 }
@@ -268,6 +269,7 @@ export interface ITicker {
 
 export interface IJWTUser {
   account: string;
+  chain: Chain;
   token: string;
 }
 
