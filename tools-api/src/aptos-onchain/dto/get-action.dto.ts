@@ -12,8 +12,11 @@ export class GetActionDto {
 
   constructor(name: ToolsNameList, args: string) {
     this.name = name;
-    const values = JSON.parse(JSON.parse(args).input);
-    this.args = Object.values(values);
+    const values = JSON.parse(args);
+    if (values?.input) {
+      values.input = JSON.parse(values.input);
+    }
+    this.args = Object.values(values?.input || values);
     this.onchain = true;
   }
 }

@@ -51,5 +51,7 @@ export class AptosOnchainService {
 
       responses.push(response);
     }
+
+    return responses;
   }
 }

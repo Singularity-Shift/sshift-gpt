@@ -18,7 +18,7 @@ import { API_BACKEND_URL } from '../../config/env';
 import { useToast } from '../../src/components/ui/use-toast';
 import { IChat, IMessage } from '@helpers';
 import { useAgent } from '../../src/context/AgentProvider';
-import { executeAction } from '@helpers';
+import { executeAllActions } from '../../src/lib/utils';
 
 interface NewMessage {
   id: string;
@@ -290,11 +290,7 @@ export default function ChatPage() {
                 } else if (parsedData.tool_response) {
                   const { actions } = parsedData.tool_response;
 
-                  for (const action of actions) {
-                    const { name, args } = action;
-
-                    await executeAction(name, args, agent);
-                  }
+                  executeAllActions(actions, agent);
                 } else if (parsedData.final_message) {
                   assistantMessage = {
                     ...assistantMessage,
@@ -512,11 +508,7 @@ export default function ChatPage() {
               } else if (parsedData.tool_response) {
                 const { actions } = parsedData.tool_response;
 
-                for (const action of actions) {
-                  const { name, args } = action;
-
-                  await executeAction(name, args, agent);
-                }
+                executeAllActions(actions, agent);
               } else if (parsedData.final_message) {
                 newAssistantMessage = {
                   ...newAssistantMessage,
@@ -761,11 +753,7 @@ export default function ChatPage() {
               } else if (parsedData.tool_response) {
                 const { actions } = parsedData.tool_response;
 
-                for (const action of actions) {
-                  const { name, args } = action;
-
-                  await executeAction(name, args, agent);
-                }
+                executeAllActions(actions, agent);
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
               }

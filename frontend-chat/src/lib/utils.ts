@@ -1,16 +1,10 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import {
-  AccountAddress,
-  Aptos,
-  AptosConfig,
-  convertAmountFromHumanReadableToOnChain,
-  MoveStructId,
-  Network,
-} from '@aptos-labs/ts-sdk';
+import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
 import { APTOS_NETWORK } from '../../config/env';
 import { AgentRuntime } from 'move-agent-kit_spiel';
+import { executeAction } from '@helpers';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -105,3 +99,11 @@ export function aptosClient(network?: Network) {
   );
   return aptos;
 }
+
+export const executeAllActions = async (actions: any, agent: AgentRuntime) => {
+  for (const action of actions) {
+    const { name, args } = action;
+
+    await executeAction(name, args, agent);
+  }
+};

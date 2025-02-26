@@ -201,16 +201,19 @@ export class AgentController {
 
           toolResults.forEach((result) => {
             const content = JSON.parse(result.content);
-            const actions = content.filter((c) => c.onchain);
 
-            if (actions.length) {
-              res.write(
-                `data: ${JSON.stringify({
-                  tool_response: {
-                    actions,
-                  },
-                })}\n\n`
-              );
+            if (content) {
+              const actions = content?.filter((c) => c.onchain);
+
+              if (actions.length) {
+                res.write(
+                  `data: ${JSON.stringify({
+                    tool_response: {
+                      actions,
+                    },
+                  })}\n\n`
+                );
+              }
             }
           });
 

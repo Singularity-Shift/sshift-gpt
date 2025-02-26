@@ -78,7 +78,7 @@ export const executeAction = async (
         return balance;
       }
       const balance = await agent.aptos.getAccountAPTAmount({
-        accountAddress: agent.account.getAddress(),
+        accountAddress: walletAddress,
       });
 
       const convertedBalance = convertAmountFromOnChainToHumanReadable(
