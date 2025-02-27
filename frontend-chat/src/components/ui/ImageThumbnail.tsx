@@ -1,5 +1,5 @@
 import React from 'react';
-import { Download } from 'lucide-react';
+import { Download, Pencil } from 'lucide-react';
 import backend from '../../services/backend';
 import { useAuth } from '../../context/AuthProvider';
 
@@ -149,6 +149,11 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
     }
   };
 
+  const handleEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    // Edit functionality will be added later
+  };
+
   return (
     <div className="cursor-pointer relative" onClick={onClick}>
       <img
@@ -163,11 +168,19 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
         } object-cover transition-all duration-200`}
       />
       {isAssistantMessage && isExpanded && (
-        <div
-          className="absolute bottom-2 right-2 p-1.5 hover:bg-white/10 transition-colors rounded"
-          onClick={downloadImage}
-        >
-          <Download className="h-5 w-5 text-white" />
+        <div className="absolute bottom-2 right-2 flex gap-2">
+          <div
+            className="p-1.5 hover:bg-white/10 transition-colors rounded"
+            onClick={handleEdit}
+          >
+            <Pencil className="h-5 w-5 text-white" />
+          </div>
+          <div
+            className="p-1.5 hover:bg-white/10 transition-colors rounded"
+            onClick={downloadImage}
+          >
+            <Download className="h-5 w-5 text-white" />
+          </div>
         </div>
       )}
     </div>
