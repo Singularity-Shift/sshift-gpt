@@ -1,6 +1,5 @@
 import { toast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { SubscriptionABI } from '@aptos';
 import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { useEffect, useState } from 'react';
@@ -11,7 +10,7 @@ import { useAuth } from '../../src/context/AuthProvider';
 
 export const ClaimSubscripton = () => {
   const { client } = useWalletClient();
-  const { abi } = useAbiClient();
+  const { abi, subscriptionABI } = useAbiClient();
   const { setHasSubscriptionToClaim } = useAppManagment();
   const { walletAddress } = useAuth();
   const [isUpdating, setIsUpdating] = useState(false);
@@ -24,7 +23,7 @@ export const ClaimSubscripton = () => {
   const onClaimSubscription = async () => {
     try {
       setIsUpdating(true);
-      const tx = await client?.useABI(SubscriptionABI).claim_subscription({
+      const tx = await client?.useABI(subscriptionABI).claim_subscription({
         type_arguments: [],
         arguments: [],
       });
@@ -58,7 +57,7 @@ export const ClaimSubscripton = () => {
     void (async () => {
       try {
         const subscriptionToClaimResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.get_subscription_to_claim({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],

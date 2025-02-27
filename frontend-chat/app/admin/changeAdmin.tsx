@@ -1,21 +1,22 @@
 import { toast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { FeesABI } from '@aptos';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { useState } from 'react';
+import { useAbiClient } from '../../src/context/AbiProvider';
 
 export const ChangeAdmin = () => {
   const { client } = useWalletClient();
 
   const { isPendingAdmin, setIsAdmin, setIsPendingAdmin } = useAppManagment();
+  const { feesABI } = useAbiClient();
 
   const [pendingAdmin, setPendingAdmin] = useState('');
 
   const handleSubmitPendingAdmin = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).set_pending_admin({
+      const tx = await client?.useABI(feesABI).set_pending_admin({
         type_arguments: [],
         arguments: [pendingAdmin as `0x${string}`],
       });
@@ -47,7 +48,7 @@ export const ChangeAdmin = () => {
 
   const handleAcceptAdmin = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).accept_admin({
+      const tx = await client?.useABI(feesABI).accept_admin({
         type_arguments: [],
         arguments: [],
       });

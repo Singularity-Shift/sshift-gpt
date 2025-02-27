@@ -14,7 +14,6 @@ import { useToast } from '../../src/components/ui/use-toast';
 import { Chain, IMoveBotFields, ISubscription } from '@helpers';
 import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { FeesABI, SubscriptionABI } from '@aptos';
 import { useAuth } from './AuthProvider';
 import { useChain } from './ChainProvider';
 
@@ -74,7 +73,7 @@ export const AppManagementProvider = ({
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
 
-  const { abi } = useAbiClient();
+  const { abi, feesABI, subscriptionABI } = useAbiClient();
   const { connected } = useWallet();
   const { toast } = useToast();
   const { client } = useWalletClient();
@@ -86,7 +85,7 @@ export const AppManagementProvider = ({
 
     void (async () => {
       const hasSubscriptionToClaimResult = await abi
-        ?.useABI(SubscriptionABI)
+        ?.useABI(subscriptionABI)
         .view.has_subscription_to_claim({
           typeArguments: [],
           functionArguments: [walletAddress as `0x${string}`],
@@ -102,7 +101,7 @@ export const AppManagementProvider = ({
       let adminResult;
       let pendingAdminResult;
       try {
-        adminResult = await abi?.useABI(FeesABI).view.get_admin({
+        adminResult = await abi?.useABI(feesABI).view.get_admin({
           typeArguments: [],
           functionArguments: [],
         });
@@ -114,7 +113,7 @@ export const AppManagementProvider = ({
         });
       }
       try {
-        pendingAdminResult = await abi?.useABI(FeesABI).view.get_pending_admin({
+        pendingAdminResult = await abi?.useABI(feesABI).view.get_pending_admin({
           typeArguments: [],
           functionArguments: [],
         });
@@ -136,7 +135,7 @@ export const AppManagementProvider = ({
     (async () => {
       let collectorResult;
       try {
-        collectorResult = await abi?.useABI(FeesABI).view.get_collectors({
+        collectorResult = await abi?.useABI(feesABI).view.get_collectors({
           typeArguments: [],
           functionArguments: [],
         });
@@ -160,7 +159,7 @@ export const AppManagementProvider = ({
       let reviewerResult;
       let pendingReviewerResult;
       try {
-        reviewerResult = await abi?.useABI(FeesABI).view.get_reviewer({
+        reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],
         });
@@ -174,7 +173,7 @@ export const AppManagementProvider = ({
 
       try {
         pendingReviewerResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_pending_reviewer({
             typeArguments: [],
             functionArguments: [],
@@ -197,7 +196,7 @@ export const AppManagementProvider = ({
     void (async () => {
       try {
         const resourceAccountResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_resource_account_address({
             typeArguments: [],
             functionArguments: [],
@@ -216,7 +215,7 @@ export const AppManagementProvider = ({
 
       try {
         const currencyResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_currency_addr({
             typeArguments: [],
             functionArguments: [],
@@ -246,7 +245,7 @@ export const AppManagementProvider = ({
         });
 
         const configResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.get_subscription_config({
             typeArguments: [],
             functionArguments: [],
@@ -256,7 +255,7 @@ export const AppManagementProvider = ({
 
         if (chain === Chain.Aptos) {
           const moveBotFieldsResult = await abi
-            ?.useABI(SubscriptionABI)
+            ?.useABI(subscriptionABI)
             .view.get_move_bot_fields({
               typeArguments: [],
               functionArguments: [],
@@ -314,7 +313,7 @@ export const AppManagementProvider = ({
         setNftAddressesRequiredOwned([...nftAddresses]);
 
         const hasSubscriptionActiveResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.has_subscription_active({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
@@ -327,7 +326,7 @@ export const AppManagementProvider = ({
 
         if (hasSubscriptionActive) {
           const subscribtionResult = await abi
-            ?.useABI(SubscriptionABI)
+            ?.useABI(subscriptionABI)
             .view.get_plan({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],
@@ -362,7 +361,7 @@ export const AppManagementProvider = ({
     try {
       const duration = days * 24 * 60 * 60;
 
-      const tx = await client?.useABI(SubscriptionABI).buy_plan({
+      const tx = await client?.useABI(subscriptionABI).buy_plan({
         type_arguments: [],
         arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
       });
@@ -375,7 +374,7 @@ export const AppManagementProvider = ({
       if (committedTransactionResponse.success) {
         // Check subscription status after successful purchase
         const hasSubscriptionActiveResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.has_subscription_active({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
@@ -387,7 +386,7 @@ export const AppManagementProvider = ({
 
         if (hasSubscriptionActive) {
           const subscriptionResult = await abi
-            ?.useABI(SubscriptionABI)
+            ?.useABI(subscriptionABI)
             .view.get_plan({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],

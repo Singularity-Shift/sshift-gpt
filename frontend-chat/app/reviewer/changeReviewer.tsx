@@ -1,13 +1,14 @@
 import { toast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { FeesABI } from '@aptos';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { Button } from '../../src/components/ui/button';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { useState } from 'react';
+import { useAbiClient } from '../../src/context/AbiProvider';
 
 export const ChangeReviewer = () => {
   const { client } = useWalletClient();
+  const { feesABI } = useAbiClient();
 
   const { isPendingReviewer, setIsReviewer, setIsPendingReviewer } =
     useAppManagment();
@@ -16,7 +17,7 @@ export const ChangeReviewer = () => {
 
   const handleSubmitPendingReviewer = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).set_pending_reviewer({
+      const tx = await client?.useABI(feesABI).set_pending_reviewer({
         type_arguments: [],
         arguments: [pendingReviewer as `0x${string}`],
       });
@@ -48,7 +49,7 @@ export const ChangeReviewer = () => {
 
   const handleAcceptReviewer = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).accept_reviewer({
+      const tx = await client?.useABI(feesABI).accept_reviewer({
         type_arguments: [],
         arguments: [],
       });

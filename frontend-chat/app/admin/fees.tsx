@@ -1,6 +1,5 @@
 'use client';
 import { useAbiClient } from '../../src/context/AbiProvider';
-import { FeesABI } from '@aptos';
 import { useEffect, useState } from 'react';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import {
@@ -15,7 +14,7 @@ import { RESOURCE_ACCOUNT_SEED } from '../../config/env';
 import { useAppManagment } from '../../src/context/AppManagment';
 
 export const Fees = () => {
-  const { abi } = useAbiClient();
+  const { abi, feesABI } = useAbiClient();
   const [isCurrencySet, setIsCurrencySet] = useState(false);
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
   const [isResourceAccountSet, setIsResourceAccountSet] =
@@ -43,7 +42,7 @@ export const Fees = () => {
   useEffect(() => {
     if (isResourceAccountSet) {
       void (async () => {
-        const balance = await abi?.useABI(FeesABI).view.get_resource_balance({
+        const balance = await abi?.useABI(feesABI).view.get_resource_balance({
           typeArguments: [],
           functionArguments: [],
         });
@@ -56,7 +55,7 @@ export const Fees = () => {
     void (async () => {
       let currencyCopy;
       const resourceAccountExists = await abi
-        ?.useABI(FeesABI)
+        ?.useABI(feesABI)
         .view.resource_account_exists({
           typeArguments: [],
           functionArguments: [],
@@ -66,7 +65,7 @@ export const Fees = () => {
 
       if (isResourceAccountExists) {
         const currencyResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_currency_addr({
             typeArguments: [],
             functionArguments: [],
@@ -83,7 +82,7 @@ export const Fees = () => {
 
   useEffect(() => {
     void (async () => {
-      const addresses = await abi?.useABI(FeesABI).view.get_collectors({
+      const addresses = await abi?.useABI(feesABI).view.get_collectors({
         typeArguments: [],
         functionArguments: [],
       });
@@ -91,7 +90,7 @@ export const Fees = () => {
       const subscribers = await Promise.all(
         addresses?.[0].map(async (a) => {
           const isSubscriber = await abi
-            ?.useABI(FeesABI)
+            ?.useABI(feesABI)
             .view.check_collector_object({
               typeArguments: [],
               functionArguments: [a],
@@ -138,7 +137,7 @@ export const Fees = () => {
     }
 
     try {
-      const tx = await client?.useABI(FeesABI).create_resource_account({
+      const tx = await client?.useABI(feesABI).create_resource_account({
         type_arguments: [],
         arguments: [RESOURCE_ACCOUNT_SEED as string, [...initialCollectors]],
       });
@@ -157,7 +156,7 @@ export const Fees = () => {
       });
 
       const resourceAccountAddressResult = await abi
-        ?.useABI(FeesABI)
+        ?.useABI(feesABI)
         .view.get_resource_account_address({
           typeArguments: [],
           functionArguments: [],
@@ -177,7 +176,7 @@ export const Fees = () => {
 
   const onPayCollectors = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).payment({
+      const tx = await client?.useABI(feesABI).payment({
         type_arguments: [],
         arguments: [
           [...collectorsSubscribed],
@@ -210,7 +209,7 @@ export const Fees = () => {
 
   const onUptateCurrency = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).set_currency({
+      const tx = await client?.useABI(feesABI).set_currency({
         type_arguments: [],
         arguments: [currency as `0x${string}`],
       });

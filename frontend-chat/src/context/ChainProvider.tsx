@@ -28,8 +28,6 @@ export const ChainProvider = ({ children }: { children: React.ReactNode }) => {
 
     const chain = window.localStorage.getItem('chain') as Chain;
 
-    if (!chain) return;
-
     const fullnode = (
       chain === Chain.Movement ? MOVEMENT_NODE_URL : APTOS_NODE_URL
     ) as string;

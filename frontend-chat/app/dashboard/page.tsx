@@ -1,28 +1,22 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '../../src/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import {
   calculatePrice,
   calculateDates,
-  calculateDiscount,
   calculateMaxDiscount,
-  aptosClient,
 } from '../../src/lib/utils';
-import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
-const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
-const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
+import { useChain } from '../../src/context/ChainProvider';
+import { Chain } from '@helpers';
 
 export default function SubscriptionPage() {
   const [days, setDays] = React.useState(15);
@@ -31,12 +25,11 @@ export default function SubscriptionPage() {
     startDate: '',
     expirationDate: '',
   });
+  const { chain } = useChain();
 
-  const router = useRouter();
   const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
     useAppManagment();
   const [discount, setDiscount] = useState(0);
-  const aptos = aptosClient();
 
   useEffect(() => {
     const priceWithoutDiscount = calculatePrice(days);
@@ -71,7 +64,7 @@ export default function SubscriptionPage() {
             qribbleNFTsOwned={qribbleNFTsOwned}
             sshiftRecordsOwned={sshiftRecordsOwned}
           />
-          {!aptos.config.fullnode?.includes('movement') && (
+          {chain === Chain.Aptos && (
             <div className="mt-6 text-center">
               <Link
                 href="https://app.panora.exchange/swap/aptos?pair=APT-USDt"
