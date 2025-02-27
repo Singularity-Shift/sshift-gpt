@@ -9,8 +9,19 @@ import { Reflector } from '@nestjs/core';
 import * as jwt from 'jsonwebtoken';
 import { ConfigService } from '../config/config.service';
 import { Request } from 'express';
-import { IUserConfig } from '@helpers';
-import { abis, FeesABI, SubscriptionABI } from '@aptos';
+import {
+  Chain,
+  FeesABITypes,
+  IUserConfig,
+  SubscriptionABITypes,
+} from '@helpers';
+import {
+  abis,
+  FeesABI,
+  SubscriptionABI,
+  FeesMoveAbi,
+  SubscriptionMoveABI,
+} from '@aptos';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -44,7 +55,7 @@ export class AuthGuard implements CanActivate {
         this.configService.get<string>('jwt.secret')
       ) as jwt.JwtPayload;
 
-      payload.config = await this.getUserConfig(payload.address);
+      payload.config = await this.getUserConfig(payload.address, payload.chain);
 
       request['user'] = { auth: token, ...payload };
 
@@ -59,10 +70,30 @@ export class AuthGuard implements CanActivate {
     return type === 'Bearer' ? token : undefined;
   }
 
-  private async getUserConfig(address: `0x${string}`): Promise<IUserConfig> {
+  private async getUserConfig(
+    address: `0x${string}`,
+    chain: Chain
+  ): Promise<IUserConfig> {
     let subscriptionDuration: number[];
 
-    const currentAdminResult = await abis.useABI(FeesABI).view.get_admin({
+    const fullnode = (
+      chain === Chain.Aptos
+        ? process.env.NEXT_PUBLIC_APTOS_NETWORK
+        : process.env.NEXT_PUBLIC_MOVEMENT_NODE_URL
+    ) as string;
+    const indexer = (
+      chain === Chain.Aptos
+        ? process.env.NEXT_PUBLIC_APTOS_INDEXER
+        : process.env.NEXT_PUBLIC_MOVEMENT_INDEXER
+    ) as string;
+
+    const feesABI: FeesABITypes = chain === Chain.Aptos ? FeesABI : FeesMoveAbi;
+    const subscriptionABI: SubscriptionABITypes =
+      chain === Chain.Aptos ? SubscriptionABI : SubscriptionMoveABI;
+
+    const contract = abis(fullnode, indexer);
+
+    const currentAdminResult = await contract.useABI(feesABI).view.get_admin({
       typeArguments: [],
       functionArguments: [],
     });
@@ -71,17 +102,19 @@ export class AuthGuard implements CanActivate {
 
     const isAdmin = currentAdmin?.toLowerCase() === address.toLowerCase();
 
-    const currentReviewerResult = await abis.useABI(FeesABI).view.get_reviewer({
-      typeArguments: [],
-      functionArguments: [],
-    });
+    const currentReviewerResult = await contract
+      .useABI(feesABI)
+      .view.get_reviewer({
+        typeArguments: [],
+        functionArguments: [],
+      });
 
     const currentReviewer = currentReviewerResult?.[0];
 
     const isReviewer = currentReviewer?.toLowerCase() === address.toLowerCase();
 
-    const currentCollectorsResult = await abis
-      .useABI(FeesABI)
+    const currentCollectorsResult = await contract
+      .useABI(feesABI)
       .view.get_collectors({
         typeArguments: [],
         functionArguments: [],
@@ -91,8 +124,8 @@ export class AuthGuard implements CanActivate {
       (c) => c.toLowerCase() === address.toLowerCase()
     );
 
-    const hasSubscriptionResult = await abis
-      .useABI(SubscriptionABI)
+    const hasSubscriptionResult = await contract
+      .useABI(subscriptionABI)
       .view.has_subscription_active({
         typeArguments: [],
         functionArguments: [address],
@@ -101,8 +134,8 @@ export class AuthGuard implements CanActivate {
     const hasSubscription = hasSubscriptionResult?.[0];
 
     if (hasSubscription) {
-      const subscriptionPlanResult = await abis
-        .useABI(SubscriptionABI)
+      const subscriptionPlanResult = await contract
+        .useABI(subscriptionABI)
         .view.get_plan({
           typeArguments: [],
           functionArguments: [address],

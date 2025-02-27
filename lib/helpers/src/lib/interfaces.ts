@@ -18,6 +18,7 @@ export interface IJwt {
 export interface IUserAuth {
   auth: string;
   address: string;
+  chain: Chain;
   config: IUserConfig;
 }
 
