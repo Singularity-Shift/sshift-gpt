@@ -8,17 +8,9 @@ import { Module } from '@nestjs/common';
 import { AgentService } from './agent.service';
 import { AgentController } from './agent.controller';
 import { HttpModule } from '@nestjs/axios';
-import { IdeogramModule } from '../ideogram/ideogram.module';
 
 @Module({
-  imports: [
-    GPTModule,
-    UserModule,
-    AdminConfigModule,
-    HttpModule,
-    ConfigModule,
-    IdeogramModule,
-  ],
+  imports: [GPTModule, UserModule, AdminConfigModule, HttpModule, ConfigModule],
   controllers: [AgentController],
   providers: [AgentService],
 })

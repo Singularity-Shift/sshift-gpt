@@ -21,8 +21,6 @@ import toolSchema from './tool_schema.json';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { AgentService } from './agent.service';
 import { v4 as uuidv4 } from 'uuid';
-import { IdeogramService } from '../ideogram/ideogram.service';
-import { EditDTO } from '../ideogram/dto/edit.dto';
 
 @Controller('agent')
 export class AgentController {
@@ -34,8 +32,7 @@ export class AgentController {
     private readonly userService: UserService,
     private readonly adminConfigService: AdminConfigService,
     private readonly agentService: AgentService,
-    private readonly openai: OpenAI,
-    private readonly ideogramService: IdeogramService
+    private readonly openai: OpenAI
   ) {}
   @Post()
   @UseGuards(AgentGuard)
@@ -462,20 +459,5 @@ export class AgentController {
 
     controller.abort();
     this.shouldStopStream.set(userAuth.address, true);
-  }
-
-  @Post('edit-image')
-  @UseGuards(AgentGuard)
-  async editImage(
-    @Body() editDto: EditDTO,
-    @UserAuth() userAuth: IUserAuth
-  ) {
-    try {
-      const result = await this.ideogramService.editImage(editDto);
-      return result;
-    } catch (error) {
-      this.logger.error('Error in edit image:', error);
-      throw error;
-    }
   }
 }
