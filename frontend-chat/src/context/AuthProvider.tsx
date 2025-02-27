@@ -12,6 +12,7 @@ import * as jwtoken from 'jsonwebtoken';
 import { usePathname, useRouter } from 'next/navigation';
 import { DataProtection } from '../content/DataProtection';
 import backend from '../services/backend';
+import { useChain } from './ChainProvider';
 
 export type AuthContextProp = {
   jwt: string;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextProp>({} as AuthContextProp);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [jwt, setJwt] = useState<string>('');
   const { signMessage, account, connected, disconnect, wallet } = useWallet();
+  const { chain } = useChain();
   const [walletAddress, setWalletAddress] = useState('');
   const router = useRouter();
   const pathname = usePathname();
@@ -54,10 +56,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         nonce: Math.random().toString(),
       });
 
+      if (
+        (messageResp.signature as any)?.data &&
+        (messageResp.signature as any)?.data?.data instanceof Uint8Array ===
+          false
+      ) {
+        const dataSignature = new Uint8Array(
+          Object.values((messageResp.signature as any).data.data)
+        );
+
+        messageResp.signature = Buffer.from(dataSignature).toString('hex');
+      }
+
       const payload: IAuth = {
         message: messageResp.fullMessage,
         signature: `${messageResp.signature}`,
         address: account?.address as string,
+        chain,
         publicKey: account?.publicKey as string,
       };
 
@@ -74,7 +89,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     address: string
   ) => {
     try {
-      const jwtAuth = storedValues?.find((s) => s.account === address);
+      const jwtAuth = storedValues?.find(
+        (s) => s.account === address && s.chain === chain
+      );
 
       let authObj: IJwt | undefined;
 
@@ -92,6 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
         const jwtUser: IJWTUser = {
           account: account?.address || '',
+          chain,
           token: authObj.authToken,
         };
 

@@ -2,7 +2,7 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
-import { APTOS_NETWORK } from '../../config/env';
+import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
 import { AgentRuntime } from 'move-agent-kit_spiel';
 import { executeAction } from '@helpers';
 
@@ -91,13 +91,6 @@ export function calculateMaxDiscount(
     (Math.min(highestDiscountAmount, maxDiscountAmount) / basePrice) * 100;
 
   return Math.min(discountPercentage, config.MAX_DISCOUNT);
-}
-
-export function aptosClient(network?: Network) {
-  const aptos = new Aptos(
-    new AptosConfig({ network: network || (APTOS_NETWORK as Network) })
-  );
-  return aptos;
 }
 
 export const executeAllActions = async (actions: any, agent: AgentRuntime) => {

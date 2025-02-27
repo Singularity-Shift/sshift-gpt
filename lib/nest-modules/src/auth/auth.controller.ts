@@ -48,6 +48,6 @@ export class AuthController {
       await this.userService.addUser(payloadDto.address);
     }
 
-    return this.authService.sigIn(payloadDto.address);
+    return this.authService.sigIn(payloadDto.address, payloadDto.chain);
   }
 }

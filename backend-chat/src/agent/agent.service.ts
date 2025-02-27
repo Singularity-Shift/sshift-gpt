@@ -11,19 +11,33 @@ export class AgentService {
     private httpService: HttpService,
     private readonly configService: ConfigService
   ) {}
-  async generateImage(prompt, size, style, auth, signal) {
+  async generateImage(
+    prompt,
+    aspect_ratio,
+    model,
+    magic_prompt_option,
+    style_type,
+    auth,
+    signal
+  ) {
     try {
-      this.logger.log('Generating image with params:', { prompt, size, style });
+      this.logger.log('Generating image with params:', {
+        prompt,
+        aspect_ratio,
+        model,
+        magic_prompt_option,
+        style_type,
+      });
 
       const result = await firstValueFrom(
         this.httpService.post(
-          `${this.configService.get(
-            'serverToolsApi.uri'
-          )}/tools/generate-image`,
+          `${this.configService.get('serverToolsApi.uri')}/ideogram/generate`,
           {
             prompt,
-            size,
-            style,
+            aspect_ratio,
+            model,
+            magic_prompt_option,
+            style_type,
           },
           {
             headers: {
@@ -37,7 +51,10 @@ export class AgentService {
       );
 
       if (!result.data.url) {
-        throw new Error('No image URL returned from generation');
+        return {
+          error: true,
+          message: 'No image URL returned from generation',
+        };
       }
 
       return {
@@ -45,10 +62,15 @@ export class AgentService {
         prompt,
       };
     } catch (error) {
-      this.logger.error('Error in generateImage:', error);
+      this.logger.error(
+        'Error in generateImage:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to generate image: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to generate image: ${error.message}`,
       };
     }
   }
@@ -87,10 +109,15 @@ export class AgentService {
       }
       return data;
     } catch (error) {
-      this.logger.error('Error in searchWeb:', error);
+      this.logger.error(
+        'Error in searchWeb:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to search web: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to search web: ${error.message}`,
       };
     }
   }
@@ -114,10 +141,12 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in wikiSearch:', error);
+      this.logger.error('Error in wikiSearch:', error.response?.data?.message);
       return {
         error: true,
-        message: `Failed to search Wikipedia: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to search Wikipedia: ${error.message}`,
       };
     }
   }
@@ -146,10 +175,15 @@ export class AgentService {
 
       return result.data;
     } catch (error) {
-      this.logger.error('Error in getStockInfo:', error);
+      this.logger.error(
+        'Error in getStockInfo:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to get stock info: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to get stock info: ${error.message}`,
       };
     }
   }
@@ -176,7 +210,9 @@ export class AgentService {
     } catch (error) {
       return {
         error: true,
-        message: `Failed to get crypto info from CoinMarketCap: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to get crypto info from CoinMarketCap: ${error.message}`,
       };
     }
   }
@@ -207,10 +243,15 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in queryArxiv:', error);
+      this.logger.error(
+        'Error in queryArxiv:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to query arXiv: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to query arXiv: ${error.message}`,
       };
     }
   }
@@ -236,10 +277,15 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in getTrendingCryptos:', error);
+      this.logger.error(
+        'Error in getTrendingCryptos:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to get trending cryptos: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to get trending cryptos: ${error.message}`,
       };
     }
   }
@@ -271,10 +317,15 @@ export class AgentService {
           message: 'Request was cancelled or timed out',
         };
       }
-      this.logger.error('Error in searchNftCollection:', error);
+      this.logger.error(
+        'Error in searchNftCollection:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to search NFT collection: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to search NFT collection: ${error.message}`,
       };
     }
   }
@@ -311,10 +362,15 @@ export class AgentService {
           message: 'Request was cancelled or timed out',
         };
       }
-      this.logger.error('Error in searchTrendingNFT:', error);
+      this.logger.error(
+        'Error in searchTrendingNFT:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to search trending NFTs: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to search trending NFTs: ${error.message}`,
       };
     }
   }
@@ -355,7 +411,10 @@ export class AgentService {
       );
 
       if (!result.data.url) {
-        throw new Error('No sound effect URL returned from generation');
+        return {
+          error: true,
+          message: 'No sound effect URL returned from generation',
+        };
       }
 
       return {
@@ -364,10 +423,15 @@ export class AgentService {
         text,
       };
     } catch (error) {
-      this.logger.error('Error in createSoundEffect:', error);
+      this.logger.error(
+        'Error in createSoundEffect:',
+        error.response?.data?.message
+      );
       return {
         error: true,
-        message: `Failed to create sound effect: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to create sound effect: ${error.message}`,
       };
     }
   }
@@ -393,10 +457,15 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in fetchUserNFTCollections:', error);
+      this.logger.error(
+        'Error in fetchUserNFTCollections:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: `Failed to fetch user NFT collections: ${error.message}`,
+        message:
+          error.response?.data?.message ||
+          `Failed to fetch user NFT collections: ${error.message}`,
       };
     }
   }
@@ -422,10 +491,14 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in getAllTopics:', error);
+      this.logger.error(
+        'Error in getAllTopics:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: 'Failed to fetch all topics',
+        message:
+          error.response?.data?.message || 'Failed to fetch all topics in lens',
       };
     }
   }
@@ -451,10 +524,15 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in getTokensMentioned:', error);
+      this.logger.error(
+        'Error in getTokensMentioned:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: 'Failed to fetch tokens mentioned',
+        message:
+          error.response?.data?.message ||
+          'Failed to fetch tokens mentioned in lens',
       };
     }
   }
@@ -482,10 +560,46 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in getTrendingUsers:', error);
+      this.logger.error(
+        'Error in getTrendingUsers:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: 'Failed to fetch trending users',
+        message:
+          error.response?.data?.message || 'Failed to fetch trending users',
+      };
+    }
+  }
+
+  async getMentionsTwitter(limit, offset, auth, signal) {
+    const query = { limit, offset };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/elfa/mentions`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        'Error in getMentions:',
+        error.response?.data?.message || error.message
+      );
+      return {
+        error: true,
+        message: error.response?.data?.message || 'Failed to fetch mentions',
       };
     }
   }
@@ -509,10 +623,110 @@ export class AgentService {
 
       return response.data;
     } catch (error) {
-      this.logger.error('Error in getOnchainActions:', error);
+      this.logger.error(
+        'Error in getOnchainActions:',
+        error.response?.data?.message || error.message
+      );
       return {
         error: true,
-        message: 'Failed to fetch onchain actions',
+        message:
+          error.response?.data?.message || 'Failed to fetch onchain actions',
+      };
+    }
+  }
+
+  async getTopMentionsTwitter(
+    ticker,
+    timeWindow,
+    page,
+    pageSize,
+    includeAccountDetails,
+    auth,
+    signal
+  ) {
+    const query = {
+      ticker,
+      timeWindow,
+      page,
+      pageSize,
+      includeAccountDetails,
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get('serverToolsApi.uri')}/elfa/top-mentions`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      console.error(
+        'Error in getTopMentions:',
+        error.response?.data?.message || error.message
+      );
+      return {
+        error: true,
+        message:
+          error.response?.data?.message ||
+          'Failed to fetch top mentions in twitter',
+      };
+    }
+  }
+
+  async getTrendingTokensTwitter(
+    timeWindow,
+    page,
+    pageSize,
+    minMentions,
+    auth,
+    signal
+  ) {
+    const query = {
+      timeWindow,
+      page,
+      pageSize,
+      minMentions,
+    };
+
+    try {
+      const response = await firstValueFrom(
+        this.httpService.get(
+          `${this.configService.get(
+            'serverToolsApi.uri'
+          )}/elfa/trending-tokens`,
+          {
+            headers: {
+              'Content-Type': 'application/json',
+              Authorization: `Bearer ${auth}`,
+            },
+            params: query,
+            timeout: 30000,
+            signal,
+          }
+        )
+      );
+
+      return response.data;
+    } catch (error) {
+      this.logger.error(
+        'Error in getTrendingTokens:',
+        error.response?.data?.message || error.message
+      );
+      return {
+        error: true,
+        message:
+          error.response?.data?.message ||
+          'Failed to fetch trending tokens in twitter',
       };
     }
   }

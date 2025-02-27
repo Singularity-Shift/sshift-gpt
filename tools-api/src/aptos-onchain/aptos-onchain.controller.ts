@@ -1,11 +1,11 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { AptosOnchainService } from './aptos-onchain.service';
 import { ActionsDto } from './dto/actions.dto';
 import { ApiResponse } from '@nestjs/swagger';
 import { GetActionDto } from './dto/get-action.dto';
 import { ToolsNameList } from 'move-agent-kit_spiel';
 import { UserAuth } from '@nest-modules';
-import { IUserAuth } from '@helpers';
+import { Chain, IUserAuth } from '@helpers';
 
 @Controller('onchain-agent')
 @ApiResponse({ status: 401, description: 'Unauthorized' })
@@ -18,6 +18,12 @@ export class AptosOnchainController {
     @Body() actionDto: ActionsDto,
     @UserAuth() userAuth: IUserAuth
   ) {
+    if (userAuth.chain !== Chain.Aptos) {
+      throw new BadRequestException(
+        'For now only Aptos chain is supported for executing onchain actions' as string
+      );
+    }
+
     const actionsWithResponses: ToolsNameList[] = [
       'aptos_get_wallet_address',
       'aptos_token_details',

@@ -21,8 +21,6 @@ import { ToolsService } from './tools.service';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { IUserAuth, TrendingOptions } from '@helpers';
 import { UserAuth } from '@nest-modules';
-import { GenerateImageDto } from './dto/generate-image.dto';
-import { GetImageDto } from './dto/get-image.dto';
 import { GetSoundEffect } from './dto/get-sound-effect.dto';
 import { GetUserNftsCollectionsDto } from './dto/get-user-nfts-collections.dto';
 import { GetCryptoInfoFromCMCDto } from './dto/get-crypto-info-from-cmc.dto';
@@ -86,31 +84,6 @@ export class ToolsController {
         throw error;
       } else {
         this.logger.error('Error fetching user NFT collections:', error);
-        throw new HttpException('Internal server error', error.status);
-      }
-    }
-  }
-
-  @Post('generate-image')
-  @UseGuards(ToolsGuard('generateImage'))
-  @ApiOperation({ summary: 'Generame image by chat gpt' })
-  @ApiResponse({
-    description: 'Generated image',
-    type: GetImageDto,
-    status: 201,
-  })
-  async createImage(@Body() generateImageDto: GenerateImageDto) {
-    try {
-      const imageGenerated = await this.toolsService.generateImage(
-        generateImageDto
-      );
-
-      return GetImageDto.fromJson(imageGenerated);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      } else {
-        this.logger.error('Error generating image:', error);
         throw new HttpException('Internal server error', error.status);
       }
     }

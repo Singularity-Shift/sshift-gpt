@@ -1,27 +1,22 @@
 'use client';
 
 import * as React from 'react';
-import { Button } from '../../src/components/ui/button';
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import {
   calculatePrice,
   calculateDates,
-  calculateDiscount,
   calculateMaxDiscount,
 } from '../../src/lib/utils';
-import config from '../../config/dashboard_config.json';
 import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardDisplayArea from '../../src/components/ui/DashboardDisplayArea';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
 import Link from 'next/link';
 import Image from 'next/image';
-
-const MAX_MOVE_BOTS = config.MAX_MOVE_BOTS;
-const MAX_QRIBBLE_NFTS = config.MAX_QRIBBLE_NFTS;
-const MAX_SSHIFT_RECORDS = config.MAX_SSHIFT_RECORDS;
+import { useChain } from '../../src/context/ChainProvider';
+import { Chain } from '@helpers';
 
 export default function SubscriptionPage() {
   const [days, setDays] = React.useState(15);
@@ -30,8 +25,8 @@ export default function SubscriptionPage() {
     startDate: '',
     expirationDate: '',
   });
+  const { chain } = useChain();
 
-  const router = useRouter();
   const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
     useAppManagment();
   const [discount, setDiscount] = useState(0);
@@ -69,29 +64,29 @@ export default function SubscriptionPage() {
             qribbleNFTsOwned={qribbleNFTsOwned}
             sshiftRecordsOwned={sshiftRecordsOwned}
           />
-          <div className="mt-6 text-center">
-            <Link 
-              href="https://app.panora.exchange/swap/aptos?pair=APT-USDt"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors duration-200 border-2 border-gray-300"
-            >
-              <Image
-                src="/images/USDT.png"
-                alt="USDT"
-                width={24}
-                height={24}
-                className="rounded-full"
-              />
-              <span className={`${silkscreen.className} text-black`}>
-                BUY USDT ON PANORA
-              </span>
-            </Link>
-          </div>
+          {chain === Chain.Aptos && (
+            <div className="mt-6 text-center">
+              <Link
+                href="https://app.panora.exchange/swap/aptos?pair=APT-USDt"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors duration-200 border-2 border-gray-300"
+              >
+                <Image
+                  src="/images/USDT.png"
+                  alt="USDT"
+                  width={24}
+                  height={24}
+                  className="rounded-full"
+                />
+                <span className={`${silkscreen.className} text-black`}>
+                  BUY USDT ON PANORA
+                </span>
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </div>
   );
 }
-
-

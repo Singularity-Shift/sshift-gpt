@@ -9,7 +9,8 @@ import { AppManagementProvider } from '../src/context/AppManagment';
 import { AbiProvider } from '../src/context/AbiProvider';
 import { AuthProvider } from '../src/context/AuthProvider';
 import { AgentProvider } from '../src/context/AgentProvider';
-import { GoogleAnalytics } from '@next/third-parties/google'
+import { ChainProvider } from '../src/context/ChainProvider';
+import { GoogleAnalytics } from '@next/third-parties/google';
 import { WebVitals } from '../src/components/ui/web-vitals';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -33,20 +34,22 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <WalletProvider>
-            <AuthProvider>
-              <BackendProvider>
-                <AbiProvider>
-                  <AppManagementProvider>
-                    <AgentProvider>
-                      <WebVitals />
-                      {children}
-                    </AgentProvider>
-                  </AppManagementProvider>
-                </AbiProvider>
-              </BackendProvider>
-            </AuthProvider>
-          </WalletProvider>
+          <ChainProvider>
+            <WalletProvider>
+              <AuthProvider>
+                <BackendProvider>
+                  <AbiProvider>
+                    <AppManagementProvider>
+                      <AgentProvider>
+                        <WebVitals />
+                        {children}
+                      </AgentProvider>
+                    </AppManagementProvider>
+                  </AbiProvider>
+                </BackendProvider>
+              </AuthProvider>
+            </WalletProvider>
+          </ChainProvider>
         </ThemeProvider>
         <Toaster />
         <GoogleAnalytics gaId={process.env.NEXT_PUBLIC_GA_ID || ''} />

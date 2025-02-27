@@ -11,17 +11,18 @@ import {
   SelectContent,
   SelectTrigger,
 } from '../../src/components/ui/select';
-import { aptos, FeesABI } from '@aptos';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { MODULE_ADDRESS } from '../../config/env';
 import { MultisignAction } from '@helpers';
 import { useAuth } from '../../src/context/AuthProvider';
+import { useChain } from '../../src/context/ChainProvider';
 
 export const Actions = () => {
   const { addAction } = useBackend();
   const { walletAddress } = useAuth();
-  const { abi } = useAbiClient();
+  const { abi, feesABI } = useAbiClient();
   const { toast } = useToast();
+  const { aptos } = useChain();
   const [isLoading, setIsLoading] = useState(false);
   const [reviewerAddress, setReviewerAddress] = useState<`0x${string}`>();
   const [newCollector, setNewCollector] = useState<`0x${string}`>();
@@ -111,7 +112,7 @@ export const Actions = () => {
     void (async () => {
       setIsLoading(true);
       try {
-        const reviewerResult = await abi?.useABI(FeesABI).view.get_reviewer({
+        const reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],
         });

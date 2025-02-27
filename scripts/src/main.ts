@@ -4,7 +4,7 @@ import { convertFileToBase64 } from './encrypt';
 
 const program = new Command();
 
-const options = program
+program
   .name('sshif')
   .description('Command-line interface for managing Sshift DAO contracts')
   .version('1.0.0')
@@ -14,22 +14,26 @@ const options = program
   .option('-p, --publish', 'publish subscription contracts')
   .option('-t, --test', 'run subscription contract tests')
   .option('-u, --upgrade', 'upgrade subscription contract')
-  .command('encrypt')
-  .option('-f, --file <path>', 'path to the file to be encrypted')
-  .parse(process.argv)
-  .opts();
+  .action((options) => {
+    if (options.compile) {
+      compile();
+    } else if (options.publish) {
+      publish();
+    } else if (options.test) {
+      test();
+    } else if (options.upgrade) {
+      upgrade;
+    } else {
+      console.error('Invalid command. Use --help for more information.');
+    }
+  })
+  .parse(process.argv);
 
-if (options.compile) {
-  compile();
-} else if (options.publish) {
-  publish();
-} else if (options.test) {
-  test();
-} else if (options.upgrade) {
-  upgrade;
-} else if (options.file) {
-  console.log(`Encrypting file: ${options.file}`);
-  convertFileToBase64(options.file);
-} else {
-  console.error('Invalid command. Use --help for more information.');
-}
+// program
+//   .command('encrypt')
+//   .description('Encrypt a file')
+//   .option('-f, --file <path>', 'path to the file to be encrypted')
+//   .action((options, path) => {
+//     console.log(path);
+//   })
+//   .parse(process.argv);

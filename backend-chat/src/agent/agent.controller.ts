@@ -21,6 +21,7 @@ import toolSchema from './tool_schema.json';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { AgentService } from './agent.service';
 import { v4 as uuidv4 } from 'uuid';
+import { sleep } from '@aptos-labs/ts-sdk';
 
 @Controller('agent')
 export class AgentController {
@@ -199,10 +200,10 @@ export class AgentController {
           );
           messagesWithSystemPrompt.push(...toolResults);
 
-          toolResults.forEach((result) => {
+          toolResults.forEach(async (result) => {
             const content = JSON.parse(result.content);
 
-            if (content) {
+            if (content?.length) {
               const actions = content?.filter((c) => c.onchain);
 
               if (actions.length) {

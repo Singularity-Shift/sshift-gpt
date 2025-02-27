@@ -24,6 +24,7 @@ interface NewMessage {
   id: string;
   title: string;
   message: IMessage;
+  messages?: IMessage[];
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -236,6 +237,8 @@ export default function ChatPage() {
         model: selectedModel,
         message: userMessage,
       };
+
+      delete newMessage.messages;
 
       try {
         const response = await fetch(`${API_BACKEND_URL}/agent`, {
@@ -458,6 +461,8 @@ export default function ChatPage() {
         message: userMessageForRegeneration,
       };
 
+      delete newMessage.messages;
+
       // Call the API with formatted messages
       const response = await fetch(`${API_BACKEND_URL}/agent`, {
         method: 'POST',
@@ -673,6 +678,8 @@ export default function ChatPage() {
         message: { ...editedMessage, content: newContent },
         model: selectedModel,
       };
+
+      delete newMessage.messages;
 
       // Regenerate the conversation from this point forward
       setStatus('thinking');

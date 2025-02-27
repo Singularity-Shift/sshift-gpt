@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { HandleFinderService } from './handle-finder.service';
 import {
   ApiBearerAuth,
@@ -13,11 +13,13 @@ import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
 import { TrendingDto } from './dto/trending.dto';
 import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
+import { ToolsGuard } from '../tools/tools.guard';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
 @ApiResponse({ status: 401, description: 'Unauthorized' })
 @ApiResponse({ status: 500, description: 'Internal server error' })
+@UseGuards(ToolsGuard('handle-finder'))
 export class HandleFinderController {
   constructor(private readonly handleFinderService: HandleFinderService) {}
 

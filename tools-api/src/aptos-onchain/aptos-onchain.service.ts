@@ -4,9 +4,8 @@ import { createReactAgentAnnotation } from '@langchain/langgraph/dist/prebuilt/r
 import { Injectable } from '@nestjs/common';
 import { GetActionDto } from './dto/get-action.dto';
 import { executeAction } from '@helpers';
-import { Account } from '@aptos-labs/ts-sdk';
+import { Account, Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { AgentRuntime, LocalSigner } from 'move-agent-kit_spiel';
-import { aptos } from '@aptos';
 
 @Injectable()
 export class AptosOnchainService {
@@ -36,6 +35,12 @@ export class AptosOnchainService {
 
   public async getResponses(actions: GetActionDto[], walletAddress: string) {
     const signer = new LocalSigner({} as Account);
+
+    const aptos = new Aptos(
+      new AptosConfig({
+        network: Network.MAINNET,
+      })
+    );
 
     const agent = new AgentRuntime(signer, aptos);
 

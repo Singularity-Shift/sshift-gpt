@@ -11,18 +11,28 @@
             "type": "string",
             "description": "The detailed description of the image to generate. You must create a perfect prompt based on the users request or description. Think about the appropiate style and size of the image based on the final prompt."
           },
-          "size": {
+          "aspect_ratio": {
             "type": "string",
-            "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "The size of the generated image."
+            "enum": ["ASPECT_1_1", "ASPECT_1_3", "ASPECT_3_1", "ASPECT_3_4", "ASPECT_4_3", "ASPECT_16_9", "ASPECT_3_2", "ASPECT_2_3", "ASPECT_9_16", "ASPECT_16_10","ASPECT_10_16"],
+            "description": " The aspect ratio to use for image generation, which determines the image’s resolution. Defaults to ASPECT_1_1."
           },
-          "style": {
+          "model": {
             "type": "string",
-            "enum": ["vivid", "natural"],
-            "description": "The artistic style of the image."
+            "enum": ["V_1", "V_1_TURBO", "V_2", "V_2_TURBO"],
+            "description": "The model used to generate an image or edit one. /generate and /remix supports all model types, however, /edit is only supported for V_2 and V_2_TURBO."
+          },
+          "magic_prompt_option": {
+            "type": "string",
+            "enum": ["AUTO", "ON", "OFF"],
+            "description": "Determine if MagicPrompt should be used in generating the request or not."
+          },
+          "style_type": {
+            "type": "string",
+            "description": "The style type to generate with; this is only applicable for models V_2 and above and should not be specified for model versions V_1.",
+            "enum": ["AUTO", "GENERAL", "REALISTIC", "DESIGN", "RENDER_3D", "ANIME"]
           }
         },
-        "required": ["prompt", "size", "style"],
+        "required": ["prompt", "aspect_ratio", "model", "magic_prompt_option", "style_type"],
         "additionalProperties": false
       },
       "strict": true
@@ -278,7 +288,7 @@
     "type": "function",
     "function": {
       "name": "getAllTopics",
-      "description": "Fetches all available topics from blockchain social network.",
+      "description": "Fetches all available topics from lens.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -297,7 +307,7 @@
     "type": "function",
     "function": {
       "name": "getTokenStats",
-      "description": "Fetches token stats from handlefinder.",
+      "description": "Fetches token stats from lens.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -321,7 +331,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingUsers",
-      "description": "Fetches trending users from handlefinder based on specified query",
+      "description": "Fetches trending users from lens based on specified query",
       "parameters": {
         "type": "object",
         "properties": {
@@ -353,8 +363,99 @@
   {
     "type": "function",
     "function": {
+      "name": "getMentionsTwitter",
+      "description": "Fetches recent mentions from Twitter.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "The number of results to return."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The offset for pagination."
+          }
+        },
+        "required": ["limit", "offset"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTopMentionsTwitter",
+      "description": "Fetches the most significant mentions from Twitter according to specified cashtag or ticker.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "description": "The ticker symbol to get mentions for. Prefixing with $ will only return cashtag matches."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "includeAccountDetails": {
+            "type": "boolean",
+            "description": "Include account details (username, description, profile image url)."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["ticker", "timeWindow", "page", "pageSize", "includeAccountDetails"]
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTrendingTokensTwitter",
+      "description": "Retrieve trending tokens in twitter based on highest mentions count, filtered by a minimum mention threshold over a specified time period.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "minMentions": {
+            "type": "integer",
+            "description": "Minimum mention count for a token to be considered."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["minMentions", "timeWindow", "page", "pageSize"]
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
       "name": "getOnchainActions",
-      "description": "Fetches onchain actions in aptos blockchain. eg. get balances, swap tokens Panora, transfers tokens, etc...",
+      "description": "Fetches onchain actions in aptos blockchain. eg. get balances, swap tokens Panora, transfers tokens, etc... Always describe the transaction with human-readable format before executing the action.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -365,6 +466,7 @@
         },
         "required": ["prompt"],
         "additionalProperties": false
+      
       }
     },
     "strict": true

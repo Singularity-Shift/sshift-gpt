@@ -55,6 +55,14 @@ export const Profiles = {
       baseUrl: process.env.HANDLE_FINDER_BASE_URL,
       address: process.env.HANDLE_FINDER_ADDRESS,
     },
+    elfa: {
+      apiKey: process.env.ELFA_API_KEY,
+      baseUrl: process.env.ELFA_BASE_URL,
+    },
+    ideogram: {
+      apiKey: process.env.IDEOGRAM_API_KEY,
+      baseUrl: process.env.IDEOGRAM_BASE_URL,
+    },
     langchain: {
       apiKey: process.env.ANTHROPIC_API_KEY,
     },
@@ -117,6 +125,14 @@ export const Profiles = {
       apiKey: process.env.HANDLE_FINDER_API_KEY,
       baseUrl: process.env.HANDLE_FINDER_BASE_URL,
       address: process.env.HANDLE_FINDER_ADDRESS,
+    },
+    elfa: {
+      apiKey: process.env.ELFA_API_KEY,
+      baseUrl: process.env.ELFA_BASE_URL,
+    },
+    ideogram: {
+      apiKey: process.env.IDEOGRAM_API_KEY,
+      baseUrl: process.env.IDEOGRAM_BASE_URL,
     },
     langchain: {
       apiKey: process.env.ANTHROPIC_API_KEY,
