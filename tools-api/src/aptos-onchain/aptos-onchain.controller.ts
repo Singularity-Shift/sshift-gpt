@@ -1,4 +1,4 @@
-import { BadGatewayException, Body, Controller, Post } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post } from '@nestjs/common';
 import { AptosOnchainService } from './aptos-onchain.service';
 import { ActionsDto } from './dto/actions.dto';
 import { ApiResponse } from '@nestjs/swagger';
@@ -19,7 +19,7 @@ export class AptosOnchainController {
     @UserAuth() userAuth: IUserAuth
   ) {
     if (userAuth.chain !== Chain.Aptos) {
-      throw new BadGatewayException(
+      throw new BadRequestException(
         'For now only Aptos chain is supported for executing onchain actions' as string
       );
     }

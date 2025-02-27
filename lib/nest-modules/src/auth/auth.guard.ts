@@ -78,7 +78,7 @@ export class AuthGuard implements CanActivate {
 
     const fullnode = (
       chain === Chain.Aptos
-        ? process.env.NEXT_PUBLIC_APTOS_NETWORK
+        ? process.env.NEXT_PUBLIC_APTOS_NODE_URL
         : process.env.NEXT_PUBLIC_MOVEMENT_NODE_URL
     ) as string;
     const indexer = (

@@ -12,7 +12,11 @@ import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
 import { Chain, IMoveBotFields, ISubscription } from '@helpers';
-import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
+import {
+  QRIBBLE_NFT_ADDRESS,
+  QRIBBLE_NFT_MOVE_ADDRESS,
+  SSHIFT_RECORD_ADDRESS,
+} from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { useAuth } from './AuthProvider';
 import { useChain } from './ChainProvider';
@@ -293,8 +297,13 @@ export const AppManagementProvider = ({
           ];
         }
 
+        const qribbleNFTCollectionAddress =
+          chain === Chain.Aptos
+            ? QRIBBLE_NFT_ADDRESS
+            : QRIBBLE_NFT_MOVE_ADDRESS;
+
         const qribbleNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
+          (c) => c.collection_addr === qribbleNFTCollectionAddress
         );
 
         const qribbleNFTsHolding = nftsHolding.filter(

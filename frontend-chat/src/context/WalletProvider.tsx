@@ -18,8 +18,8 @@ export const WalletProvider = ({ children }: PropsWithChildren) => {
         new AptosConfig({
           network:
             APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
-          fullnode: aptos?.config.fullnode || APTOS_NODE_URL,
-          indexer: aptos?.config.indexer || APTOS_INDEXER,
+          fullnode: aptos?.config?.fullnode || APTOS_NODE_URL,
+          indexer: aptos?.config?.indexer || APTOS_INDEXER,
         })
       }
       onError={(error) => {

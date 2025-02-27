@@ -1,3 +1,4 @@
+'use client';
 import { getAptosClient } from '@aptos';
 import { Aptos } from '@aptos-labs/ts-sdk';
 import {
@@ -29,10 +30,10 @@ export const ChainProvider = ({ children }: { children: React.ReactNode }) => {
     const chain = window.localStorage.getItem('chain') as Chain;
 
     const fullnode = (
-      chain === Chain.Movement ? MOVEMENT_NODE_URL : APTOS_NODE_URL
+      chain === Chain.Aptos ? APTOS_NODE_URL : MOVEMENT_NODE_URL
     ) as string;
     const indexer = (
-      chain === Chain.Aptos ? MOVEMENT_INDEXER : APTOS_INDEXER
+      chain === Chain.Aptos ? APTOS_INDEXER : MOVEMENT_INDEXER
     ) as string;
 
     setChain(chain);
@@ -41,10 +42,10 @@ export const ChainProvider = ({ children }: { children: React.ReactNode }) => {
 
   const createChainClient = (chain: Chain) => {
     const fullnode = (
-      chain === Chain.Movement ? MOVEMENT_NODE_URL : APTOS_NODE_URL
+      chain === Chain.Aptos ? APTOS_NODE_URL : MOVEMENT_NODE_URL
     ) as string;
     const indexer = (
-      chain === Chain.Aptos ? MOVEMENT_INDEXER : APTOS_INDEXER
+      chain === Chain.Aptos ? APTOS_INDEXER : MOVEMENT_INDEXER
     ) as string;
 
     window.localStorage.setItem('chain', chain);

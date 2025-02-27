@@ -1,4 +1,3 @@
-import { aptos } from '@aptos';
 import {
   AccountAddress,
   convertAmountFromHumanReadableToOnChain,
@@ -57,7 +56,7 @@ export const executeAction = async (
       if (mint) {
         let balance: number;
         if (mint.split('::').length !== 3) {
-          const balances = await aptos.getCurrentFungibleAssetBalances({
+          const balances = await agent.aptos.getCurrentFungibleAssetBalances({
             options: {
               where: {
                 owner_address: {
@@ -70,7 +69,7 @@ export const executeAction = async (
 
           balance = balances[0].amount ?? 0;
         } else {
-          balance = await aptos.getAccountCoinAmount({
+          balance = await agent.aptos.getAccountCoinAmount({
             accountAddress: walletAddress as string,
             coinType: mint as MoveStructId,
           });

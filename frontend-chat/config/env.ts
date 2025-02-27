@@ -10,6 +10,8 @@ export const COIN_DECIMALS = parseInt(
 );
 export const QRIBBLE_NFT_ADDRESS =
   process.env.NEXT_PUBLIC_QRIBBLE_NFT_ADDRESS || '';
+export const QRIBBLE_NFT_MOVE_ADDRESS =
+  process.env.NEXT_PUBLIC_QRIBBLE_NFT_MOVE_ADDRESS || '';
 export const SSHIFT_RECORD_ADDRESS =
   process.env.NEXT_PUBLIC_SSHIFT_RECORD_ADDRESS || '';
 export const MODULE_ADDRESS = process.env.NEXT_PUBLIC_MODULE_ADDRESS || '';

@@ -15,11 +15,13 @@ export default function Home() {
   const { createChainClient, chain } = useChain();
 
   const handleNetworkToggle = () => {
-    setSelectedNetwork((prev) => {
-      const chain = prev === Chain.Aptos ? Chain.Movement : Chain.Aptos;
-      createChainClient(chain);
-      return chain;
-    });
+    setSelectedNetwork(
+      selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
+    );
+
+    createChainClient(
+      selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
+    );
   };
 
   useEffect(() => {

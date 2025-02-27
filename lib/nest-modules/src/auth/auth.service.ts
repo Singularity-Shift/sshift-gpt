@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { validateSignature } from '@aptos';
 import { PayloadDto } from './dto/payload.dto';
 import { LoginDto } from './dto/login.dto';
+import { Chain } from '@helpers';
 
 @Injectable()
 export class AuthService {
@@ -12,9 +13,10 @@ export class AuthService {
     return validateSignature(payload);
   }
 
-  async sigIn(address: string): Promise<LoginDto> {
+  async sigIn(address: string, chain: Chain): Promise<LoginDto> {
     const authToken = await this.jwtService.signAsync({
       address,
+      chain,
     });
 
     return {

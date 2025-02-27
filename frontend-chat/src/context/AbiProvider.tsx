@@ -17,6 +17,7 @@ import {
 } from '@aptos';
 import { useChain } from './ChainProvider';
 import { Chain, FeesABITypes, SubscriptionABITypes } from '@helpers';
+import { APTOS_INDEXER, APTOS_NODE_URL } from 'frontend-chat/config/env';
 
 export type AbiContextProp = {
   abi: Client<DefaultABITable> | undefined;
@@ -35,6 +36,7 @@ export const AbiProvider = ({ children }: { children: ReactNode }) => {
 
   useEffect(() => {
     if (!aptos) return;
+
     setFeesABI(chain === Chain.Aptos ? FeesABI : FeesMoveAbi);
     setSubscriptionABI(
       chain === Chain.Aptos ? SubscriptionABI : SubscriptionMoveABI
@@ -42,8 +44,8 @@ export const AbiProvider = ({ children }: { children: ReactNode }) => {
 
     setAbi(
       surfClient(
-        aptos.config.fullnode as string,
-        aptos.config.indexer as string
+        aptos.config?.fullnode || (APTOS_NODE_URL as string),
+        aptos.config?.indexer || (APTOS_INDEXER as string)
       )
     );
   }, [aptos, chain]);
