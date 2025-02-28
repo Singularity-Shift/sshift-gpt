@@ -1,5 +1,6 @@
+import { Chain } from '@helpers';
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString } from 'class-validator';
+import { IsEnum, IsString } from 'class-validator';
 
 export class PayloadDto {
   @ApiProperty({
@@ -15,6 +16,13 @@ export class PayloadDto {
   })
   @IsString()
   message: string;
+
+  @ApiProperty({
+    description: 'Chain identifier',
+    example: 'aptos',
+  })
+  @IsEnum([Chain.Aptos, Chain.Movement])
+  chain: Chain;
 
   @ApiProperty({
     description: 'The address',

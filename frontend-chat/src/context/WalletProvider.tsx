@@ -5,9 +5,11 @@ import { PropsWithChildren } from 'react';
 import { AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { PontemWallet } from '@pontem/wallet-adapter-plugin';
 import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
+import { useChain } from './ChainProvider';
 
 export const WalletProvider = ({ children }: PropsWithChildren) => {
   const wallets = [new PontemWallet()];
+  const { aptos } = useChain();
 
   return (
     <AptosWalletAdapterProvider
@@ -16,8 +18,8 @@ export const WalletProvider = ({ children }: PropsWithChildren) => {
         new AptosConfig({
           network:
             APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
-          fullnode: APTOS_NODE_URL,
-          indexer: APTOS_INDEXER,
+          fullnode: aptos?.config?.fullnode || APTOS_NODE_URL,
+          indexer: aptos?.config?.indexer || APTOS_INDEXER,
         })
       }
       onError={(error) => {

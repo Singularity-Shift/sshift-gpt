@@ -6,7 +6,8 @@ import { useAppManagment } from '../../../src/context/AppManagment';
 import { Button } from './button';
 import { useRouter } from 'next/navigation';
 import { silkscreen } from '../../../app/fonts';
-import { aptosClient } from '@fn-chat/lib/utils';
+import { useChain } from '../../context/ChainProvider';
+import { Chain } from '@helpers';
 
 interface UserProfileContainerProps {
   moveBotsOwned: number;
@@ -21,7 +22,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
 }) => {
   const { isSubscriptionActive, expirationDate } = useAppManagment();
   const router = useRouter();
-  const aptos = aptosClient();
+  const { chain } = useChain();
 
   const handleEnterSShiftGPT = () => {
     router.push('/chat');
@@ -65,7 +66,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
       </div>
 
       <div className="flex-grow mt-16 space-y-4">
-        {!aptos.config.fullnode?.includes('movement') && (
+        {chain === Chain.Aptos && (
           <>
             <div className="flex justify-between items-center">
               <div>

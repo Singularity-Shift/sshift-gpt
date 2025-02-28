@@ -77,6 +77,12 @@ const DOTENV_SCHEMA = Joi.object({
     apiKey: Joi.string().required(),
     baseUrl: Joi.string().required(),
   }),
+  langchain: Joi.object({
+    apiKey: Joi.string().required(),
+  }),
+  panora: Joi.object({
+    apiKey: Joi.string().required(),
+  }),
 });
 
 type DotenvSchemaKeys =
@@ -110,7 +116,9 @@ type DotenvSchemaKeys =
   | 'elfa.apiKey'
   | 'elfa.baseUrl'
   | 'ideogram.apiKey'
-  | 'ideogram.baseUrl';
+  | 'ideogram.baseUrl'
+  | 'langchain.apiKey'
+  | 'panora.apiKey';
 
 export class ConfigService {
   private readonly envConfig: EnvConfig;

@@ -450,5 +450,25 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getOnchainActions",
+      "description": "Fetches onchain actions in aptos blockchain. eg. get balances, swap tokens Panora, transfers tokens, etc... Always describe the transaction with human-readable format before executing the action.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The prompt for the onchain action."
+          }
+        },
+        "required": ["prompt"],
+        "additionalProperties": false
+      
+      }
+    },
+    "strict": true
   }
 ]

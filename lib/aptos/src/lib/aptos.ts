@@ -24,12 +24,21 @@ export const validateSignature = ({
   });
 };
 
-export const aptos = new Aptos(
-  new AptosConfig({
-    network: APTOS_NETWORK === 'mainnet' ? Network.MAINNET : Network.TESTNET,
-    fullnode: process.env.NEXT_PUBLIC_APTOS_NODE_URL,
-    indexer: process.env.NEXT_PUBLIC_APTOS_INDEXER,
-  })
-);
+export const getAptosClient = (
+  fullnode: string,
+  indexer: string,
+  network?: Network
+) =>
+  new Aptos(
+    new AptosConfig({
+      network:
+        network || APTOS_NETWORK === 'mainnet'
+          ? Network.MAINNET
+          : Network.TESTNET,
+      fullnode,
+      indexer,
+    })
+  );
 
-export const abis = createSurfClient(aptos);
+export const abis = (fullnode: string, indexer: string) =>
+  createSurfClient(getAptosClient(fullnode, indexer));
