@@ -8,7 +8,7 @@ const backend = axios.create({
 });
 
 export const toolsApi = axios.create({
-  baseURL: process.env.NEXT_PUBLIC_URI_TOOLS,
+  baseURL: process.env.API_TOOLS_URL,
   headers: {
     'Content-Type': 'application/json',
   },
