@@ -35,21 +35,23 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
   const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [previewMask, setPreviewMask] = useState(false);
 
   const updateBrushSettings = (context: CanvasRenderingContext2D) => {
     if (brushMode === BrushMode.PAINT) {
-      context.globalCompositeOperation = 'multiply';
-      context.fillStyle = 'rgba(255, 0, 0, 0.2)';
-      context.strokeStyle = 'rgba(255, 0, 0, 0.2)';
+      // Use solid white for the mask - areas to edit
+      context.globalCompositeOperation = 'source-over';
+      context.strokeStyle = 'white';
+      context.fillStyle = 'white';
     } else {
+      // Use destination-out to erase
       context.globalCompositeOperation = 'destination-out';
-      context.fillStyle = 'rgba(255, 255, 255, 1)';
-      context.strokeStyle = 'rgba(255, 255, 255, 1)';
+      context.strokeStyle = 'white';
+      context.fillStyle = 'white';
     }
     context.lineWidth = brushSize;
     context.lineCap = 'round';
     context.lineJoin = 'round';
-    context.globalAlpha = 0.2;
   };
 
   useEffect(() => {
@@ -142,48 +144,62 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     maskCanvas.height = canvasRef.current.height;
     const maskCtx = maskCanvas.getContext('2d')!;
 
-    // Fill with black background
+    // Fill with black background (areas to keep)
     maskCtx.fillStyle = 'black';
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
-    // Set composite operation to copy only the red painted areas
-    maskCtx.globalCompositeOperation = 'source-over';
+    // Draw the canvas content directly onto the mask
+    maskCtx.drawImage(canvasRef.current, 0, 0);
 
-    // Get the current canvas image data
-    const imageData = ctx.getImageData(0, 0, canvasRef.current.width, canvasRef.current.height);
+    // Get the image data to ensure it's a proper binary mask
+    const imageData = maskCtx.getImageData(0, 0, maskCanvas.width, maskCanvas.height);
     const data = imageData.data;
 
-    // Create new image data for the mask
-    const maskImageData = maskCtx.createImageData(canvasRef.current.width, canvasRef.current.height);
-    const maskData = maskImageData.data;
-
-    // Convert the red semi-transparent areas to white
+    // Ensure the mask is binary - pure black or pure white
     for (let i = 0; i < data.length; i += 4) {
-      // If there's any red (indicating a painted area)
-      if (data[i] > 0) {
-        // Set to white (255, 255, 255, 255)
-        maskData[i] = 255;     // R
-        maskData[i + 1] = 255; // G
-        maskData[i + 2] = 255; // B
-        maskData[i + 3] = 255; // A
+      // If any of the RGB channels are light (> 128), make it pure white
+      if (data[i] > 128 || data[i + 1] > 128 || data[i + 2] > 128) {
+        data[i] = 255;     // R
+        data[i + 1] = 255; // G
+        data[i + 2] = 255; // B
+        data[i + 3] = 255; // A (fully opaque)
       } else {
-        // Set to black (0, 0, 0, 255)
-        maskData[i] = 0;     // R
-        maskData[i + 1] = 0; // G
-        maskData[i + 2] = 0; // B
-        maskData[i + 3] = 255; // A
+        // Otherwise make it pure black
+        data[i] = 0;       // R
+        data[i + 1] = 0;   // G
+        data[i + 2] = 0;   // B
+        data[i + 3] = 255; // A (fully opaque)
       }
     }
 
-    // Put the mask image data back to the mask canvas
-    maskCtx.putImageData(maskImageData, 0, 0);
+    // Put the processed image data back
+    maskCtx.putImageData(imageData, 0, 0);
 
-    // Convert the canvas to a blob
+    // For debugging - display the mask in the console
+    console.log('Mask created with dimensions:', maskCanvas.width, 'x', maskCanvas.height);
+    
+    // Convert the canvas to a blob with PNG format to preserve transparency
     return new Promise((resolve) => {
       maskCanvas.toBlob((blob) => {
         resolve(blob!);
-      }, 'image/png');
+      }, 'image/png', 1.0); // Use highest quality
     });
+  };
+
+  const downloadMask = async () => {
+    try {
+      const maskBlob = await createMaskImage();
+      const url = URL.createObjectURL(maskBlob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mask.png';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading mask:', error);
+    }
   };
 
   const handleSendEdit = async () => {
@@ -210,15 +226,22 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       const maskUrl = maskResponse.data.url;
       console.log('Mask uploaded successfully:', maskUrl);
 
+      // Log the dimensions of the original image for debugging
+      if (originalDimensions) {
+        console.log('Original image dimensions:', originalDimensions.width, 'x', originalDimensions.height);
+      }
+
       // Send edit request to ideogram endpoint
       const editPayload = {
         imageUrl: imageUrl,
         maskUrl: maskUrl,
-        prompt: prompt,
+        prompt: prompt || "Maintain the original image style and composition",
         model: model,
         magic_prompt_option: 'AUTO',
         num_images: 1
       };
+
+      console.log('Sending edit request with payload:', editPayload);
 
       const editResponse = await toolsApi.post('/ideogram/edit', editPayload, {
         headers: {
@@ -236,6 +259,11 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         alert('Failed to process edit. Please try again.');
       }
     }
+  };
+
+  const togglePreviewMask = () => {
+    if (!canvasRef.current || !ctx) return;
+    setPreviewMask(!previewMask);
   };
 
   if (!isOpen) return null;
@@ -260,6 +288,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               src={imageUrl}
               alt="Edit"
               className="w-full h-auto"
+              style={{ opacity: previewMask ? 0.5 : 1 }}
             />
             <canvas
               ref={canvasRef}
@@ -350,6 +379,18 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
               Clear Mask
+            </button>
+            <button
+              onClick={togglePreviewMask}
+              className={`px-4 py-2 border ${previewMask ? 'bg-blue-100 border-blue-300' : 'border-gray-300'} rounded-md hover:bg-gray-50 transition-colors`}
+            >
+              {previewMask ? 'Hide Mask' : 'Preview Mask'}
+            </button>
+            <button
+              onClick={downloadMask}
+              className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+            >
+              Download Mask
             </button>
             <button
               onClick={handleSendEdit}

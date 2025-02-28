@@ -47,12 +47,17 @@ export class IdeogramService {
   async editImage(editDto: EditDTO) {
     // Download both images
     try {
+      console.log('Starting image edit process with:', editDto);
+      
       const imageResponse = await firstValueFrom(
         this.httpService.get(editDto.imageUrl, { responseType: 'arraybuffer' })
       );
+      console.log('Original image downloaded, size:', imageResponse.data.byteLength);
+      
       const maskResponse = await firstValueFrom(
         this.httpService.get(editDto.maskUrl, { responseType: 'arraybuffer' })
       );
+      console.log('Mask image downloaded, size:', maskResponse.data.byteLength);
 
       // Create form data
       const formData = new FormData();
@@ -67,6 +72,8 @@ export class IdeogramService {
       formData.append('magic_prompt_option', editDto.magic_prompt_option);
       formData.append('num_images', editDto.num_images.toString());
 
+      console.log('Sending edit request to Ideogram API with model:', editDto.model);
+      
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/edit`, formData, {
           headers: {
@@ -75,10 +82,13 @@ export class IdeogramService {
           },
         })
       );
+      
+      console.log('Received response from Ideogram API');
       const imageData = response.data?.data?.[0];
       const { url } = await this.bucketService.uploadImageToBucket(
         imageData.url
       );
+      console.log('Edited image uploaded to bucket:', url);
 
       return {
         ...imageData,
