@@ -34,6 +34,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const [isDrawing, setIsDrawing] = useState(false);
   const [ctx, setCtx] = useState<CanvasRenderingContext2D | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [originalDimensions, setOriginalDimensions] = useState<{ width: number; height: number } | null>(null);
 
   const updateBrushSettings = (context: CanvasRenderingContext2D) => {
     if (brushMode === BrushMode.PAINT) {
@@ -63,9 +64,15 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       const img = imageRef.current;
       img.onload = () => {
         setImageLoaded(true);
+        // Store original dimensions
+        setOriginalDimensions({
+          width: img.naturalWidth,
+          height: img.naturalHeight
+        });
         if (canvasRef.current && ctx) {
-          canvasRef.current.width = img.width;
-          canvasRef.current.height = img.height;
+          // Set canvas to original image dimensions
+          canvasRef.current.width = img.naturalWidth;
+          canvasRef.current.height = img.naturalHeight;
           updateBrushSettings(ctx);
         }
       };
@@ -78,13 +85,20 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     }
   }, [brushMode, brushSize]);
 
+  const getScaledCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!canvasRef.current || !originalDimensions) return { x: 0, y: 0 };
+    const rect = canvasRef.current.getBoundingClientRect();
+    const scaleX = originalDimensions.width / rect.width;
+    const scaleY = originalDimensions.height / rect.height;
+    return {
+      x: (e.clientX - rect.left) * scaleX,
+      y: (e.clientY - rect.top) * scaleY
+    };
+  };
+
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!ctx) return;
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const scaleX = canvasRef.current!.width / rect.width;
-    const scaleY = canvasRef.current!.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const { x, y } = getScaledCoordinates(e);
     
     ctx.beginPath();
     ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
@@ -97,11 +111,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !ctx) return;
-    const rect = canvasRef.current!.getBoundingClientRect();
-    const scaleX = canvasRef.current!.width / rect.width;
-    const scaleY = canvasRef.current!.height / rect.height;
-    const x = (e.clientX - rect.left) * scaleX;
-    const y = (e.clientY - rect.top) * scaleY;
+    const { x, y } = getScaledCoordinates(e);
     
     ctx.beginPath();
     ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
