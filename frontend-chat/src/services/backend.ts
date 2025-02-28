@@ -7,4 +7,11 @@ const backend = axios.create({
   },
 });
 
+export const toolsApi = axios.create({
+  baseURL: process.env.URI_TOOLS,
+  headers: {
+    'Content-Type': 'application/json',
+  },
+});
+
 export default backend;

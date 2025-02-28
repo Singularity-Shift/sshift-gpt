@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, Paintbrush, Eraser } from 'lucide-react';
-import backend from '../../services/backend';
+import backend, { toolsApi } from '../../services/backend';
 import { useAuth } from '../../context/AuthProvider';
 
 interface ImageEditModalProps {
@@ -185,27 +185,46 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       // Create the mask image
       const maskBlob = await createMaskImage();
       
-      // Create form data for upload
+      // Create form data for mask upload
       const formData = new FormData();
       formData.append('file', maskBlob, 'mask.png');
 
       // Upload the mask to the bucket using the dedicated mask endpoint
-      const response = await backend.post('/bucket/mask', formData, {
+      const maskResponse = await backend.post('/bucket/mask', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
           'Authorization': `Bearer ${jwt}`
         },
       });
 
-      const maskUrl = response.data.url;
+      const maskUrl = maskResponse.data.url;
       console.log('Mask uploaded successfully:', maskUrl);
 
-      // TODO: Send the edit request with the mask URL
-      // Will implement in next step
+      // Send edit request to ideogram endpoint
+      const editPayload = {
+        imageUrl: imageUrl,
+        maskUrl: maskUrl,
+        prompt: prompt,
+        model: model,
+        magic_prompt_option: 'AUTO',
+        num_images: 1
+      };
+
+      const editResponse = await toolsApi.post('/ideogram/edit', editPayload, {
+        headers: {
+          'Authorization': `Bearer ${jwt}`
+        }
+      });
+
+      console.log('Edit response:', editResponse.data);
       
     } catch (error) {
-      console.error('Error creating/uploading mask:', error);
-      alert('Failed to upload mask. Please try again.');
+      console.error('Error in edit process:', error);
+      if (error instanceof Error) {
+        alert(`Failed to process edit: ${error.message}`);
+      } else {
+        alert('Failed to process edit. Please try again.');
+      }
     }
   };
 
