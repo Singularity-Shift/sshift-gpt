@@ -59,14 +59,28 @@ export class IdeogramService {
       );
       console.log('Mask image downloaded, size:', maskResponse.data.byteLength);
 
+      // Verify dimensions explicitly
+      const originalImage = Buffer.from(imageResponse.data);
+      const maskImage = Buffer.from(maskResponse.data);
+      const sizeOf = require('image-size');
+      const originalDimensions = sizeOf(originalImage);
+      const maskDimensions = sizeOf(maskImage);
+
+      console.log('Original image dimensions:', originalDimensions);
+      console.log('Mask image dimensions:', maskDimensions);
+
+      if (originalDimensions.width !== maskDimensions.width || originalDimensions.height !== maskDimensions.height) {
+        throw new Error('Dimension mismatch between original image and mask');
+      }
+
       // Create form data
       const formData = new FormData();
       formData.append(
         'image_file',
         new Blob([imageResponse.data]),
-        'image.jpg'
+        'image.png'
       );
-      formData.append('mask', new Blob([maskResponse.data]), 'mask.jpg');
+      formData.append('mask', new Blob([maskResponse.data]), 'mask.png');
       formData.append('prompt', editDto.prompt);
       formData.append('model', editDto.model);
       formData.append('magic_prompt_option', editDto.magic_prompt_option);
