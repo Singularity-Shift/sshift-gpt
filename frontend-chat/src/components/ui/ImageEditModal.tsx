@@ -39,15 +39,15 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   const updateBrushSettings = (context: CanvasRenderingContext2D) => {
     if (brushMode === BrushMode.PAINT) {
-      // Use solid white for the mask - areas to edit
+      // Use solid black for the mask - areas to edit
       context.globalCompositeOperation = 'source-over';
-      context.strokeStyle = 'white';
-      context.fillStyle = 'white';
+      context.strokeStyle = 'black';
+      context.fillStyle = 'black';
     } else {
-      // Use destination-out to erase
+      // Use destination-out to erase (which will reveal the white background)
       context.globalCompositeOperation = 'destination-out';
-      context.strokeStyle = 'white';
-      context.fillStyle = 'white';
+      context.strokeStyle = 'black';
+      context.fillStyle = 'black';
     }
     context.lineWidth = brushSize;
     context.lineCap = 'round';
@@ -144,8 +144,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     maskCanvas.height = canvasRef.current.height;
     const maskCtx = maskCanvas.getContext('2d')!;
 
-    // Fill with black background (areas to keep)
-    maskCtx.fillStyle = 'black';
+    // Fill with white background (areas to keep)
+    maskCtx.fillStyle = 'white';
     maskCtx.fillRect(0, 0, maskCanvas.width, maskCanvas.height);
 
     // Draw the canvas content directly onto the mask
@@ -157,17 +157,17 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
     // Ensure the mask is binary - pure black or pure white
     for (let i = 0; i < data.length; i += 4) {
-      // If any of the RGB channels are light (> 128), make it pure white
-      if (data[i] > 128 || data[i + 1] > 128 || data[i + 2] > 128) {
-        data[i] = 255;     // R
-        data[i + 1] = 255; // G
-        data[i + 2] = 255; // B
-        data[i + 3] = 255; // A (fully opaque)
-      } else {
-        // Otherwise make it pure black
+      // If any of the RGB channels are dark (< 128), make it pure black (areas to edit)
+      if (data[i] < 128 || data[i + 1] < 128 || data[i + 2] < 128) {
         data[i] = 0;       // R
         data[i + 1] = 0;   // G
         data[i + 2] = 0;   // B
+        data[i + 3] = 255; // A (fully opaque)
+      } else {
+        // Otherwise make it pure white (areas to keep)
+        data[i] = 255;     // R
+        data[i + 1] = 255; // G
+        data[i + 2] = 255; // B
         data[i + 3] = 255; // A (fully opaque)
       }
     }
@@ -177,6 +177,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
     // For debugging - display the mask in the console
     console.log('Mask created with dimensions:', maskCanvas.width, 'x', maskCanvas.height);
+    console.log('Mask colors: BLACK = areas to edit, WHITE = areas to keep');
     
     // Convert the canvas to a blob with PNG format to preserve transparency
     return new Promise((resolve) => {
