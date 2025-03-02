@@ -1,4 +1,4 @@
-import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus, BadRequestException } from '@nestjs/common';
 import { GenerateDTO } from './dto/generate.dto';
 import { BucketService, ConfigService } from '@nest-modules';
 import { HttpService } from '@nestjs/axios';
@@ -71,7 +71,7 @@ export class IdeogramService {
       this.logger.log('Mask image dimensions:', maskDimensions);
 
       if (originalDimensions.width !== maskDimensions.width || originalDimensions.height !== maskDimensions.height) {
-        throw new Error('Dimension mismatch between original image and mask');
+        throw new BadRequestException('Dimension mismatch between original image and mask');
       }
 
       // Create form data
