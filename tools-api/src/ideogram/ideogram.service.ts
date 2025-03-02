@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import { GenerateDTO } from './dto/generate.dto';
 import { BucketService, ConfigService } from '@nest-modules';
 import { HttpService } from '@nestjs/axios';
@@ -114,7 +114,10 @@ export class IdeogramService {
         'Error editing image:',
         error.response?.data || error.message
       );
-      throw new Error('Failed to edit image');
+      throw new HttpException(
+        error.response?.data?.message || 'Failed to edit image',
+        error.response?.status || HttpStatus.INTERNAL_SERVER_ERROR
+      );
     }
   }
 }
