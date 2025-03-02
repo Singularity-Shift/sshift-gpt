@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { GenerateDTO } from './dto/generate.dto';
 import { BucketService, ConfigService } from '@nest-modules';
 import { HttpService } from '@nestjs/axios';
@@ -8,6 +8,7 @@ import { FormData } from 'formdata-node';
 
 @Injectable()
 export class IdeogramService {
+  private readonly logger = new Logger(IdeogramService.name);
   private baseUrl: string;
   private apiKey: string;
   constructor(
@@ -47,17 +48,17 @@ export class IdeogramService {
   async editImage(editDto: EditDTO) {
     // Download both images
     try {
-      console.log('Starting image edit process with:', editDto);
+      this.logger.log('Starting image edit process with:', editDto);
       
       const imageResponse = await firstValueFrom(
         this.httpService.get(editDto.imageUrl, { responseType: 'arraybuffer' })
       );
-      console.log('Original image downloaded, size:', imageResponse.data.byteLength);
+      this.logger.log('Original image downloaded, size:', imageResponse.data.byteLength);
       
       const maskResponse = await firstValueFrom(
         this.httpService.get(editDto.maskUrl, { responseType: 'arraybuffer' })
       );
-      console.log('Mask image downloaded, size:', maskResponse.data.byteLength);
+      this.logger.log('Mask image downloaded, size:', maskResponse.data.byteLength);
 
       // Verify dimensions explicitly
       const originalImage = Buffer.from(imageResponse.data);
@@ -66,8 +67,8 @@ export class IdeogramService {
       const originalDimensions = sizeOf(originalImage);
       const maskDimensions = sizeOf(maskImage);
 
-      console.log('Original image dimensions:', originalDimensions);
-      console.log('Mask image dimensions:', maskDimensions);
+      this.logger.log('Original image dimensions:', originalDimensions);
+      this.logger.log('Mask image dimensions:', maskDimensions);
 
       if (originalDimensions.width !== maskDimensions.width || originalDimensions.height !== maskDimensions.height) {
         throw new Error('Dimension mismatch between original image and mask');
@@ -86,7 +87,7 @@ export class IdeogramService {
       formData.append('magic_prompt_option', editDto.magic_prompt_option);
       formData.append('num_images', editDto.num_images.toString());
 
-      console.log('Sending edit request to Ideogram API with model:', editDto.model);
+      this.logger.log('Sending edit request to Ideogram API with model:', editDto.model);
       
       const response = await firstValueFrom(
         this.httpService.post(`${this.baseUrl}/edit`, formData, {
@@ -97,19 +98,19 @@ export class IdeogramService {
         })
       );
       
-      console.log('Received response from Ideogram API');
+      this.logger.log('Received response from Ideogram API');
       const imageData = response.data?.data?.[0];
       const { url } = await this.bucketService.uploadImageToBucket(
         imageData.url
       );
-      console.log('Edited image uploaded to bucket:', url);
+      this.logger.log('Edited image uploaded to bucket:', url);
 
       return {
         ...imageData,
         url,
       };
     } catch (error) {
-      console.error(
+      this.logger.error(
         'Error editing image:',
         error.response?.data || error.message
       );
