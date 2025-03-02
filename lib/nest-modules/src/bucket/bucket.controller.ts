@@ -86,7 +86,11 @@ export class BucketController {
       const stream = await this.bucketService.downloadImageFromBucket(filename);
       res.set({
         'Content-Disposition': `attachment; filename=${filename}`,
-        'Content-Type': 'application/octet-stream'
+        'Content-Type': 'application/octet-stream',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate',
+        'Pragma': 'no-cache',
+        'Expires': '0',
+        'Surrogate-Control': 'no-store'
       });
       stream.pipe(res);
     } catch (error) {
