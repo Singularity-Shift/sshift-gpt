@@ -1,5 +1,5 @@
 import { IActionFunction } from '@helpers';
-import { ToolsNameList } from 'move-agent-kit_spiel';
+import { ToolsNameList } from 'move-agent-kit-fullstack';
 
 export class GetActionDto {
   name: ToolsNameList;

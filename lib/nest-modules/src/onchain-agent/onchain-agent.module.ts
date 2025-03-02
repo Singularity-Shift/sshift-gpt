@@ -7,7 +7,7 @@ import {
   AgentRuntime,
   createAptosTools,
   LocalSigner,
-} from 'move-agent-kit_spiel';
+} from 'move-agent-kit-fullstack';
 import { Account, Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';

@@ -3,7 +3,7 @@ import { AptosOnchainService } from './aptos-onchain.service';
 import { ActionsDto } from './dto/actions.dto';
 import { ApiResponse } from '@nestjs/swagger';
 import { GetActionDto } from './dto/get-action.dto';
-import { ToolsNameList } from 'move-agent-kit_spiel';
+import { ToolsNameList } from 'move-agent-kit-fullstack';
 import { UserAuth } from '@nest-modules';
 import { Chain, IUserAuth } from '@helpers';
 

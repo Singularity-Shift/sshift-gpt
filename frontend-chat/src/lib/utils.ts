@@ -3,7 +3,7 @@ import { twMerge } from 'tailwind-merge';
 import { Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import config from '../../config/dashboard_config.json'; // Adjust the path as necessary
 import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
-import { AgentRuntime } from 'move-agent-kit_spiel';
+import { AgentRuntime } from 'move-agent-kit-fullstack';
 import { executeAction } from '@helpers';
 
 export function cn(...inputs: ClassValue[]) {

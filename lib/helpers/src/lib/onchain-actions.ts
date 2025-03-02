@@ -8,7 +8,7 @@ import {
   AgentRuntime,
   getTokenByTokenName,
   parseFungibleAssetAddressToWrappedAssetAddress,
-} from 'move-agent-kit_spiel';
+} from 'move-agent-kit-fullstack';
 
 export const executeAction = async (
   name: string,
@@ -198,7 +198,7 @@ export const executeAction = async (
       break;
     }
     case 'joule_lend_token': {
-      const args = values as [number, MoveStructId, string, boolean, boolean];
+      const args = values as [number, MoveStructId, string, boolean];
 
       const details = await agent.getTokenDetails(args[1]);
 
@@ -211,7 +211,7 @@ export const executeAction = async (
       break;
     }
     case 'joule_withdraw_token': {
-      const args = values as [number, MoveStructId, string, boolean];
+      const args = values as [number, MoveStructId, string];
 
       const details = await agent.getTokenDetails(args[1]);
 
@@ -225,7 +225,7 @@ export const executeAction = async (
       break;
     }
     case 'joule_borrow_token': {
-      const args = values as [number, MoveStructId, string, boolean];
+      const args = values as [number, MoveStructId, string];
 
       const details = await agent.getTokenDetails(args[1]);
       args[0] = convertAmountFromHumanReadableToOnChain(
@@ -238,7 +238,7 @@ export const executeAction = async (
       break;
     }
     case 'joule_repay_token': {
-      const args = values as [number, MoveStructId, string, boolean];
+      const args = values as [number, MoveStructId, string];
 
       const details = await agent.getTokenDetails(args[1]);
       args[0] = convertAmountFromHumanReadableToOnChain(
@@ -259,8 +259,44 @@ export const executeAction = async (
     case 'joule_get_user_all_positions': {
       const args = values as [AccountAddress];
 
-      args[0] = agent.account.getAddress();
-      return agent.getUserAllPositions(...args);
+      args[0] = AccountAddress.from(walletAddress as string);
+      const response = await agent.getUserAllPositions(...args);
+
+      return Promise.all(
+        response.map(async (r) => {
+          const positions_map = await Promise.all(
+            r.positions_map.data.map(async (position) => {
+              const borrow_positions = await Promise.all(
+                position.value.borrow_positions.data.map(async (p) => ({
+                  ...p,
+                  value: convertAmountFromOnChainToHumanReadable(
+                    p.value,
+                    (
+                      await agent.getTokenDetails(position.token_id)
+                    )?.decimals || 8
+                  ).toString(),
+                }))
+              );
+
+              const lend_positions = await Promise.all(
+                position.value.lend_positions.data.map(async (p) => ({
+                  ...p,
+                  value: convertAmountFromOnChainToHumanReadable(
+                    p.value,
+                    (
+                      await agent.getTokenDetails(position.token_id)
+                    )?.decimals || 8
+                  ).toString(),
+                }))
+              );
+
+              return { ...position, borrow_positions, lend_positions };
+            })
+          );
+
+          return { ...r, positions_map };
+        })
+      );
     }
     case 'amnis_stake': {
       const args = values as [AccountAddress, number];
