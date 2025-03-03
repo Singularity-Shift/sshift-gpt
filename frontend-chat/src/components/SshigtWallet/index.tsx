@@ -2,8 +2,8 @@ import {
   APTOS_CONNECT_ACCOUNT_URL,
   AboutAptosConnect,
   AboutAptosConnectEducationScreen,
-  AnyAptosWallet,
   AptosPrivacyPolicy,
+  AdapterWallet,
   WalletItem,
   WalletSortingOptions,
   groupAndSortWallets,
@@ -11,6 +11,7 @@ import {
   isInstallRequired,
   truncateAddress,
   useWallet,
+  AdapterNotDetectedWallet,
 } from '@aptos-labs/wallet-adapter-react';
 import {
   ArrowLeft,
@@ -221,7 +222,7 @@ function ConnectWalletDialog({
 }
 
 interface WalletRowProps {
-  wallet: AnyAptosWallet;
+  wallet: AdapterWallet | AdapterNotDetectedWallet;
   onConnect?: () => void;
 }
 

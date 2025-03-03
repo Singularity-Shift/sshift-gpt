@@ -3,17 +3,14 @@
 import { AptosWalletAdapterProvider } from '@aptos-labs/wallet-adapter-react';
 import { PropsWithChildren } from 'react';
 import { AptosConfig, Network } from '@aptos-labs/ts-sdk';
-import { PontemWallet } from '@pontem/wallet-adapter-plugin';
 import { APTOS_INDEXER, APTOS_NETWORK, APTOS_NODE_URL } from '../../config/env';
 import { useChain } from './ChainProvider';
 
 export const WalletProvider = ({ children }: PropsWithChildren) => {
-  const wallets = [new PontemWallet()];
   const { aptos } = useChain();
 
   return (
     <AptosWalletAdapterProvider
-      plugins={wallets}
       dappConfig={
         new AptosConfig({
           network:

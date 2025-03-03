@@ -271,11 +271,11 @@ export const executeAction = async (
       const response = await agent.getUserAllPositions(...args);
 
       return Promise.all(
-        response.map(async (r) => {
+        response.map(async (r: any) => {
           const positions_map = await Promise.all(
-            r.positions_map.data.map(async (position) => {
+            r.positions_map.data.map(async (position: any) => {
               const borrow_positions = await Promise.all(
-                position.value.borrow_positions.data.map(async (p) => ({
+                position.value.borrow_positions.data.map(async (p: any) => ({
                   ...p,
                   value: convertAmountFromOnChainToHumanReadable(
                     p.value,
@@ -287,7 +287,7 @@ export const executeAction = async (
               );
 
               const lend_positions = await Promise.all(
-                position.value.lend_positions.data.map(async (p) => ({
+                position.value.lend_positions.data.map(async (p: any) => ({
                   ...p,
                   value: convertAmountFromOnChainToHumanReadable(
                     p.value,

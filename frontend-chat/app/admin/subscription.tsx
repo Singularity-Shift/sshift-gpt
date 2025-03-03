@@ -178,7 +178,9 @@ export const Subscription = () => {
 
   const getNfts = async () => {
     const nfts = await aptos.account.getAccountOwnedTokens({
-      accountAddress: AccountAddress.fromString(account?.address as string),
+      accountAddress: AccountAddress.fromString(
+        account?.address.toString() as string
+      ),
     });
 
     console.log(nfts);
@@ -186,7 +188,9 @@ export const Subscription = () => {
 
   const getCoins = async () => {
     const coins = await aptos.account.getAccountCoinsData({
-      accountAddress: AccountAddress.fromString(account?.address as string),
+      accountAddress: AccountAddress.fromString(
+        account?.address.toString() as string
+      ),
     });
 
     console.log(coins);

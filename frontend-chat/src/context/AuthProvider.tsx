@@ -66,15 +66,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           Object.values((messageResp.signature as any).data.data)
         );
 
-        messageResp.signature = Buffer.from(dataSignature).toString('hex');
+        messageResp.signature = Buffer.from(dataSignature).toString(
+          'hex'
+        ) as any;
       }
 
       const payload: IAuth = {
         message: messageResp.fullMessage,
         signature: `${messageResp.signature}`,
-        address: account?.address.toString(),
+        address: account?.address.toString() as `0x${string}}`,
         chain,
-        publicKey: account?.publicKey.toString(),
+        publicKey: account?.publicKey.toString() as string,
       };
 
       const response = await backend.post('/auth/login', { ...payload });
@@ -155,7 +157,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (storedValue?.some((s) => s.account === account?.address)) {
+    if (storedValue?.some((s) => s.account === account?.address.toString())) {
       localStorage.setItem(
         'jwt',
         JSON.stringify(

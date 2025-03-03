@@ -29,7 +29,7 @@ export const FundManage = () => {
           ?.useABI(feesABI)
           .view.check_collector_object({
             typeArguments: [],
-            functionArguments: [account?.address as `0x${string}`],
+            functionArguments: [account?.address.toString() as `0x${string}`],
           });
 
         setIsSubscribed(Boolean(responseIsSubscribed?.[0]));
@@ -87,7 +87,7 @@ export const FundManage = () => {
             ?.useABI(feesABI)
             .view.get_balance_to_claim({
               typeArguments: [],
-              functionArguments: [account?.address as `0x${string}`],
+              functionArguments: [account?.address.toString() as `0x${string}`],
             });
 
           const feesBalance = feesBalanceResult?.[0];
