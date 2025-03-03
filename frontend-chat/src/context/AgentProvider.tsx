@@ -1,6 +1,6 @@
 'use client';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
-import { AgentRuntime, WalletSigner } from 'move-agent-kit_spiel';
+import { AgentRuntime, WalletSigner } from 'move-agent-kit-fullstack';
 import { createContext, useContext, useEffect, useState } from 'react';
 import { useAuth } from './AuthProvider';
 import { PANORA_API_KEY } from '../../config/env';

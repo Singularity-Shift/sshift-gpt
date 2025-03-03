@@ -1,7 +1,7 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
 import { Chain, MultisignAction } from './enums';
-import { ToolsNameList } from 'move-agent-kit_spiel';
+import { ToolsNameList } from 'move-agent-kit-fullstack';
 
 export interface IAuth {
   message: string;

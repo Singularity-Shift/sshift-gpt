@@ -13,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DataProtection } from '../content/DataProtection';
 import backend from '../services/backend';
 import { useChain } from './ChainProvider';
+import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 export type AuthContextProp = {
   jwt: string;
@@ -71,9 +72,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const payload: IAuth = {
         message: messageResp.fullMessage,
         signature: `${messageResp.signature}`,
-        address: account?.address as string,
+        address: account?.address.toString(),
         chain,
-        publicKey: account?.publicKey as string,
+        publicKey: account?.publicKey.toString(),
       };
 
       const response = await backend.post('/auth/login', { ...payload });
@@ -108,7 +109,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setJwt(authObj.authToken);
 
         const jwtUser: IJWTUser = {
-          account: account?.address || '',
+          account: account?.address.toString() || '',
           chain,
           token: authObj.authToken,
         };
@@ -175,7 +176,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const storedValue = getJwt();
 
-    handleConnectWallet(storedValue, account?.address as string);
+    handleConnectWallet(storedValue, account?.address.toString());
   }, [connected, account]);
 
   const value: AuthContextProp = { jwt, walletAddress, handleDisconnect };
