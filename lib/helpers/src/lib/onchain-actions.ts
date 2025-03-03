@@ -258,11 +258,11 @@ export const executeAction = async (
       break;
     }
     case 'joule_get_user_position': {
-      const args = values as [AccountAddress, string];
+      const args = values as [string];
 
-      args[0] = AccountAddress.from(walletAddress as string);
+      const address = AccountAddress.from(walletAddress as string);
 
-      return agent.getUserPosition(...args);
+      return agent.getUserPosition(address, ...args);
     }
     case 'joule_get_user_all_positions': {
       const args = values as [AccountAddress];
