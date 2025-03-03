@@ -24,7 +24,7 @@ services:
     image: node:latest
     container_name: sshift_dao_chat
     working_dir: /usr/src/sshift_dao_chat
-    command: bash -c "npm install && npx nx reset && npm run ${MULT_RUN_ENV}"
+    command: bash -c "npm install --legacy-peer-deps && npx nx reset && npm run ${MULT_RUN_ENV}"
     environment:
       OPENAI_API_KEY: ${OPENAI_API_KEY}
       REDIS_PWD: ${REDIS_PWD}
