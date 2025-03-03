@@ -152,10 +152,13 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               spellCheck="true"
               autoComplete="on"
               inputMode="text"
+              enterKeyHint="send"
+              translate="yes"
               style={{ 
                 fontFamily: 'system-ui, -apple-system, sans-serif',
-                unicodeBidi: 'embed'
+                unicodeBidi: 'plaintext'
               }}
+              aria-label="Message input - supports all languages and characters"
             />
           </div>
           <div className="flex items-end self-end gap-1.5 md:gap-2 flex-shrink-0">

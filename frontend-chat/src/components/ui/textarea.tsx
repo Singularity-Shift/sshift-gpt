@@ -32,6 +32,9 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           spellCheck="true"
           autoComplete="on"
+          lang="auto"
+          dir="auto"
+          translate="yes"
           {...props}
         />
       </div>
