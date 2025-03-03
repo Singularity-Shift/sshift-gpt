@@ -165,21 +165,21 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
           className={`rounded ${
             isAssistantMessage
               ? isExpanded
-                ? 'max-w-full w-full h-auto'
-                : 'max-w-[100px] max-h-[100px]'
-              : 'max-w-[100px] max-h-[100px]'
-          } object-cover transition-all duration-200`}
+                ? 'max-w-full w-full h-auto max-h-[80vh] object-contain'
+                : 'max-w-[100px] max-h-[100px] object-cover'
+              : 'max-w-[100px] max-h-[100px] object-cover'
+          } transition-all duration-200`}
         />
         {isAssistantMessage && isExpanded && (
           <div className="absolute bottom-2 right-2 flex gap-2">
             <div
-              className="p-1.5 hover:bg-white/10 transition-colors rounded"
+              className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors rounded shadow-md"
               onClick={handleEdit}
             >
               <Pencil className="h-5 w-5 text-white" />
             </div>
             <div
-              className="p-1.5 hover:bg-white/10 transition-colors rounded"
+              className="p-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm transition-colors rounded shadow-md"
               onClick={downloadImage}
             >
               <Download className="h-5 w-5 text-white" />
