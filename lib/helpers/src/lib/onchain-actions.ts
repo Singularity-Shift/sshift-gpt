@@ -74,7 +74,15 @@ export const executeAction = async (
             coinType: mint as MoveStructId,
           });
         }
-        return balance;
+
+        const tokenDetails = await agent.getTokenDetails(mint);
+
+        const convertedBalance = convertAmountFromOnChainToHumanReadable(
+          balance,
+          tokenDetails.decimals || 8
+        );
+
+        return convertedBalance;
       }
       const balance = await agent.aptos.getAccountAPTAmount({
         accountAddress: walletAddress as string,
@@ -299,21 +307,21 @@ export const executeAction = async (
       );
     }
     case 'amnis_stake': {
-      const args = values as [AccountAddress, number];
+      const args = values as [number];
 
-      args[0] = agent.account.getAddress();
-      args[1] = convertAmountFromHumanReadableToOnChain(args[1], 8);
+      const address = agent.account.getAddress();
+      args[0] = convertAmountFromHumanReadableToOnChain(args[0], 8);
 
-      await agent.stakeTokensWithAmnis(...args);
+      await agent.stakeTokensWithAmnis(address, ...args);
       break;
     }
     case 'amnis_withdraw_stake': {
-      const args = values as [AccountAddress, number];
+      const args = values as [number];
 
-      args[0] = agent.account.getAddress();
-      args[1] = convertAmountFromHumanReadableToOnChain(args[1], 8);
+      const address = agent.account.getAddress();
+      args[0] = convertAmountFromHumanReadableToOnChain(args[0], 8);
 
-      await agent.withdrawStakeFromAmnis(...args);
+      await agent.withdrawStakeFromAmnis(address, ...args);
       break;
     }
     case 'aries_borrow': {
