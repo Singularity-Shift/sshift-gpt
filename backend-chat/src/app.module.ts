@@ -16,6 +16,24 @@ import {
 import { MongooseModule } from '@nestjs/mongoose';
 import { MultisignModule } from './multisign/multising.module';
 import { AgentModule } from './agent/agent.module';
+import { Injectable, ExecutionContext } from '@nestjs/common';
+
+// Custom cache interceptor that excludes bucket download endpoints
+@Injectable()
+export class CustomCacheInterceptor extends CacheInterceptor {
+  trackBy(context: ExecutionContext): string | undefined {
+    const request = context.switchToHttp().getRequest();
+    const { url } = request;
+    
+    // Skip caching for bucket download endpoints
+    if (url.includes('/bucket/download/')) {
+      return undefined;
+    }
+    
+    // Use the default tracking for all other endpoints
+    return super.trackBy(context);
+  }
+}
 
 @Module({
   imports: [
@@ -53,7 +71,7 @@ import { AgentModule } from './agent/agent.module';
   providers: [
     {
       provide: APP_INTERCEPTOR,
-      useClass: CacheInterceptor,
+      useClass: CustomCacheInterceptor,
     },
     {
       provide: APP_GUARD,
