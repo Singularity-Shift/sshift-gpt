@@ -151,15 +151,15 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
       {/* Backdrop overlay for mobile */}
       {isOpen && (
         <div 
-          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 md:hidden" 
+          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-40 min-[1134px]:hidden" 
           onClick={onClose}
         />
       )}
       <div className={`
-        fixed md:relative top-0 left-0 h-[100dvh] w-80 border-r border-border
+        fixed min-[1134px]:relative top-0 left-0 h-[100dvh] w-80 border-r border-border
         bg-transparent
-        md:block transform transition-transform duration-300 ease-in-out z-50
-        ${isOpen ? 'translate-x-0 !bg-white' : '-translate-x-full md:translate-x-0'}
+        min-[1134px]:block transform transition-transform duration-300 ease-in-out z-50
+        ${isOpen ? 'translate-x-0 !bg-white' : '-translate-x-full min-[1134px]:translate-x-0'}
       `}>
         <div className="flex flex-col h-full">
           <div className="p-4 border-b border-border h-[73px] flex items-center justify-between">
@@ -179,7 +179,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                 variant="ghost"
                 size="sm"
                 onClick={onClose}
-                className="md:hidden"
+                className="min-[1134px]:hidden"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -243,7 +243,7 @@ export const ChatSidebar: React.FC<ChatSidebarProps> = ({
                                   >
                                     {chat.title.length > 25 ? `${chat.title.substring(0, 25)}...` : chat.title}
                                   </Button>
-                                  <div className="flex absolute right-1 top-1/2 -translate-y-1/2 md:opacity-0 md:group-hover:opacity-100 opacity-100 transition-opacity">
+                                  <div className="flex absolute right-1 top-1/2 -translate-y-1/2 min-[1134px]:opacity-0 min-[1134px]:group-hover:opacity-100 opacity-100 transition-opacity">
                                     <Button
                                       variant="ghost"
                                       size="icon"
