@@ -84,10 +84,10 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             title="Mini Apps"
           >
             <div className="grid grid-cols-2 gap-0.5 w-4 h-4">
-              <div className="bg-blue-500 rounded-sm"></div>
-              <div className="bg-blue-500 rounded-sm"></div>
-              <div className="bg-blue-500 rounded-sm"></div>
-              <div className="bg-blue-500 rounded-sm"></div>
+              <div className="bg-green-500 rounded-sm"></div>
+              <div className="bg-green-600 rounded-sm"></div>
+              <div className="bg-green-600 rounded-sm"></div>
+              <div className="bg-green-500 rounded-sm"></div>
             </div>
           </Button>
         )}
