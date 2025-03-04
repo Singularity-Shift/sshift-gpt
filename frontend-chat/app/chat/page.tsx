@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { Menu } from 'lucide-react';
+import { Menu, PanelRight } from 'lucide-react';
 
 // Core Layout Components
 import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
@@ -11,6 +11,7 @@ import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
 import { ChatInput } from '../../src/components/ui/ChatInput';
 import { Button } from '../../src/components/ui/button';
+import { RightSidebar } from '../../src/components/ui/right-sidebar';
 
 import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
@@ -49,6 +50,7 @@ export default function ChatPage() {
   );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const { jwt } = useAuth();
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
@@ -947,12 +949,13 @@ export default function ChatPage() {
           onNewChat={() => handleNewChat()}
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
+          onToggleMiniApps={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
         />
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden absolute top-[14px] left-2 z-40"
+          className="min-[1134px]:hidden absolute top-[18px] left-2 z-40"
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -977,6 +980,10 @@ export default function ChatPage() {
           />
         </div>
       </div>
+      <RightSidebar 
+        isOpen={isRightSidebarOpen}
+        onClose={() => setIsRightSidebarOpen(false)}
+      />
     </div>
   );
 }
