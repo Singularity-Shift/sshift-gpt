@@ -9,7 +9,19 @@ export interface TextareaProps
 }
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
-  ({ className, isExpanded, onToggleExpand, ...props }, ref) => {
+  ({ className, isExpanded, onToggleExpand, onChange, value, ...props }, ref) => {
+    // Create a memoized handler for input events
+    const handleInputChange = React.useCallback(
+      (e: React.ChangeEvent<HTMLTextAreaElement> | React.FormEvent<HTMLTextAreaElement>) => {
+        if (onChange && 'target' in e) {
+          const event = new Event('change', { bubbles: true });
+          Object.defineProperty(event, 'target', { value: e.target });
+          onChange(event as unknown as React.ChangeEvent<HTMLTextAreaElement>);
+        }
+      },
+      [onChange]
+    );
+
     return (
       <div className="relative w-full">
         <button
@@ -35,6 +47,10 @@ const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
           lang="auto"
           dir="auto"
           translate="yes"
+          value={value}
+          onChange={handleInputChange}
+          onInput={handleInputChange}
+          onCompositionEnd={handleInputChange}
           {...props}
         />
       </div>
