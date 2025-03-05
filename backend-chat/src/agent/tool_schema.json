@@ -295,10 +295,15 @@
           "date": {
             "type": "string",
             "description": "The date to fetch topics with format YYYY-MM-DD."
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["Lens", "Farcaster"],
+            "description": "The protocol to fetch topics from."
           }
         },
         "additionalProperties": false,
-        "required": ["date"]
+        "required": ["date", "protocol"]
       },
       "strict": true
     }
@@ -307,7 +312,7 @@
     "type": "function",
     "function": {
       "name": "getTokenStats",
-      "description": "Fetches token stats from lens.",
+      "description": "Fetches token stats from lens and Farcaster.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -319,9 +324,14 @@
           "page": {
             "type": "integer",
             "description": "The page number for pagination."
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["Lens", "Farcaster"],
+            "description": "The protocol to fetch stats from."
           }
         },
-        "required": ["limit", "page"],
+        "required": ["limit", "page", "protocol"],
         "additionalProperties": false
       },
       "strict": true
@@ -331,7 +341,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingUsers",
-      "description": "Fetches trending users from lens based on specified query",
+      "description": "Fetches trending users from lens and Farcaster based on specified query",
       "parameters": {
         "type": "object",
         "properties": {
@@ -350,7 +360,7 @@
           },
           "protocol": {
             "type": "string",
-            "enum": ["Lens"]
+            "enum": ["Lens", "Farcaster"]
           }
         },
         "additionalProperties": false,
