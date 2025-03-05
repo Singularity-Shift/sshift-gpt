@@ -950,6 +950,7 @@ export default function ChatPage() {
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
           onToggleMiniApps={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+          setIsSidebarOpen={setIsSidebarOpen}
         />
         <Button
           variant="ghost"
