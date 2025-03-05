@@ -955,7 +955,7 @@ export default function ChatPage() {
           variant="ghost"
           size="sm"
           onClick={() => setIsSidebarOpen(true)}
-          className="min-[1134px]:hidden absolute top-[18px] left-2 z-40"
+          className="min-[1134px]:hidden absolute top-[20px] left-2 z-40"
         >
           <Menu className="h-5 w-5" />
         </Button>

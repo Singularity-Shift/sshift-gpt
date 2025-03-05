@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './select';
-import { ArrowLeft, Plus } from 'lucide-react';
+import { ArrowLeft, Plus, Menu } from 'lucide-react';
 import UserLoginStatus from './UserLoginStatus';
 
 interface ChatHeaderProps {
@@ -17,6 +17,7 @@ interface ChatHeaderProps {
   onNavigateToDashboard: () => void;
   currentChatModel: string | null;
   onToggleMiniApps?: () => void;
+  setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -26,6 +27,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   onNavigateToDashboard,
   currentChatModel,
   onToggleMiniApps,
+  setIsSidebarOpen,
 }) => {
   return (
     <div className="flex items-center justify-between p-2 min-[1010px]:p-4 border-b border-border h-[73px] w-full">
@@ -67,10 +69,11 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
         <Button 
           onClick={onNewChat} 
           variant="outline"
-          className="h-9 whitespace-nowrap bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] transition-colors max-[425px]:w-9 max-[425px]:p-0 min-[426px]:px-4"
+          className="h-10 whitespace-nowrap bg-blue-50 border-blue-100 hover:bg-blue-100 hover:border-blue-200 shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] transition-colors max-[367px]:w-9 max-[367px]:p-0 max-[429px]:w-[52px] max-[429px]:px-2 min-[430px]:px-4"
         >
-          <span className="hidden min-[426px]:inline text-blue-600">New Chat</span>
-          <Plus className="min-[426px]:hidden h-4 w-4 text-blue-600" />
+          <span className="hidden min-[430px]:inline text-blue-600">New Chat</span>
+          <span className="hidden max-[429px]:min-[367px]:inline text-blue-600 text-sm">New</span>
+          <Plus className="min-[367px]:hidden h-4 w-4 text-blue-600" />
         </Button>
       </div>
       <div className="flex items-center gap-3">
@@ -91,6 +94,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </div>
           </Button>
         )}
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={() => setIsSidebarOpen(true)}
+          className="min-[1134px]:hidden absolute top-[20px] left-2 z-40"
+        >
+          <Menu className="h-5 w-5" />
+        </Button>
         <UserLoginStatus />
       </div>
     </div>
