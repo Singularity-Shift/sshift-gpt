@@ -1,3 +1,4 @@
+import { Protocol } from '@helpers';
 import { ApiProperty } from '@nestjs/swagger';
 
 export class UserTrendingDto {
@@ -20,5 +21,5 @@ export class UserTrendingDto {
     description: 'Protocol of the lens',
     enum: ['Lens', 'Farcaster'],
   })
-  protocol: 'Lens' | 'Farcaster';
+  protocol: Protocol;
 }

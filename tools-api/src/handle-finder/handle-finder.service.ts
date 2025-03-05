@@ -8,6 +8,7 @@ import { PublicationDto } from './dto/publication.dto';
 import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
 import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
+import { Protocol } from '@helpers';
 
 @Injectable()
 export class HandleFinderService {
@@ -24,7 +25,7 @@ export class HandleFinderService {
     this.apiKey = this.configService.get('handleFinder.apiKey');
   }
 
-  async findAllTopics(date: string): Promise<TopicDto[]> {
+  async findAllTopics(date: string, protocol: Protocol): Promise<TopicDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<TopicDto[]>(`${this.url}/llm/topics`, {
         headers: {
@@ -33,6 +34,7 @@ export class HandleFinderService {
         },
         params: {
           date,
+          protocol,
         },
       })
     );
@@ -42,7 +44,8 @@ export class HandleFinderService {
 
   async findTrendingTokenStats(
     limit: number,
-    page: number
+    page: number,
+    protocol: Protocol
   ): Promise<TrendingTokensStatsDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<TrendingTokensStatsDto[]>(
@@ -54,6 +57,7 @@ export class HandleFinderService {
           params: {
             limit,
             page,
+            protocol,
           },
         }
       )

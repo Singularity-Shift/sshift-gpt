@@ -14,6 +14,7 @@ import { GetTrendingDto } from './dto/get-trending.dto';
 import { TrendingDto } from './dto/trending.dto';
 import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
 import { ToolsGuard } from '../tools/tools.guard';
+import { Protocol } from '@helpers';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
@@ -30,13 +31,23 @@ export class HandleFinderController {
     type: [TopicDto],
     status: 200,
   })
-  async findAllTopics(@Query('date') date: string): Promise<TopicDto[]> {
-    return this.handleFinderService.findAllTopics(date);
+  async findAllTopics(
+    @Query('date') date: string,
+    @Query('protocol') protocol: Protocol
+  ): Promise<TopicDto[]> {
+    return this.handleFinderService.findAllTopics(date, protocol);
   }
 
   @Get('tokens/stats')
   @ApiQuery({ name: 'limit', type: 'number', required: false, example: 15 })
   @ApiQuery({ name: 'page', type: 'number', required: false, example: 1 })
+  @ApiQuery({
+    name: 'protocol',
+    type: 'enum',
+    enum: Protocol,
+    required: true,
+    description: 'Social fi protocol',
+  })
   @ApiOperation({ summary: 'Get token' })
   @ApiResponse({
     description: 'find tokens mentioned',
@@ -45,9 +56,14 @@ export class HandleFinderController {
   })
   async findTrendingTokenStats(
     @Query('limit') limit = 15,
-    @Query('page') page = 1
+    @Query('page') page = 1,
+    @Query('protocol') protocol: Protocol
   ): Promise<TrendingTokensStatsDto[]> {
-    return this.handleFinderService.findTrendingTokenStats(limit, page);
+    return this.handleFinderService.findTrendingTokenStats(
+      limit,
+      page,
+      protocol
+    );
   }
 
   @Get('categories')

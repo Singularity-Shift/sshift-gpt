@@ -25,3 +25,8 @@ export enum Chain {
   Aptos = 'aptos',
   Movement = 'movement',
 }
+
+export enum Protocol {
+  Lens = 'Lens',
+  Farcaster = 'Farcaster',
+}

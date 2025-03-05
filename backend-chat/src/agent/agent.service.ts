@@ -470,7 +470,7 @@ export class AgentService {
     }
   }
 
-  async getAllTopics(date, auth, signal) {
+  async getAllTopics(date, protocol, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
@@ -482,7 +482,7 @@ export class AgentService {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${auth}`,
             },
-            params: { date },
+            params: { date, protocol },
             timeout: 30000,
             signal,
           }
@@ -503,7 +503,7 @@ export class AgentService {
     }
   }
 
-  async getTokenStats(limit, page, auth, signal) {
+  async getTokenStats(limit, page, protocol, auth, signal) {
     try {
       const response = await firstValueFrom(
         this.httpService.get(
@@ -515,7 +515,7 @@ export class AgentService {
               'Content-Type': 'application/json',
               Authorization: `Bearer ${auth}`,
             },
-            params: { limit, page },
+            params: { limit, page, protocol },
             timeout: 30000,
             signal,
           }
