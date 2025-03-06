@@ -109,7 +109,25 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
       const blob = await response.blob();
       console.log('Blob received:', blob.type, blob.size);
 
-      if ('showSaveFilePicker' in window) {
+      // Check if we're on a mobile device
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // For mobile devices, create a direct download link
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = filename.split('/').pop() || 'download.png';
+        // Set target to _blank to open in new tab if needed
+        a.target = '_blank';
+        // Add rel for security
+        a.rel = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        console.log('Mobile download initiated');
+      } else if ('showSaveFilePicker' in window) {
         console.log('Using File System Access API');
         const options = {
           suggestedName: filename.split('/').pop(),
@@ -129,8 +147,22 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
           console.log('File saved successfully using File System Access API');
         } catch (err) {
           console.error('Error using File System Access API:', err);
-          // Fallback to traditional download if user cancels File System Access API
-          throw err;
+          // Check if this is a user abort error (user canceled the save dialog)
+          if (err instanceof Error && 
+              (err.name === 'AbortError' || err.message.includes('user aborted') || err.message.includes('cancel'))) {
+            console.log('User canceled the save dialog');
+            return; // Exit gracefully without showing an error
+          }
+          // Only fallback to traditional download for non-cancellation errors
+          console.log('Falling back to traditional download method');
+          const url = window.URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = filename.split('/').pop() || 'download.png';
+          document.body.appendChild(a);
+          a.click();
+          document.body.removeChild(a);
+          window.URL.revokeObjectURL(url);
         }
       } else {
         console.log('Using traditional download method');
@@ -146,8 +178,13 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
       }
     } catch (error) {
       console.error('Error during download:', error);
-      // You might want to show an error message to the user here
-      alert('Failed to download image. Please try again.');
+      // More specific error message for mobile devices
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      if (isMobile) {
+        alert('To download on mobile: 1. Tap and hold the image 2. Select "Save Image" or "Download Image"');
+      } else {
+        alert('Failed to download image. Please try again.');
+      }
     }
   };
 
