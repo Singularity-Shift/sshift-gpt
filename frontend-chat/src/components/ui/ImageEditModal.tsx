@@ -521,26 +521,31 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   // Add touch event handlers
   const getTouchCoordinates = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !e.touches[0]) return { x: 0, y: 0 };
+    if (!canvasRef.current || !e.touches[0] || !originalDimensions) return { x: 0, y: 0 };
     
     const canvas = canvasRef.current;
     const rect = canvas.getBoundingClientRect();
-    const x = e.touches[0].clientX - rect.left;
-    const y = e.touches[0].clientY - rect.top;
+    const touchX = e.touches[0].clientX - rect.left;
+    const touchY = e.touches[0].clientY - rect.top;
     
-    // Scale coordinates if canvas display size differs from its internal size
-    // and adjust for current zoom and pan
-    const scaleX = canvas.width / (rect.width * scale);
-    const scaleY = canvas.height / (rect.height * scale);
+    // Calculate the scaling factors between original image dimensions and displayed canvas
+    const scaleX = originalDimensions.width / rect.width;
+    const scaleY = originalDimensions.height / rect.height;
+
+    // Calculate the actual position on the canvas accounting for zoom and pan
+    // First convert touch position to the zoomed canvas coordinate system
+    const canvasX = (touchX / scale) + (position.x / scale);
+    const canvasY = (touchY / scale) + (position.y / scale);
     
+    // Then scale to the original image dimensions
     return {
-      x: (x * scaleX) - (position.x * scaleX),
-      y: (y * scaleY) - (position.y * scaleY)
+      x: canvasX * scaleX,
+      y: canvasY * scaleY
     };
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!ctx || isProcessing || !showOriginal || isDragging) return;
+    if (!ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -554,7 +559,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging) return;
+    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -718,6 +723,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           e.stopPropagation();
           // Don't do anything else here that might interfere with input focus
         }}
+        onTouchStart={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-2 sticky top-0 bg-white z-10">
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
@@ -883,6 +889,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                     // Ensure the input is focused
                     e.currentTarget.focus();
                   }}
+                  onTouchStart={(e) => e.stopPropagation()}
                   onTouchEnd={(e) => {
                     e.stopPropagation();
                     // Store a reference to the current target
