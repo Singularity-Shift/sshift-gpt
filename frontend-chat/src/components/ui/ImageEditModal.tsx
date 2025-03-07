@@ -554,8 +554,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
     // Calculate the actual position on the canvas accounting for zoom and pan
     // First convert touch position to the zoomed canvas coordinate system
-    const canvasX = (touchX / scale) + (position.x / scale);
-    const canvasY = (touchY / scale) + (position.y / scale);
+    const canvasX = ((touchX - position.x) / scale);
+    const canvasY = ((touchY - position.y) / scale);
     
     // Then scale to the original image dimensions
     return {
@@ -565,7 +565,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
+    if (!ctx || isProcessing || !showOriginal || isDragging) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -579,7 +579,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
+    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -640,8 +640,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       );
       lastDistance.current = distance;
       lastPosition.current = { x: centerX, y: centerY };
-    } else if (e.touches.length === 1 && scale <= 1 && canvasRef.current) {
-      // Only allow single-finger touch for drawing when not zoomed in
+    } else if (e.touches.length === 1 && canvasRef.current) {
+      // Allow single-finger touch for drawing regardless of zoom level
       startDrawingTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
     }
   };
@@ -691,10 +691,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         handleDrag(centerX, centerY);
       }
     } else if (e.touches.length === 1 && canvasRef.current) {
-      // Only allow drawing with one finger when not zoomed in
-      if (!scale || scale <= 1) {
-        drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
-      }
+      // Allow drawing with one finger regardless of zoom level
+      drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
     }
   };
 
