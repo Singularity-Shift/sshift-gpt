@@ -52,6 +52,11 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const dragStart = useRef({ x: 0, y: 0 });
   const positionStart = useRef({ x: 0, y: 0 });
 
+  // Helper function to stop event propagation for all touch events
+  const stopTouchPropagation = (e: React.TouchEvent) => {
+    e.stopPropagation();
+  };
+
   const updateBrushSettings = (context: CanvasRenderingContext2D) => {
     if (brushMode === BrushMode.PAINT) {
       // Use solid black for the mask - areas to edit
@@ -482,18 +487,15 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     }
   };
 
-  // Effect to prevent body scrolling when modal is open
+  // Prevent scrolling when modal is open
   useEffect(() => {
     if (isOpen) {
       // Save the current overflow style
       const originalStyle = window.getComputedStyle(document.body).overflow;
       // Prevent scrolling on the body
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
       
-      // Prevent wheel and touchmove events
+      // Prevent wheel and touchmove events on body but allow in modal
       const preventDefault = (e: Event) => {
         // Only prevent if not inside the modal content that needs scrolling
         if (!(e.target as Element)?.closest('.modal-scroll-content')) {
@@ -506,13 +508,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       
       // Restore original styles and remove event listeners when modal closes
       return () => {
-        const scrollY = document.body.style.top;
         document.body.style.overflow = originalStyle;
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.top = '';
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        
         window.removeEventListener('wheel', preventDefault);
         window.removeEventListener('touchmove', preventDefault);
       };
@@ -534,8 +530,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
     // Calculate the actual position on the canvas accounting for zoom and pan
     // First convert touch position to the zoomed canvas coordinate system
-    const canvasX = (touchX / scale) + (position.x / scale);
-    const canvasY = (touchY / scale) + (position.y / scale);
+    const canvasX = ((touchX - position.x) / scale);
+    const canvasY = ((touchY - position.y) / scale);
     
     // Then scale to the original image dimensions
     return {
@@ -545,7 +541,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
+    if (!ctx || isProcessing || !showOriginal || isDragging) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -559,7 +555,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging || scale > 1) return;
+    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging) return;
     
     const { x, y } = getTouchCoordinates(e);
     
@@ -620,8 +616,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       );
       lastDistance.current = distance;
       lastPosition.current = { x: centerX, y: centerY };
-    } else if (e.touches.length === 1 && scale <= 1 && canvasRef.current) {
-      // Only allow single-finger touch for drawing when not zoomed in
+    } else if (e.touches.length === 1 && canvasRef.current) {
+      // Allow single-finger touch for drawing regardless of zoom level
       startDrawingTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
     }
   };
@@ -671,10 +667,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         handleDrag(centerX, centerY);
       }
     } else if (e.touches.length === 1 && canvasRef.current) {
-      // Only allow drawing with one finger when not zoomed in
-      if (!scale || scale <= 1) {
-        drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
-      }
+      // Allow drawing with one finger regardless of zoom level
+      drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
     }
   };
 
@@ -715,15 +709,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-1"
-      onClick={onClose}
     >
       <div 
         className="bg-white rounded-lg p-3 w-full max-w-[95vw] sm:max-w-4xl h-auto max-h-[98vh] flex flex-col overflow-hidden text-xs sm:text-base"
-        onClick={(e) => {
-          e.stopPropagation();
-          // Don't do anything else here that might interfere with input focus
-        }}
-        onTouchStart={(e) => e.stopPropagation()}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-2 sticky top-0 bg-white z-10">
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
@@ -735,6 +724,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               onClick={onClose}
               className="p-1 hover:bg-gray-100 rounded-full transition-colors"
               aria-label="Close"
+              onTouchStart={stopTouchPropagation}
+              onTouchMove={stopTouchPropagation}
+              onTouchEnd={stopTouchPropagation}
+              onTouchCancel={stopTouchPropagation}
             >
               <X className="h-5 w-5" />
             </button>
@@ -746,7 +739,12 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           Pinch to zoom • Double-tap to reset
         </div>
 
-        <div className="space-y-2 overflow-y-auto flex-1 pr-1 modal-scroll-content">
+        <div className="space-y-2 overflow-y-auto flex-1 pr-1 modal-scroll-content"
+          onTouchStart={stopTouchPropagation}
+          onTouchMove={stopTouchPropagation}
+          onTouchEnd={stopTouchPropagation}
+          onTouchCancel={stopTouchPropagation}
+        >
           <div 
             ref={imageContainerRef}
             className="relative w-full overflow-hidden" 
@@ -824,7 +822,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               <button
                 onClick={toggleImage}
                 className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
-                onTouchStart={(e) => e.stopPropagation()}
+                onTouchStart={stopTouchPropagation}
+                onTouchMove={stopTouchPropagation}
+                onTouchEnd={stopTouchPropagation}
+                onTouchCancel={stopTouchPropagation}
               >
                 {showOriginal ? 'Show Edited' : 'Show Original'}
               </button>
@@ -832,7 +833,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 <button
                   onClick={downloadEditedImage}
                   className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white rounded-md transition-colors flex items-center gap-1 sm:gap-2 shadow-md"
-                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchStart={stopTouchPropagation}
+                  onTouchMove={stopTouchPropagation}
+                  onTouchEnd={stopTouchPropagation}
+                  onTouchCancel={stopTouchPropagation}
                 >
                   <Download className="h-3 w-3 sm:h-4 sm:w-4" />
                   Download
@@ -857,8 +861,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                     // Ensure the select is focused
                     e.currentTarget.focus();
                   }}
+                  onTouchStart={stopTouchPropagation}
+                  onTouchMove={stopTouchPropagation}
                   onTouchEnd={(e) => {
-                    e.stopPropagation();
+                    stopTouchPropagation(e);
                     // Store a reference to the current target
                     const selectElement = e.currentTarget;
                     // Ensure the select is focused
@@ -868,6 +874,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                       }
                     }, 0);
                   }}
+                  onTouchCancel={stopTouchPropagation}
                 >
                   <option value={ModelType.V_2}>V2</option>
                   <option value={ModelType.V_2_TURBO}>V2 Turbo</option>
@@ -889,9 +896,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                     // Ensure the input is focused
                     e.currentTarget.focus();
                   }}
-                  onTouchStart={(e) => e.stopPropagation()}
+                  onTouchStart={stopTouchPropagation}
+                  onTouchMove={stopTouchPropagation}
                   onTouchEnd={(e) => {
-                    e.stopPropagation();
+                    stopTouchPropagation(e);
                     // Store a reference to the current target
                     const inputElement = e.currentTarget;
                     // Prevent default to avoid any browser-specific issues
@@ -902,6 +910,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                       }
                     }, 0);
                   }}
+                  onTouchCancel={stopTouchPropagation}
                 />
               </div>
             </div>
@@ -920,7 +929,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                         : 'bg-gray-100 text-gray-600'
                     }`}
                     disabled={isProcessing || !showOriginal}
-                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchStart={stopTouchPropagation}
+                    onTouchMove={stopTouchPropagation}
+                    onTouchEnd={stopTouchPropagation}
+                    onTouchCancel={stopTouchPropagation}
                   >
                     <Paintbrush className="h-3 w-3" />
                     Paint
@@ -933,7 +945,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                         : 'bg-gray-100 text-gray-600'
                     }`}
                     disabled={isProcessing || !showOriginal}
-                    onTouchStart={(e) => e.stopPropagation()}
+                    onTouchStart={stopTouchPropagation}
+                    onTouchMove={stopTouchPropagation}
+                    onTouchEnd={stopTouchPropagation}
+                    onTouchCancel={stopTouchPropagation}
                   >
                     <Eraser className="h-3 w-3" />
                     Erase
@@ -949,7 +964,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 className="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer"
                 disabled={isProcessing || !showOriginal}
                 onClick={(e) => e.stopPropagation()}
-                onTouchStart={(e) => e.stopPropagation()}
+                onTouchStart={stopTouchPropagation}
+                onTouchMove={stopTouchPropagation}
+                onTouchEnd={stopTouchPropagation}
+                onTouchCancel={stopTouchPropagation}
               />
             </div>
 
@@ -958,7 +976,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 onClick={clearMask}
                 className="px-2 py-1 text-xs border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
                 disabled={isProcessing || !showOriginal}
-                onTouchStart={(e) => e.stopPropagation()}
+                onTouchStart={stopTouchPropagation}
+                onTouchMove={stopTouchPropagation}
+                onTouchEnd={stopTouchPropagation}
+                onTouchCancel={stopTouchPropagation}
               >
                 Clear Mask
               </button>
@@ -966,7 +987,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 onClick={togglePreviewMask}
                 className={`px-2 py-1 text-xs border ${previewMask ? 'bg-blue-100 border-blue-300' : 'border-gray-300'} rounded-md hover:bg-gray-50 transition-colors`}
                 disabled={isProcessing || !showOriginal}
-                onTouchStart={(e) => e.stopPropagation()}
+                onTouchStart={stopTouchPropagation}
+                onTouchMove={stopTouchPropagation}
+                onTouchEnd={stopTouchPropagation}
+                onTouchCancel={stopTouchPropagation}
               >
                 {previewMask ? 'Hide Mask' : 'Preview Mask'}
               </button>
