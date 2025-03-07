@@ -733,9 +733,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-1"
-      onClick={onClose}
-      onTouchEnd={(e) => {
-        // Only close if the touch event is directly on this outer container
+      onMouseDown={(e) => {
+        // Only close if clicking directly on the overlay background
         if (e.target === e.currentTarget) {
           onClose();
         }
@@ -743,18 +742,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     >
       <div 
         className="bg-white rounded-lg p-3 w-full max-w-[95vw] sm:max-w-4xl h-auto max-h-[98vh] flex flex-col overflow-hidden text-xs sm:text-base"
-        onClick={(e) => {
-          e.stopPropagation();
-          // Don't do anything else here that might interfere with input focus
-        }}
-        onTouchStart={stopTouchPropagation}
-        onTouchMove={stopTouchPropagation}
-        onTouchEnd={stopTouchPropagation}
-        onTouchCancel={stopTouchPropagation}
-        onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-2 sticky top-0 bg-white z-10">
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
