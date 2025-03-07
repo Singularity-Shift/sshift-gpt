@@ -494,11 +494,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       const originalStyle = window.getComputedStyle(document.body).overflow;
       // Prevent scrolling on the body
       document.body.style.overflow = 'hidden';
-      document.body.style.position = 'fixed';
-      document.body.style.width = '100%';
-      document.body.style.top = `-${window.scrollY}px`;
       
-      // Prevent wheel and touchmove events
+      // Prevent wheel and touchmove events on body but allow in modal
       const preventDefault = (e: Event) => {
         // Only prevent if not inside the modal content that needs scrolling
         if (!(e.target as Element)?.closest('.modal-scroll-content')) {
@@ -509,32 +506,11 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       window.addEventListener('wheel', preventDefault, { passive: false });
       window.addEventListener('touchmove', preventDefault, { passive: false });
       
-      // Handle keyboard events
-      const handleKeyboardEvents = () => {
-        // This empty function is used to capture keyboard events
-        // without doing anything, preventing them from bubbling up
-        // and potentially closing the modal
-      };
-      
-      // Add listeners for keyboard events
-      window.addEventListener('keyboardDidShow', handleKeyboardEvents);
-      window.addEventListener('keyboardDidHide', handleKeyboardEvents);
-      window.addEventListener('resize', handleKeyboardEvents);
-      
       // Restore original styles and remove event listeners when modal closes
       return () => {
-        const scrollY = document.body.style.top;
         document.body.style.overflow = originalStyle;
-        document.body.style.position = '';
-        document.body.style.width = '';
-        document.body.style.top = '';
-        window.scrollTo(0, parseInt(scrollY || '0') * -1);
-        
         window.removeEventListener('wheel', preventDefault);
         window.removeEventListener('touchmove', preventDefault);
-        window.removeEventListener('keyboardDidShow', handleKeyboardEvents);
-        window.removeEventListener('keyboardDidHide', handleKeyboardEvents);
-        window.removeEventListener('resize', handleKeyboardEvents);
       };
     }
   }, [isOpen]);
