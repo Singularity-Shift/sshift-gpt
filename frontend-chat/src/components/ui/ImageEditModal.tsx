@@ -709,12 +709,6 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   return (
     <div 
       className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-1"
-      onMouseDown={(e) => {
-        // Only close if clicking directly on the overlay background
-        if (e.target === e.currentTarget) {
-          onClose();
-        }
-      }}
     >
       <div 
         className="bg-white rounded-lg p-3 w-full max-w-[95vw] sm:max-w-4xl h-auto max-h-[98vh] flex flex-col overflow-hidden text-xs sm:text-base"
