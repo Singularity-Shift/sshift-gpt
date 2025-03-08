@@ -438,20 +438,44 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       
       if (isMobile) {
-        // For mobile devices, create a direct download link
+        // For mobile devices, use the Web Share API if available
+        if (navigator.share && navigator.canShare) {
+          try {
+            const file = new File([blob], filename.split('/').pop() || 'edited-image.png', { 
+              type: blob.type 
+            });
+            
+            const shareData = {
+              files: [file],
+              title: 'Download Edited Image',
+              text: 'Edited image from SShift'
+            };
+            
+            if (navigator.canShare(shareData)) {
+              await navigator.share(shareData);
+              console.log('Mobile share successful');
+              return;
+            } else {
+              console.log('Web Share API cannot share this content, falling back');
+            }
+          } catch (err) {
+            console.error('Error using Web Share API:', err);
+            // Fall back to traditional method if sharing fails
+          }
+        }
+        
+        // Fallback for mobile if Web Share API is not available or fails
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
         a.href = url;
         a.download = filename.split('/').pop() || 'edited-image.png';
-        // Set target to _blank to open in new tab if needed
         a.target = '_blank';
-        // Add rel for security
         a.rel = 'noopener noreferrer';
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
         window.URL.revokeObjectURL(url);
-        console.log('Mobile download initiated');
+        console.log('Mobile download initiated via fallback method');
       } else if ('showSaveFilePicker' in window) {
         console.log('Using File System Access API');
         const options = {
@@ -513,7 +537,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       // More specific error message for mobile devices
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       if (isMobile) {
-        alert('To download on mobile: 1. Tap and hold the image 2. Select "Save Image" or "Download Image"');
+        alert('Could not download image. Please try again or take a screenshot.');
       } else {
         alert('Failed to download image. Please try again.');
       }
