@@ -956,9 +956,14 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     >
       <div 
         className="bg-white w-full h-full flex flex-col overflow-hidden text-xs sm:text-base"
-        style={{ touchAction: 'none' }}
+        style={{ 
+          touchAction: 'none',
+          maxHeight: '100vh',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
       >
-        <div className="flex justify-between items-center p-3 sticky top-0 bg-white z-10 border-b">
+        <div className="flex justify-between items-center p-2 sm:p-3 sticky top-0 bg-white z-10 border-b shrink-0">
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-gray-500 hidden sm:inline-block">
@@ -975,16 +980,15 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         </div>
 
         {/* Mobile zoom hint */}
-        <div className="text-[10px] text-gray-500 mb-1 sm:hidden text-center">
+        <div className="text-[10px] text-gray-500 mb-1 sm:hidden text-center shrink-0">
           Pinch to zoom • Double-tap to reset
         </div>
 
-        <div className="space-y-2 overflow-y-auto flex-1 pr-1 modal-scroll-content"
-        >
+        <div className="flex-1 min-h-0 flex flex-col">
           <div 
             ref={imageContainerRef}
-            className="relative w-full overflow-hidden flex-1" 
-            style={{ height: 'calc(100vh - 250px)' }}
+            className="relative flex-1 overflow-hidden" 
+            style={{ minHeight: 0 }}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -1060,7 +1064,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           </div>
 
           {editedImageUrl && (
-            <div className="flex flex-wrap justify-center gap-1 my-1 sm:my-3">
+            <div className="flex flex-wrap justify-center gap-1 my-1 sm:my-2 shrink-0">
               <button
                 onClick={toggleImage}
                 className="px-2 sm:px-3 py-1 sm:py-1.5 text-xs sm:text-sm bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 transition-colors"
@@ -1079,7 +1083,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-2 p-3 border-t bg-white">
+          <div className="grid grid-cols-1 gap-2 p-2 sm:p-3 border-t bg-white shrink-0">
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <label className="block text-xs font-medium text-gray-700 mb-1">
