@@ -53,6 +53,33 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const dragStart = useRef({ x: 0, y: 0 });
   const positionStart = useRef({ x: 0, y: 0 });
 
+  // Add effect to ensure canvas dimensions match image while preserving content during zoom
+  useEffect(() => {
+    if (imageLoaded && imageRef.current && canvasRef.current && ctx && scale !== 1) {
+      // Get current canvas content
+      const tempCanvas = document.createElement('canvas');
+      const tempCtx = tempCanvas.getContext('2d');
+      if (!tempCtx) return;
+      
+      // Set temp canvas to same dimensions as current canvas and copy content
+      tempCanvas.width = canvasRef.current.width;
+      tempCanvas.height = canvasRef.current.height;
+      tempCtx.drawImage(canvasRef.current, 0, 0);
+      
+      // Update canvas style dimensions to match image
+      const imgRect = imageRef.current.getBoundingClientRect();
+      const canvasStyle = canvasRef.current.style;
+      canvasStyle.width = `${imgRect.width}px`;
+      canvasStyle.height = `${imgRect.height}px`;
+      
+      // Restore the content
+      ctx.drawImage(tempCanvas, 0, 0);
+      
+      // Clean up
+      tempCanvas.remove();
+    }
+  }, [scale]);
+
   // Add effect to ensure canvas position matches image position
   useEffect(() => {
     if (!imageLoaded) return;
@@ -218,8 +245,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
             canvas.width = img.naturalWidth;
             canvas.height = img.naturalHeight;
             
-            // Clear the canvas
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            // Clear the canvas only on initial load
+            if (!imageLoaded) {
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
             
             // Update brush settings
             updateBrushSettings(ctx);
@@ -248,11 +277,19 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         img.onload = handleImageLoad;
       }
     }
-  }, [ctx, brushSize]);
+  }, [ctx, imageLoaded]);
 
   useEffect(() => {
     if (ctx) {
+      // Store current composite operation and line width
+      const currentComposite = ctx.globalCompositeOperation;
+      const currentLineWidth = ctx.lineWidth;
+      
       updateBrushSettings(ctx);
+      
+      // Restore the previous drawing state
+      ctx.globalCompositeOperation = currentComposite;
+      ctx.lineWidth = currentLineWidth;
     }
   }, [brushMode, brushSize]);
 
