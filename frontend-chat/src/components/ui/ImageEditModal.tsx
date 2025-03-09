@@ -143,14 +143,21 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const getScaledCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!canvasRef.current || !originalDimensions) return { x: 0, y: 0 };
     const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = originalDimensions.width / (rect.width * scale);
-    const scaleY = originalDimensions.height / (rect.height * scale);
+    const scaleX = originalDimensions.width / rect.width;
+    const scaleY = originalDimensions.height / rect.height;
     
-    // Adjust for current zoom and pan
-    const x = ((e.clientX - rect.left) * scaleX) - (position.x * scaleX);
-    const y = ((e.clientY - rect.top) * scaleY) - (position.y * scaleY);
+    // Calculate the position in the original image coordinates
+    // First, get the position relative to the canvas
+    const canvasX = e.clientX - rect.left;
+    const canvasY = e.clientY - rect.top;
     
-    return { x, y };
+    // Then adjust for zoom and pan
+    // When zoomed in, we need to account for the offset caused by panning
+    // and the scaling factor
+    const imageX = ((canvasX / scale) - (position.x / scale)) * scaleX;
+    const imageY = ((canvasY / scale) - (position.y / scale)) * scaleY;
+    
+    return { x: imageX, y: imageY };
   };
 
   const startDragging = (clientX: number, clientY: number) => {
@@ -185,21 +192,34 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
     ctx.fill();
     
-    ctx.beginPath();
-    ctx.moveTo(x, y);
     setIsDrawing(true);
+    lastPosition.current = { x, y };
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !ctx || scale > 1 || isDragging) return;
     const { x, y } = getScaledCoordinates(e);
     
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Get the distance between the current point and the last point
+    const dx = x - lastPosition.current.x;
+    const dy = y - lastPosition.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    // Calculate how many circles we need to draw to create a smooth line
+    const stepSize = brushSize / 4;
+    const numSteps = Math.max(1, Math.floor(distance / stepSize));
+    
+    // Draw circles along the path for a smooth stroke
+    for (let i = 0; i <= numSteps; i++) {
+      const pointX = lastPosition.current.x + (dx * i) / numSteps;
+      const pointY = lastPosition.current.y + (dy * i) / numSteps;
+      
+      ctx.beginPath();
+      ctx.arc(pointX, pointY, brushSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    lastPosition.current = { x, y };
   };
 
   const stopDrawing = () => {
@@ -554,16 +574,13 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     const scaleX = originalDimensions.width / rect.width;
     const scaleY = originalDimensions.height / rect.height;
 
-    // Calculate the actual position on the canvas accounting for zoom and pan
-    // First convert touch position to the zoomed canvas coordinate system
-    const canvasX = ((touchX - position.x) / scale);
-    const canvasY = ((touchY - position.y) / scale);
+    // Calculate the position in the original image coordinates
+    // First, get the position relative to the canvas
+    // Then adjust for zoom and pan
+    const imageX = ((touchX / scale) - (position.x / scale)) * scaleX;
+    const imageY = ((touchY / scale) - (position.y / scale)) * scaleY;
     
-    // Then scale to the original image dimensions
-    return {
-      x: canvasX * scaleX,
-      y: canvasY * scaleY
-    };
+    return { x: imageX, y: imageY };
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -575,9 +592,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
     ctx.fill();
     
-    ctx.beginPath();
-    ctx.moveTo(x, y);
     setIsDrawing(true);
+    lastPosition.current = { x, y };
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -585,12 +601,26 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     
     const { x, y } = getTouchCoordinates(e);
     
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
+    // Get the distance between the current point and the last point
+    const dx = x - lastPosition.current.x;
+    const dy = y - lastPosition.current.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
     
-    ctx.lineTo(x, y);
-    ctx.stroke();
+    // Calculate how many circles we need to draw to create a smooth line
+    const stepSize = brushSize / 4;
+    const numSteps = Math.max(1, Math.floor(distance / stepSize));
+    
+    // Draw circles along the path for a smooth stroke
+    for (let i = 0; i <= numSteps; i++) {
+      const pointX = lastPosition.current.x + (dx * i) / numSteps;
+      const pointY = lastPosition.current.y + (dy * i) / numSteps;
+      
+      ctx.beginPath();
+      ctx.arc(pointX, pointY, brushSize / 2, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    lastPosition.current = { x, y };
   };
 
   const stopDrawingTouch = () => {
