@@ -408,6 +408,13 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         console.log('Original image dimensions:', originalDimensions.width, 'x', originalDimensions.height);
       }
 
+      // Extract original filename without extension
+      const originalFilename = imageUrl.split('/').pop()?.split('.')[0] || 'edited';
+      
+      // Generate a unique filename with timestamp
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const editedFilename = `edited-images/${originalFilename}-${timestamp}.png`;
+
       // Send edit request to ideogram endpoint
       const editPayload = {
         imageUrl: imageUrl,
@@ -415,7 +422,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         prompt: prompt || "Maintain the original image style and composition",
         model: model,
         magic_prompt_option: 'AUTO',
-        num_images: 1
+        num_images: 1,
+        outputPath: editedFilename
       };
 
       console.log('Sending edit request with payload:', editPayload);
