@@ -53,6 +53,34 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const dragStart = useRef({ x: 0, y: 0 });
   const positionStart = useRef({ x: 0, y: 0 });
 
+  // Add effect to ensure canvas position matches image position
+  useEffect(() => {
+    if (imageLoaded && imageRef.current && canvasRef.current) {
+      const updateCanvasPosition = () => {
+        const imgRect = imageRef.current!.getBoundingClientRect();
+        const canvasStyle = canvasRef.current!.style;
+        
+        // Match the canvas position and dimensions to the image
+        canvasStyle.width = `${imgRect.width}px`;
+        canvasStyle.height = `${imgRect.height}px`;
+      };
+      
+      // Update initially
+      updateCanvasPosition();
+      
+      // Update on resize
+      const resizeObserver = new ResizeObserver(updateCanvasPosition);
+      resizeObserver.observe(imageRef.current);
+      
+      return () => {
+        if (imageRef.current) {
+          resizeObserver.unobserve(imageRef.current);
+        }
+        resizeObserver.disconnect();
+      };
+    }
+  }, [imageLoaded]);
+
   // Add effect to handle viewport meta tag
   useEffect(() => {
     if (isOpen) {
@@ -90,6 +118,48 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     e.stopPropagation();
   };
 
+  // Helper function for coordinate conversion using the image's displayed bounds
+  const getDrawingCoordinates = (clientX: number, clientY: number) => {
+    if (!imageRef.current || !originalDimensions || !canvasRef.current) return { x: 0, y: 0 };
+    
+    // Get the image's displayed dimensions and position
+    const imgRect = imageRef.current.getBoundingClientRect();
+    
+    // Calculate aspect ratios
+    const displayRatio = imgRect.width / imgRect.height;
+    const originalRatio = originalDimensions.width / originalDimensions.height;
+    
+    // Calculate the actual displayed image dimensions accounting for letterboxing
+    let displayedWidth = imgRect.width;
+    let displayedHeight = imgRect.height;
+    let offsetX = 0;
+    let offsetY = 0;
+    
+    if (displayRatio > originalRatio) {
+      // Image is wider than container
+      displayedWidth = imgRect.height * originalRatio;
+      offsetX = (imgRect.width - displayedWidth) / 2;
+    } else {
+      // Image is taller than container
+      displayedHeight = imgRect.width / originalRatio;
+      offsetY = (imgRect.height - displayedHeight) / 2;
+    }
+    
+    // Calculate the position relative to the actual displayed image area
+    const localX = clientX - (imgRect.left + offsetX);
+    const localY = clientY - (imgRect.top + offsetY);
+    
+    // Calculate the scaling factors based on the actual displayed dimensions
+    const scaleX = originalDimensions.width / displayedWidth;
+    const scaleY = originalDimensions.height / displayedHeight;
+    
+    // Map the coordinates to the canvas space
+    const canvasX = localX * scaleX;
+    const canvasY = localY * scaleY;
+    
+    return { x: canvasX, y: canvasY };
+  };
+
   const updateBrushSettings = (context: CanvasRenderingContext2D) => {
     if (brushMode === BrushMode.PAINT) {
       // Use solid black for the mask - areas to edit
@@ -117,20 +187,56 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   useEffect(() => {
     if (imageRef.current) {
       const img = imageRef.current;
-      img.onload = () => {
+      
+      const handleImageLoad = () => {
         setImageLoaded(true);
         // Store original dimensions
         setOriginalDimensions({
           width: img.naturalWidth,
           height: img.naturalHeight
         });
-        if (canvasRef.current && ctx) {
-          // Set canvas to original image dimensions
-          canvasRef.current.width = img.naturalWidth;
-          canvasRef.current.height = img.naturalHeight;
-          updateBrushSettings(ctx);
+        
+        const canvas = canvasRef.current;
+        if (canvas && ctx) {
+          const updateCanvasDimensions = () => {
+            // Get the actual displayed image dimensions
+            const imgRect = img.getBoundingClientRect();
+            const displayRatio = imgRect.width / imgRect.height;
+            const originalRatio = img.naturalWidth / img.naturalHeight;
+            
+            // Set canvas to original image dimensions
+            canvas.width = img.naturalWidth;
+            canvas.height = img.naturalHeight;
+            
+            // Clear the canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            // Update brush settings
+            updateBrushSettings(ctx);
+          };
+          
+          // Initial update
+          updateCanvasDimensions();
+          
+          // Add resize observer to handle dimension changes
+          const resizeObserver = new ResizeObserver(() => {
+            updateCanvasDimensions();
+          });
+          
+          resizeObserver.observe(img);
+          
+          return () => {
+            resizeObserver.disconnect();
+          };
         }
       };
+      
+      // Handle both immediate load and async load cases
+      if (img.complete) {
+        handleImageLoad();
+      } else {
+        img.onload = handleImageLoad;
+      }
     }
   }, [ctx, brushSize]);
 
@@ -141,23 +247,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   }, [brushMode, brushSize]);
 
   const getScaledCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !originalDimensions) return { x: 0, y: 0 };
-    const rect = canvasRef.current.getBoundingClientRect();
-    const scaleX = originalDimensions.width / rect.width;
-    const scaleY = originalDimensions.height / rect.height;
-    
-    // Calculate the position in the original image coordinates
-    // First, get the position relative to the canvas
-    const canvasX = e.clientX - rect.left;
-    const canvasY = e.clientY - rect.top;
-    
-    // Then adjust for zoom and pan
-    // When zoomed in, we need to account for the offset caused by panning
-    // and the scaling factor
-    const imageX = ((canvasX / scale) - (position.x / scale)) * scaleX;
-    const imageY = ((canvasY / scale) - (position.y / scale)) * scaleY;
-    
-    return { x: imageX, y: imageY };
+    return getDrawingCoordinates(e.clientX, e.clientY);
   };
 
   const startDragging = (clientX: number, clientY: number) => {
@@ -198,6 +288,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDrawing || !ctx || scale > 1 || isDragging) return;
+    
     const { x, y } = getScaledCoordinates(e);
     
     // Get the distance between the current point and the last point
@@ -563,24 +654,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   // Add touch event handlers
   const getTouchCoordinates = (e: React.TouchEvent<HTMLCanvasElement>) => {
-    if (!canvasRef.current || !e.touches[0] || !originalDimensions) return { x: 0, y: 0 };
-    
-    const canvas = canvasRef.current;
-    const rect = canvas.getBoundingClientRect();
-    const touchX = e.touches[0].clientX - rect.left;
-    const touchY = e.touches[0].clientY - rect.top;
-    
-    // Calculate the scaling factors between original image dimensions and displayed canvas
-    const scaleX = originalDimensions.width / rect.width;
-    const scaleY = originalDimensions.height / rect.height;
-
-    // Calculate the position in the original image coordinates
-    // First, get the position relative to the canvas
-    // Then adjust for zoom and pan
-    const imageX = ((touchX / scale) - (position.x / scale)) * scaleX;
-    const imageY = ((touchY / scale) - (position.y / scale)) * scaleY;
-    
-    return { x: imageX, y: imageY };
+    if (!e.touches[0]) return { x: 0, y: 0 };
+    return getDrawingCoordinates(e.touches[0].clientX, e.touches[0].clientY);
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
@@ -673,8 +748,13 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       lastDistance.current = distance;
       lastPosition.current = { x: centerX, y: centerY };
     } else if (e.touches.length === 1 && canvasRef.current) {
-      // Allow single-finger touch for drawing regardless of zoom level
-      startDrawingTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
+      // Only start drawing if not zoomed in
+      if (scale === 1) {
+        startDrawingTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
+      } else {
+        // Start dragging with one finger when zoomed in
+        startDragging(e.touches[0].clientX, e.touches[0].clientY);
+      }
     }
   };
 
@@ -701,17 +781,38 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           const newScale = scale * (1 + scaleFactor * (distance - lastDistance.current) / 10);
           
           // Limit scale to reasonable bounds
-          const limitedScale = Math.max(0.5, Math.min(5, newScale));
+          const limitedScale = Math.max(1, Math.min(5, newScale));
           
           // Calculate position change for panning
           const deltaX = centerX - lastPosition.current.x;
           const deltaY = centerY - lastPosition.current.y;
           
-          setScale(limitedScale);
-          setPosition(prev => ({
-            x: prev.x + deltaX,
-            y: prev.y + deltaY
-          }));
+          // Only update if scale changed
+          if (limitedScale !== scale) {
+            setScale(limitedScale);
+            
+            // Update position to keep the pinch center point fixed
+            if (imageContainerRef.current) {
+              const rect = imageContainerRef.current.getBoundingClientRect();
+              const containerCenterX = rect.left + rect.width / 2;
+              const containerCenterY = rect.top + rect.height / 2;
+              
+              // Calculate the offset from center
+              const offsetX = centerX - containerCenterX;
+              const offsetY = centerY - containerCenterY;
+              
+              // Adjust position based on scale change and offset
+              setPosition(prev => ({
+                x: prev.x + deltaX + offsetX * (limitedScale - scale) / limitedScale,
+                y: prev.y + deltaY + offsetY * (limitedScale - scale) / limitedScale
+              }));
+            } else {
+              setPosition(prev => ({
+                x: prev.x + deltaX,
+                y: prev.y + deltaY
+              }));
+            }
+          }
         }
         
         lastDistance.current = distance;
@@ -722,9 +823,14 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
         // Handle two-finger dragging when zoomed in
         handleDrag(centerX, centerY);
       }
-    } else if (e.touches.length === 1 && canvasRef.current) {
-      // Allow drawing with one finger regardless of zoom level
-      drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
+    } else if (e.touches.length === 1) {
+      if (scale === 1 && canvasRef.current && !isDragging) {
+        // Only draw if not zoomed in and not dragging
+        drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
+      } else if (scale > 1 && isDragging) {
+        // Handle one-finger dragging when zoomed in
+        handleDrag(e.touches[0].clientX, e.touches[0].clientY);
+      }
     }
   };
 
@@ -739,6 +845,19 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const resetZoom = () => {
     setScale(1);
     setPosition({ x: 0, y: 0 });
+    setIsDragging(false);
+    setIsPinching(false);
+    lastDistance.current = null;
+    
+    // Update canvas position after zoom reset
+    if (imageLoaded && imageRef.current && canvasRef.current) {
+      const imgRect = imageRef.current.getBoundingClientRect();
+      const canvasStyle = canvasRef.current.style;
+      
+      // Match the canvas position and dimensions to the image
+      canvasStyle.width = `${imgRect.width}px`;
+      canvasStyle.height = `${imgRect.height}px`;
+    }
   };
 
   // Add mouse event handlers for dragging
@@ -837,7 +956,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               style={{
                 transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
                 transformOrigin: 'center',
-                transition: isPinching ? 'none' : 'transform 0.1s ease-out'
+                transition: isPinching ? 'none' : 'transform 0.1s ease-out',
+                willChange: 'transform'
               }}
             >
               <img
@@ -845,7 +965,10 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 src={showOriginal ? imageUrl : (editedImageUrl || imageUrl)}
                 alt="Edit"
                 className="w-full h-full object-contain"
-                style={{ opacity: previewMask ? 0.5 : 1 }}
+                style={{ 
+                  opacity: previewMask ? 0.5 : 1,
+                  pointerEvents: 'none'
+                }}
               />
               <canvas
                 ref={canvasRef}
@@ -860,9 +983,11 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 className="absolute top-0 left-0 w-full h-full touch-none"
                 style={{
                   background: 'transparent',
-                  pointerEvents: imageLoaded && !isProcessing && !isPinching ? 'auto' : 'none',
+                  pointerEvents: imageLoaded && !isProcessing && !isPinching && scale === 1 ? 'auto' : 'none',
                   cursor: brushMode === BrushMode.PAINT ? 'crosshair' : 'cell',
-                  display: showOriginal ? 'block' : 'none'
+                  display: showOriginal ? 'block' : 'none',
+                  objectFit: 'contain',
+                  objectPosition: 'center'
                 }}
               />
             </div>
