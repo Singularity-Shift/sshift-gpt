@@ -55,30 +55,40 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   // Add effect to ensure canvas position matches image position
   useEffect(() => {
-    if (imageLoaded && imageRef.current && canvasRef.current) {
-      const updateCanvasPosition = () => {
-        const imgRect = imageRef.current!.getBoundingClientRect();
-        const canvasStyle = canvasRef.current!.style;
-        
-        // Match the canvas position and dimensions to the image
-        canvasStyle.width = `${imgRect.width}px`;
-        canvasStyle.height = `${imgRect.height}px`;
-      };
+    if (!imageLoaded) return;
+
+    const image = imageRef.current;
+    const canvas = canvasRef.current;
+    
+    if (!image || !canvas) return;
+
+    const updateCanvasPosition = () => {
+      // Check refs are still valid when callback is invoked
+      if (!imageRef.current || !canvasRef.current) return;
       
-      // Update initially
-      updateCanvasPosition();
+      const imgRect = imageRef.current.getBoundingClientRect();
+      const canvasStyle = canvasRef.current.style;
       
-      // Update on resize
-      const resizeObserver = new ResizeObserver(updateCanvasPosition);
-      resizeObserver.observe(imageRef.current);
-      
-      return () => {
-        if (imageRef.current) {
-          resizeObserver.unobserve(imageRef.current);
-        }
-        resizeObserver.disconnect();
-      };
-    }
+      // Match the canvas position and dimensions to the image
+      canvasStyle.width = `${imgRect.width}px`;
+      canvasStyle.height = `${imgRect.height}px`;
+    };
+    
+    // Initial update
+    updateCanvasPosition();
+    
+    // Update on resize
+    const resizeObserver = new ResizeObserver(() => {
+      // Request animation frame to ensure DOM is ready
+      requestAnimationFrame(updateCanvasPosition);
+    });
+    
+    resizeObserver.observe(image);
+    
+    // Cleanup function
+    return () => {
+      resizeObserver.disconnect();
+    };
   }, [imageLoaded]);
 
   // Add effect to handle viewport meta tag
