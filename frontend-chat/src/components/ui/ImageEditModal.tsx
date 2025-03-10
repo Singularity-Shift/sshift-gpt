@@ -52,6 +52,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const [isDragging, setIsDragging] = useState(false);
   const dragStart = useRef({ x: 0, y: 0 });
   const positionStart = useRef({ x: 0, y: 0 });
+  const touchStartTimeRef = useRef<number>(0);
+  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const isTouchIntentDetermined = useRef<boolean>(false);
 
   // Add effect to ensure canvas dimensions match image while preserving content during zoom
   useEffect(() => {
@@ -322,7 +325,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!ctx || scale > 1 || isDragging) return;
+    e.stopPropagation();
+    if (!ctx || isDragging) return;
     const { x, y } = getScaledCoordinates(e);
     
     ctx.beginPath();
@@ -334,7 +338,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
-    if (!isDrawing || !ctx || scale > 1 || isDragging) return;
+    e.stopPropagation();
+    if (!isDrawing || !ctx || isDragging) return;
     
     const { x, y } = getScaledCoordinates(e);
     
@@ -714,19 +719,56 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
     if (!ctx || isProcessing || !showOriginal || isDragging) return;
     
-    const { x, y } = getTouchCoordinates(e);
+    // Store the touch start time
+    touchStartTimeRef.current = Date.now();
+    isTouchIntentDetermined.current = false;
     
-    ctx.beginPath();
-    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-    ctx.fill();
-    
-    setIsDrawing(true);
-    lastPosition.current = { x, y };
+    // Set a timer to start drawing after a short delay
+    // This gives time to detect if a second finger is placed down
+    touchTimerRef.current = setTimeout(() => {
+      if (e.touches.length === 1) {
+        const { x, y } = getTouchCoordinates(e);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        setIsDrawing(true);
+        lastPosition.current = { x, y };
+        isTouchIntentDetermined.current = true;
+      }
+    }, 50); // 50ms delay to detect multi-touch intent
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    e.stopPropagation();
+    
+    // Clear the timer if we're moving before the timer fires
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+    
+    // Only draw if we've determined this is a drawing gesture
+    if (!isDrawing && !isTouchIntentDetermined.current) {
+      // If it's been more than 50ms since touch start and still only one finger, start drawing
+      if (Date.now() - touchStartTimeRef.current > 50 && e.touches.length === 1 && ctx) {
+        const { x, y } = getTouchCoordinates(e);
+        
+        ctx.beginPath();
+        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+        ctx.fill();
+        
+        setIsDrawing(true);
+        lastPosition.current = { x, y };
+        isTouchIntentDetermined.current = true;
+      }
+      return;
+    }
+    
     if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging) return;
     
     const { x, y } = getTouchCoordinates(e);
@@ -736,11 +778,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     const dy = y - lastPosition.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
     
-    // Calculate how many circles we need to draw to create a smooth line
     const stepSize = brushSize / 4;
     const numSteps = Math.max(1, Math.floor(distance / stepSize));
     
-    // Draw circles along the path for a smooth stroke
     for (let i = 0; i <= numSteps; i++) {
       const pointX = lastPosition.current.x + (dx * i) / numSteps;
       const pointY = lastPosition.current.y + (dy * i) / numSteps;
@@ -754,9 +794,13 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   };
 
   const stopDrawingTouch = () => {
-    if (!ctx) return;
+    if (touchTimerRef.current) {
+      clearTimeout(touchTimerRef.current);
+      touchTimerRef.current = null;
+    }
+    
     setIsDrawing(false);
-    ctx.closePath();
+    isTouchIntentDetermined.current = false;
   };
 
   // Reset zoom when image changes
@@ -767,7 +811,21 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   // Handle pinch to zoom
   const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    // Handle double tap to reset zoom
+    if ((e.target as HTMLElement).tagName === 'CANVAS') {
+      if (e.touches.length > 1) {
+        // Cancel drawing intent if a second finger is placed
+        if (touchTimerRef.current) {
+          clearTimeout(touchTimerRef.current);
+          touchTimerRef.current = null;
+        }
+        setIsDrawing(false);
+        isTouchIntentDetermined.current = false;
+      }
+      
+      // Let the canvas handle single-touch events
+      if (e.touches.length === 1) return;
+    }
+    
     const now = new Date().getTime();
     const timeSince = now - lastTapRef.current;
     
@@ -783,33 +841,27 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       e.preventDefault();
       e.stopPropagation();
       
+      // Cancel any drawing that might be in progress
+      setIsDrawing(false);
+      isTouchIntentDetermined.current = false;
+      
       const touch1 = e.touches[0];
       const touch2 = e.touches[1];
       const centerX = (touch1.clientX + touch2.clientX) / 2;
       const centerY = (touch1.clientY + touch2.clientY) / 2;
       
-      if (scale > 1) {
-        // Start dragging with two fingers when zoomed in
-        startDragging(centerX, centerY);
-      }
+      startDragging(centerX, centerY);
       
       setIsPinching(true);
       
-      // Calculate initial distance between two fingers for pinch-to-zoom
       const distance = Math.hypot(
         touch2.clientX - touch1.clientX,
         touch2.clientY - touch1.clientY
       );
       lastDistance.current = distance;
       lastPosition.current = { x: centerX, y: centerY };
-    } else if (e.touches.length === 1 && canvasRef.current) {
-      // Only start drawing if not zoomed in
-      if (scale === 1) {
-        startDrawingTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
-      } else {
-        // Start dragging with one finger when zoomed in
-        startDragging(e.touches[0].clientX, e.touches[0].clientY);
-      }
+    } else if (e.touches.length === 1 && (e.target as HTMLElement).tagName !== 'CANVAS') {
+      startDragging(e.touches[0].clientX, e.touches[0].clientY);
     }
   };
 
@@ -822,41 +874,30 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
       const touch2 = e.touches[1];
       const centerX = (touch1.clientX + touch2.clientX) / 2;
       const centerY = (touch1.clientY + touch2.clientY) / 2;
-
+      
       if (isPinching) {
-        // Handle pinch-to-zoom
         const distance = Math.hypot(
           touch2.clientX - touch1.clientX,
           touch2.clientY - touch1.clientY
         );
         
         if (lastDistance.current !== null) {
-          // Calculate scale change
-          const scaleFactor = 0.01; // Adjust sensitivity
+          const scaleFactor = 0.01;
           const newScale = scale * (1 + scaleFactor * (distance - lastDistance.current) / 10);
-          
-          // Limit scale to reasonable bounds
           const limitedScale = Math.max(1, Math.min(5, newScale));
-          
-          // Calculate position change for panning
           const deltaX = centerX - lastPosition.current.x;
           const deltaY = centerY - lastPosition.current.y;
           
-          // Only update if scale changed
           if (limitedScale !== scale) {
             setScale(limitedScale);
             
-            // Update position to keep the pinch center point fixed
             if (imageContainerRef.current) {
               const rect = imageContainerRef.current.getBoundingClientRect();
               const containerCenterX = rect.left + rect.width / 2;
               const containerCenterY = rect.top + rect.height / 2;
-              
-              // Calculate the offset from center
               const offsetX = centerX - containerCenterX;
               const offsetY = centerY - containerCenterY;
               
-              // Adjust position based on scale change and offset
               setPosition(prev => ({
                 x: prev.x + deltaX + offsetX * (limitedScale - scale) / limitedScale,
                 y: prev.y + deltaY + offsetY * (limitedScale - scale) / limitedScale
@@ -870,30 +911,34 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           }
         }
         
-        lastDistance.current = distance;
+        lastDistance.current = Math.hypot(
+          touch2.clientX - touch1.clientX,
+          touch2.clientY - touch1.clientY
+        );
         lastPosition.current = { x: centerX, y: centerY };
-      }
-      
-      if (isDragging && scale > 1) {
-        // Handle two-finger dragging when zoomed in
-        handleDrag(centerX, centerY);
+      } else if (isDragging) {
+        handleDrag(e.touches[0].clientX, e.touches[0].clientY);
       }
     } else if (e.touches.length === 1) {
-      if (scale === 1 && canvasRef.current && !isDragging) {
-        // Only draw if not zoomed in and not dragging
-        drawTouch(e as unknown as React.TouchEvent<HTMLCanvasElement>);
-      } else if (scale > 1 && isDragging) {
-        // Handle one-finger dragging when zoomed in
+      if ((e.target as HTMLElement).tagName !== 'CANVAS' && isDragging) {
         handleDrag(e.touches[0].clientX, e.touches[0].clientY);
       }
     }
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (e.touches.length < 2) {
+    if (isPinching && e.touches.length < 2) {
       setIsPinching(false);
       lastDistance.current = null;
+    }
+    
+    if (isDragging && e.touches.length === 0) {
       stopDragging();
+    }
+    
+    // If we're on the canvas and all touches are removed, stop drawing
+    if ((e.target as HTMLElement).tagName === 'CANVAS' && e.touches.length === 0) {
+      stopDrawingTouch();
     }
   };
 
@@ -917,6 +962,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   // Add mouse event handlers for dragging
   const handleMouseDown = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).tagName === 'CANVAS') return;
     if (scale > 1) {
       e.preventDefault();
       startDragging(e.clientX, e.clientY);
