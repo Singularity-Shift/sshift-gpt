@@ -21,8 +21,6 @@ import { ToolsService } from './tools.service';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
 import { IUserAuth, TrendingOptions } from '@helpers';
 import { UserAuth } from '@nest-modules';
-import { GenerateImageDto } from './dto/generate-image.dto';
-import { GetImageDto } from './dto/get-image.dto';
 import { GetSoundEffect } from './dto/get-sound-effect.dto';
 import { GetUserNftsCollectionsDto } from './dto/get-user-nfts-collections.dto';
 import { GetCryptoInfoFromCMCDto } from './dto/get-crypto-info-from-cmc.dto';
@@ -86,31 +84,6 @@ export class ToolsController {
         throw error;
       } else {
         this.logger.error('Error fetching user NFT collections:', error);
-        throw new HttpException('Internal server error', error.status);
-      }
-    }
-  }
-
-  @Post('generate-image')
-  @UseGuards(ToolsGuard('generateImage'))
-  @ApiOperation({ summary: 'Generame image by chat gpt' })
-  @ApiResponse({
-    description: 'Generated image',
-    type: GetImageDto,
-    status: 201,
-  })
-  async createImage(@Body() generateImageDto: GenerateImageDto) {
-    try {
-      const imageGenerated = await this.toolsService.generateImage(
-        generateImageDto
-      );
-
-      return GetImageDto.fromJson(imageGenerated);
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
-      } else {
-        this.logger.error('Error generating image:', error);
         throw new HttpException('Internal server error', error.status);
       }
     }
@@ -226,6 +199,13 @@ export class ToolsController {
     required: true,
     example: 'Qribbles',
   })
+  @ApiParam({
+    name: 'chain',
+    description: 'Blockchain to search on (aptos, sui, or movement)',
+    type: String,
+    required: true,
+    example: 'aptos',
+  })
   @ApiOperation({ summary: 'Search NFT collection' })
   @ApiResponse({
     description: 'NFT collection items',
@@ -233,10 +213,11 @@ export class ToolsController {
     type: GetNFTCollectionDto,
   })
   searchNFTCollection(
-    @Param('collectionName') collectionName: string
+    @Param('collectionName') collectionName: string,
+    @Query('chain') chain = 'aptos'
   ): Promise<GetNFTCollectionDto> {
     try {
-      return this.toolsService.searchNFTCollection(collectionName);
+      return this.toolsService.searchNFTCollection(collectionName, chain);
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
@@ -261,15 +242,22 @@ export class ToolsController {
     type: String,
     required: true,
     description: 'Period to filter results',
-    example: 'week',
+    example: 'days_7',
   })
   @ApiQuery({
     name: 'trending_by',
     type: String,
     required: true,
     description:
-      'Trending by (highest_price, highest_volume, highest_market_cap)',
-    example: '0x312343422f',
+      'Trending by (crypto_volume, usd_volume, trades_count, average_trade)',
+    example: 'crypto_volume',
+  })
+  @ApiQuery({
+    name: 'chain',
+    type: String,
+    required: true,
+    description: 'Blockchain to search on (aptos, sui, or movement)',
+    example: 'aptos',
   })
   @ApiOperation({ summary: 'Search trending NFTs' })
   @ApiResponse({
@@ -280,10 +268,16 @@ export class ToolsController {
   searchTrendingNFTs(
     @Query('limit', ParseIntPipe) limit = 10,
     @Query('period') period: string,
-    @Query('trending_by') trendingBy: string
+    @Query('trending_by') trendingBy: string,
+    @Query('chain') chain = 'aptos'
   ): Promise<GetTrendingNFTDto> {
     try {
-      return this.toolsService.searchTrendingNFT({ period, trendingBy, limit });
+      return this.toolsService.searchTrendingNFT({
+        period,
+        trendingBy,
+        limit,
+        chain,
+      });
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;

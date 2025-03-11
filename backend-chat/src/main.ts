@@ -20,7 +20,14 @@ async function bootstrap() {
   const globalPrefix = 'chat-api';
   app.setGlobalPrefix(globalPrefix);
   app.useGlobalPipes(new ValidationPipe());
-  app.enableCors();
+  
+  // Update CORS configuration to accept request origin
+  app.enableCors({
+    origin: true, // This accepts the Origin header from the request
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Authorization', 'Content-Type'],
+  });
 
   const packageJsonPath = path.join(__dirname, '../..', 'package.json');
   const packageJsonString = readFileSync(packageJsonPath, 'utf8');

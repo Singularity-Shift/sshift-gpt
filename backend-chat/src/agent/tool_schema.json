@@ -9,20 +9,30 @@
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "The detailed description of the image to generate."
+            "description": "The detailed description of the image to generate. You must create a perfect prompt based on the users request or description. Think about the appropiate style and size of the image based on the final prompt."
           },
-          "size": {
+          "aspect_ratio": {
             "type": "string",
-            "enum": ["1024x1024", "1792x1024", "1024x1792"],
-            "description": "The size of the generated image."
+            "enum": ["ASPECT_1_1", "ASPECT_1_3", "ASPECT_3_1", "ASPECT_3_4", "ASPECT_4_3", "ASPECT_16_9", "ASPECT_3_2", "ASPECT_2_3", "ASPECT_9_16", "ASPECT_16_10","ASPECT_10_16"],
+            "description": " The aspect ratio to use for image generation, which determines the image’s resolution. Defaults to ASPECT_1_1."
           },
-          "style": {
+          "model": {
             "type": "string",
-            "enum": ["vivid", "natural"],
-            "description": "The artistic style of the image."
+            "enum": ["V_1", "V_1_TURBO", "V_2", "V_2_TURBO"],
+            "description": "The model used to generate an image or edit one. /generate and /remix supports all model types, however, /edit is only supported for V_2 and V_2_TURBO."
+          },
+          "magic_prompt_option": {
+            "type": "string",
+            "enum": ["AUTO", "ON", "OFF"],
+            "description": "Determine if MagicPrompt should be used in generating the request or not."
+          },
+          "style_type": {
+            "type": "string",
+            "description": "The style type to generate with; this is only applicable for models V_2 and above and should not be specified for model versions V_1.",
+            "enum": ["AUTO", "GENERAL", "REALISTIC", "DESIGN", "RENDER_3D", "ANIME"]
           }
         },
-        "required": ["prompt", "size", "style"],
+        "required": ["prompt", "aspect_ratio", "model", "magic_prompt_option", "style_type"],
         "additionalProperties": false
       },
       "strict": true
@@ -32,7 +42,7 @@
     "type": "function",
     "function": {
       "name": "searchWeb",
-      "description": "Performs a web search for the given query.",
+      "description": "Performs a web search for the given query and returns text content with an array of citations. The returned content is comprehensive and should be provided in full to the user (DO NOT SUMMERIZE IT), with only additonal thoughts and commentary to the response content in your unique style.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -51,7 +61,7 @@
     "type": "function",
     "function": {
       "name": "wikiSearch",
-      "description": "Searches Wikipedia for the given query.",
+      "description": "Searches Wikipedia for the given query. Taylor the search based on the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -74,7 +84,7 @@
     "type": "function",
     "function": {
       "name": "getStockInfo",
-      "description": "Fetches financial data about specified stocks.",
+      "description": "Fetches detailed financial data about specified stocks.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -121,7 +131,7 @@
     "type": "function",
     "function": {
       "name": "queryArxiv",
-      "description": "Fetches academic papers from arXiv.",
+      "description": "Fetches academic papers from arXiv. Taylor  the search and number of results to return based on the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -154,7 +164,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingCryptos",
-      "description": "Fetches trending cryptocurrencies.",
+      "description": "Fetches trending tokens from coingecko.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -179,16 +189,21 @@
     "type": "function",
     "function": {
       "name": "searchNftCollection",
-      "description": "Searches for an NFT collection on the Aptos blockchain.",
+      "description": "Searches for an NFT collection on specified blockchain.",
       "parameters": {
         "type": "object",
         "properties": {
           "collection_name": {
             "type": "string",
             "description": "The name of the NFT collection to search for."
+          },
+          "chain": {
+            "type": "string",
+            "enum": ["aptos", "sui", "movement"],
+            "description": "The blockchain to search on."
           }
         },
-        "required": ["collection_name"],
+        "required": ["collection_name", "chain"],
         "additionalProperties": false
       },
       "strict": true
@@ -216,9 +231,14 @@
             "type": "integer",
             "enum": [5, 10, 20, 40],
             "description": "The number of results to return."
+          },
+          "chain": {
+            "type": "string",
+            "enum": ["aptos", "sui", "movement"],
+            "description": "The blockchain to fetch trending collections from."
           }
         },
-        "required": ["period", "trending_by", "limit"],
+        "required": ["period", "trending_by", "limit", "chain"],
         "additionalProperties": false
       },
       "strict": true
@@ -228,7 +248,7 @@
     "type": "function",
     "function": {
       "name": "createSoundEffect",
-      "description": "Generates a sound effect based on user input.",
+      "description": "Generates a sound effect based on a provided descriptive prompt that you must create based on the users request. Think about and use the duration and prompt influence to create a sound effect that is unique, creative, and appropiate for the users request.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -238,11 +258,11 @@
           },
           "duration_seconds": {
             "type": "number",
-            "description": "The duration of the sound in seconds."
+            "description": "The duration of the sound in seconds - minimum 0.5, maximum 20."
           },
           "prompt_influence": {
             "type": "number",
-            "description": "Controls how closely to follow the provided description."
+            "description": "Controls how closely to follow the provided description - minimum 0, maximum 1."
           }
         },
         "required": ["text", "duration_seconds", "prompt_influence"],
@@ -268,17 +288,22 @@
     "type": "function",
     "function": {
       "name": "getAllTopics",
-      "description": "Fetches all available topics from blockchain social network.",
+      "description": "Fetches all available topics from lens.",
       "parameters": {
         "type": "object",
         "properties": {
           "date": {
             "type": "string",
             "description": "The date to fetch topics with format YYYY-MM-DD."
+          },
+          "protocol": {
+            "type": "string",
+            "enum": ["Lens", "Farcaster"],
+            "description": "The protocol to fetch topics from."
           }
         },
         "additionalProperties": false,
-        "required": ["date"]
+        "required": ["date", "protocol"]
       },
       "strict": true
     }
@@ -286,8 +311,8 @@
   {
     "type": "function",
     "function": {
-      "name": "getTokensMentioned",
-      "description": "Fetches tokens more mentioned.",
+      "name": "getTokenStats",
+      "description": "Fetches token stats from lens and Farcaster.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -300,12 +325,13 @@
             "type": "integer",
             "description": "The page number for pagination."
           },
-          "date": {
+          "protocol": {
             "type": "string",
-            "description": "The date to fetch tokens mentions with format YYYY-MM-DD."
+            "enum": ["Lens", "Farcaster"],
+            "description": "The protocol to fetch stats from."
           }
         },
-        "required": ["limit", "page", "date"],
+        "required": ["limit", "page", "protocol"],
         "additionalProperties": false
       },
       "strict": true
@@ -315,7 +341,7 @@
     "type": "function",
     "function": {
       "name": "getTrendingUsers",
-      "description": "Fetches trending users based on specified query",
+      "description": "Fetches trending users from lens and Farcaster based on specified query",
       "parameters": {
         "type": "object",
         "properties": {
@@ -334,7 +360,7 @@
           },
           "protocol": {
             "type": "string",
-            "enum": ["Lens"]
+            "enum": ["Lens", "Farcaster"]
           }
         },
         "additionalProperties": false,
@@ -343,5 +369,116 @@
       },
       "strict": true
     }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getMentionsTwitter",
+      "description": "Fetches recent mentions from Twitter.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "limit": {
+            "type": "integer",
+            "description": "The number of results to return."
+          },
+          "offset": {
+            "type": "integer",
+            "description": "The offset for pagination."
+          }
+        },
+        "required": ["limit", "offset"],
+        "additionalProperties": false
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTopMentionsTwitter",
+      "description": "Fetches the most significant mentions from Twitter according to specified cashtag or ticker.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "ticker": {
+            "type": "string",
+            "description": "The ticker symbol to get mentions for. Prefixing with $ will only return cashtag matches."
+          },
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "includeAccountDetails": {
+            "type": "boolean",
+            "description": "Include account details (username, description, profile image url)."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["ticker", "timeWindow", "page", "pageSize", "includeAccountDetails"]
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getTrendingTokensTwitter",
+      "description": "Retrieve trending tokens in twitter based on highest mentions count, filtered by a minimum mention threshold over a specified time period.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "timeWindow": {
+            "type": "string",
+            "description": "Time window for mentions (eg., 1h, 24h, 7d).",
+            "enum": ["1h", "24h", "7d"]
+          },
+          "page": {
+            "type": "integer",
+            "description": "Page number for pagination."
+          },
+          "pageSize": {
+            "type": "integer",
+            "description": "Number of results per page."
+          },
+          "minMentions": {
+            "type": "integer",
+            "description": "Minimum mention count for a token to be considered."
+          }
+        },
+        "additionalProperties": false,
+        "required": ["minMentions", "timeWindow", "page", "pageSize"]
+      },
+      "strict": true
+    }
+  },
+  {
+    "type": "function",
+    "function": {
+      "name": "getOnchainActions",
+      "description": "Fetches onchain actions in aptos blockchain. eg. get balances, swap tokens Panora, transfers tokens, lend and withdraw from Joule Finance or Aries, all onchain actions with emojicoins, etc... Always describe the transaction with human-readable format",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "prompt": {
+            "type": "string",
+            "description": "The prompt for the onchain action."
+          }
+        },
+        "required": ["prompt"],
+        "additionalProperties": false
+      
+      }
+    },
+    "strict": true
   }
 ]

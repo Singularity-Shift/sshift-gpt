@@ -20,3 +20,13 @@ export enum AIModel {
   GPT4o = 'gpt-4o',
   GPT4oMini = 'gpt-4o-mini',
 }
+
+export enum Chain {
+  Aptos = 'aptos',
+  Movement = 'movement',
+}
+
+export enum Protocol {
+  Lens = 'Lens',
+  Farcaster = 'Farcaster',
+}

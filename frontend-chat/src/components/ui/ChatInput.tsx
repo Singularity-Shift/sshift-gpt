@@ -147,6 +147,17 @@ export const ChatInput: React.FC<ChatInputProps> = ({
               className="resize-none bg-white rounded-xl shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border border-gray-100 focus:ring-2 focus:ring-blue-100 focus:border-blue-200 transition-shadow"
               isExpanded={isExpanded}
               onToggleExpand={() => setIsExpanded(!isExpanded)}
+              lang="auto"
+              dir="auto"
+              spellCheck="true"
+              autoComplete="on"
+              inputMode="text"
+              translate="yes"
+              style={{
+                fontFamily: 'system-ui, -apple-system, sans-serif',
+                unicodeBidi: 'plaintext',
+              }}
+              aria-label="Message input - supports all languages and characters"
             />
           </div>
           <div className="flex items-end self-end gap-1.5 md:gap-2 flex-shrink-0">

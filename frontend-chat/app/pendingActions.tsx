@@ -30,12 +30,14 @@ export const PendingActions = () => {
         new Deserializer(Hex.fromHexString(action.transaction).toUint8Array())
       );
 
-      const signature = await signTransaction(transaction);
+      const signature = await signTransaction({
+        transactionOrPayload: transaction,
+      });
 
       await updateAction(
         action.action,
         action.targetAddress,
-        signature.bcsToHex().toString()
+        signature.authenticator.bcsToHex().toString()
       );
 
       toast({
@@ -69,11 +71,13 @@ export const PendingActions = () => {
         new Deserializer(Hex.fromHexString(action.signature).toUint8Array())
       );
 
-      const senderSignature = await signTransaction(transaction);
+      const senderSignature = await signTransaction({
+        transactionOrPayload: transaction,
+      });
 
       const tx = await submitTransaction({
         transaction,
-        senderAuthenticator: senderSignature,
+        senderAuthenticator: senderSignature.authenticator,
         additionalSignersAuthenticators: [reviewerSignature],
       });
 

@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { v4 as uuidv4 } from 'uuid';
-import { Menu } from 'lucide-react';
+import { Menu, PanelRight } from 'lucide-react';
 
 // Core Layout Components
 import { ChatSidebar } from '../../src/components/ui/ChatSidebar';
@@ -11,17 +11,21 @@ import { ChatHeader } from '../../src/components/ui/ChatHeader';
 import { ChatWindow } from '../../src/components/ui/ChatWindow';
 import { ChatInput } from '../../src/components/ui/ChatInput';
 import { Button } from '../../src/components/ui/button';
+import { RightSidebar } from '../../src/components/ui/right-sidebar';
 
 import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
 import { API_BACKEND_URL } from '../../config/env';
 import { useToast } from '../../src/components/ui/use-toast';
 import { IChat, IMessage } from '@helpers';
+import { useAgent } from '../../src/context/AgentProvider';
+import { executeAllActions } from '../../src/lib/utils';
 
 interface NewMessage {
   id: string;
   title: string;
   message: IMessage;
+  messages?: IMessage[];
   isRenaming?: boolean;
   usage?: {
     prompt_tokens: number;
@@ -46,13 +50,13 @@ export default function ChatPage() {
   );
   const [isAssistantResponding, setIsAssistantResponding] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [isRightSidebarOpen, setIsRightSidebarOpen] = useState(false);
   const { jwt } = useAuth();
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const [isPaginating, setIsPaginating] = useState(false);
   const { toast } = useToast();
-
+  const { agent } = useAgent();
   const lastMessageRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -136,7 +140,7 @@ export default function ChatPage() {
 
           console.log('Chat select messages response:', messagesResponse.data);
 
-          const { messages, total } = messagesResponse.data;
+          const { messages } = messagesResponse.data;
           const hasMoreMessages = messages.length === 10;
 
           setChats((prevChats) =>
@@ -188,6 +192,8 @@ export default function ChatPage() {
         timestamp: Date.now(),
       };
 
+      console.log('[handleSendMessage] Before updating chat title');
+
       setChats((prevChats) => {
         const currentTime = Date.now();
         return prevChats.map((chat) => {
@@ -197,6 +203,22 @@ export default function ChatPage() {
               updatedMessages.length === 1
                 ? inputMessage.split(' ').slice(0, 5).join(' ') + '...'
                 : chat.title;
+
+            console.log('[handleSendMessage] Chat title update:', {
+              chatId: chat.id,
+              oldTitle: chat.title,
+              newTitle: updatedTitle,
+              isFirstMessage: updatedMessages.length === 1,
+            });
+
+            // If this is the first message, persist the auto-generated title
+            if (updatedMessages.length === 1) {
+              console.log(
+                '[handleSendMessage] First message - calling handleRenameChat'
+              );
+              handleRenameChat(chat.id, updatedTitle, true);
+            }
+
             return {
               ...chat,
               messages: updatedMessages,
@@ -217,6 +239,8 @@ export default function ChatPage() {
         model: selectedModel,
         message: userMessage,
       };
+
+      delete newMessage.messages;
 
       try {
         const response = await fetch(`${API_BACKEND_URL}/agent`, {
@@ -269,17 +293,9 @@ export default function ChatPage() {
                 } else if (parsedData.tool_call) {
                   setStatus('tool-calling');
                 } else if (parsedData.tool_response) {
-                  if (parsedData.tool_response.name === 'generateImage') {
-                    assistantMessage.images = [
-                      ...(assistantMessage.images || []),
-                      parsedData.tool_response.result.image_url,
-                    ];
-                    updateChat(assistantMessage);
-                  } else if (parsedData.tool_response.name === 'searchWeb') {
-                    assistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                    updateChat(assistantMessage);
-                  }
-                  setStatus('typing');
+                  const { actions } = parsedData.tool_response;
+
+                  executeAllActions(actions, agent);
                 } else if (parsedData.final_message) {
                   assistantMessage = {
                     ...assistantMessage,
@@ -323,8 +339,18 @@ export default function ChatPage() {
     scrollToBottom();
   };
 
-  const handleRenameChat = async (chatId: string, newTitle: string) => {
+  const handleRenameChat = async (
+    chatId: string,
+    newTitle: string,
+    isAutoRename = false
+  ) => {
     try {
+      console.log('[handleRenameChat] Starting rename operation:', {
+        chatId,
+        newTitle,
+        isAutoRename,
+      });
+
       await backend.patch(
         `/history/${chatId}/${newTitle}`,
         {},
@@ -335,18 +361,27 @@ export default function ChatPage() {
         }
       );
 
+      console.log('[handleRenameChat] Backend request successful');
+
       setChats((prevChats) =>
         prevChats.map((chat) =>
           chat.id === chatId ? { ...chat, title: newTitle } : chat
         )
       );
 
-      toast({
-        variant: 'default',
-        title: 'Chat renamed',
-        description: 'Chat title has been updated.',
-      });
+      console.log('[handleRenameChat] State updated successfully');
+
+      // Only show toast for manual renames
+      if (!isAutoRename) {
+        toast({
+          variant: 'default',
+          title: 'Chat renamed',
+          description: 'Chat title has been updated.',
+        });
+      }
     } catch (error) {
+      console.error('[handleRenameChat] Error:', error);
+      // Still show error toast even for auto-rename since it indicates a problem
       toast({
         variant: 'destructive',
         title: 'Error renaming chat',
@@ -403,7 +438,9 @@ export default function ChatPage() {
       const currentChat = chats.find((chat) => chat.id === currentChatId);
       if (!currentChat) return;
 
-      const messageIndex = currentChat.messages.findIndex((msg) => msg.id === assistantMessage.id);
+      const messageIndex = currentChat.messages.findIndex(
+        (msg) => msg.id === assistantMessage.id
+      );
       if (messageIndex === -1) return;
 
       const userMessageIndex = messageIndex - 1;
@@ -425,6 +462,8 @@ export default function ChatPage() {
         model: selectedModel,
         message: userMessageForRegeneration,
       };
+
+      delete newMessage.messages;
 
       // Call the API with formatted messages
       const response = await fetch(`${API_BACKEND_URL}/agent`, {
@@ -474,17 +513,9 @@ export default function ChatPage() {
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
               } else if (parsedData.tool_response) {
-                if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.images = [
-                    ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url,
-                  ];
-                  updateChat(newAssistantMessage);
-                } else if (parsedData.tool_response.name === 'searchWeb') {
-                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                  updateChat(newAssistantMessage);
-                }
-                setStatus('typing');
+                const { actions } = parsedData.tool_response;
+
+                executeAllActions(actions, agent);
               } else if (parsedData.final_message) {
                 newAssistantMessage = {
                   ...newAssistantMessage,
@@ -533,6 +564,7 @@ export default function ChatPage() {
 
     (async () => {
       try {
+        console.log('[Initial Load] Starting to load chats');
         // First get the chat list
         const chatResponse = await backend.get('/history', {
           headers: {
@@ -541,6 +573,15 @@ export default function ChatPage() {
         });
 
         const savedChats = chatResponse.data;
+        console.log('[Initial Load] Loaded chats:', {
+          chatCount: savedChats?.chats?.length,
+          chats: savedChats?.chats?.map((c: IChat) => ({
+            id: c.id,
+            title: c.title,
+            messageCount: c.messages?.length,
+          })),
+        });
+
         if (savedChats && savedChats.chats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
           const mostRecentChat = savedChats.chats.reduce(
@@ -549,6 +590,12 @@ export default function ChatPage() {
                 ? current
                 : latest
           );
+
+          console.log('[Initial Load] Most recent chat:', {
+            id: mostRecentChat.id,
+            title: mostRecentChat.title,
+            lastUpdated: mostRecentChat.lastUpdated,
+          });
 
           // Get initial messages for the most recent chat
           const messagesResponse = await backend.get(
@@ -567,7 +614,7 @@ export default function ChatPage() {
           console.log('Initial messages response:', messagesResponse.data);
 
           // Check if there are more messages based on the total count
-          const { messages, total } = messagesResponse.data;
+          const { messages } = messagesResponse.data;
           const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
 
           // Update the most recent chat with only the first 10 messages
@@ -633,6 +680,8 @@ export default function ChatPage() {
         message: { ...editedMessage, content: newContent },
         model: selectedModel,
       };
+
+      delete newMessage.messages;
 
       // Regenerate the conversation from this point forward
       setStatus('thinking');
@@ -711,16 +760,9 @@ export default function ChatPage() {
                 newAssistantMessage.content += parsedData.content;
                 setStatus('typing');
               } else if (parsedData.tool_response) {
-                if (parsedData.tool_response.name === 'generateImage') {
-                  newAssistantMessage.images = [
-                    ...(newAssistantMessage.images || []),
-                    parsedData.tool_response.result.image_url,
-                  ];
-                  setStatus('tool-calling');
-                } else if (parsedData.tool_response.name === 'searchWeb') {
-                  newAssistantMessage.content += `\n\nWeb search result:\n${parsedData.tool_response.result}\n\n`;
-                  setStatus('tool-calling');
-                }
+                const { actions } = parsedData.tool_response;
+
+                executeAllActions(actions, agent);
               } else if (parsedData.tool_call) {
                 setStatus('tool-calling');
               }
@@ -809,7 +851,6 @@ export default function ChatPage() {
       currentChatId
     );
     setIsLoadingMore(true);
-    setIsPaginating(true);
     try {
       const nextPage = currentPage + 1;
       console.log('[LoadMore] Requesting page:', nextPage);
@@ -843,7 +884,7 @@ export default function ChatPage() {
         return;
       }
 
-      const { messages: olderMessages, total, totalPages } = response.data;
+      const { messages: olderMessages, totalPages } = response.data;
 
       if (olderMessages && olderMessages.length > 0) {
         console.log(
@@ -886,7 +927,6 @@ export default function ChatPage() {
       setHasMore(false);
     } finally {
       setIsLoadingMore(false);
-      setIsPaginating(false);
     }
   };
 
@@ -909,12 +949,14 @@ export default function ChatPage() {
           onNewChat={() => handleNewChat()}
           onNavigateToDashboard={() => router.push('/dashboard')}
           currentChatModel={currentChat?.model || null}
+          onToggleMiniApps={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
+          setIsSidebarOpen={setIsSidebarOpen}
         />
         <Button
           variant="ghost"
           size="sm"
           onClick={() => setIsSidebarOpen(true)}
-          className="md:hidden absolute top-[14px] left-2 z-40"
+          className="min-[1134px]:hidden absolute top-[20px] left-2 z-40"
         >
           <Menu className="h-5 w-5" />
         </Button>
@@ -939,6 +981,10 @@ export default function ChatPage() {
           />
         </div>
       </div>
+      <RightSidebar 
+        isOpen={isRightSidebarOpen}
+        onClose={() => setIsRightSidebarOpen(false)}
+      />
     </div>
   );
 }

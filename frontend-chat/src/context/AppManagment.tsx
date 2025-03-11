@@ -11,12 +11,15 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { IMoveBotFields, ISubscription } from '@helpers';
-import { aptosClient } from '../lib/utils';
-import { QRIBBLE_NFT_ADDRESS, SSHIFT_RECORD_ADDRESS } from '../../config/env';
+import { Chain, IMoveBotFields, ISubscription } from '@helpers';
+import {
+  QRIBBLE_NFT_ADDRESS,
+  QRIBBLE_NFT_MOVE_ADDRESS,
+  SSHIFT_RECORD_ADDRESS,
+} from '../../config/env';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { FeesABI, SubscriptionABI } from '@aptos';
 import { useAuth } from './AuthProvider';
+import { useChain } from './ChainProvider';
 
 export type AppManagmenContextProp = {
   isAdmin: boolean;
@@ -68,24 +71,25 @@ export const AppManagementProvider = ({
   const [nftAddressesRequiredOwned, setNftAddressesRequiredOwned] = useState<
     string[]
   >([]);
+
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currency, setCurrency] = useState<`0x${string}` | null>(null);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
 
-  const { abi } = useAbiClient();
+  const { abi, feesABI, subscriptionABI } = useAbiClient();
   const { connected } = useWallet();
   const { toast } = useToast();
-  const aptos = aptosClient();
   const { client } = useWalletClient();
   const { walletAddress } = useAuth();
+  const { aptos, chain } = useChain();
 
   useEffect(() => {
     if (!connected) return;
 
     void (async () => {
       const hasSubscriptionToClaimResult = await abi
-        ?.useABI(SubscriptionABI)
+        ?.useABI(subscriptionABI)
         .view.has_subscription_to_claim({
           typeArguments: [],
           functionArguments: [walletAddress as `0x${string}`],
@@ -101,7 +105,7 @@ export const AppManagementProvider = ({
       let adminResult;
       let pendingAdminResult;
       try {
-        adminResult = await abi?.useABI(FeesABI).view.get_admin({
+        adminResult = await abi?.useABI(feesABI).view.get_admin({
           typeArguments: [],
           functionArguments: [],
         });
@@ -113,7 +117,7 @@ export const AppManagementProvider = ({
         });
       }
       try {
-        pendingAdminResult = await abi?.useABI(FeesABI).view.get_pending_admin({
+        pendingAdminResult = await abi?.useABI(feesABI).view.get_pending_admin({
           typeArguments: [],
           functionArguments: [],
         });
@@ -135,7 +139,7 @@ export const AppManagementProvider = ({
     (async () => {
       let collectorResult;
       try {
-        collectorResult = await abi?.useABI(FeesABI).view.get_collectors({
+        collectorResult = await abi?.useABI(feesABI).view.get_collectors({
           typeArguments: [],
           functionArguments: [],
         });
@@ -159,7 +163,7 @@ export const AppManagementProvider = ({
       let reviewerResult;
       let pendingReviewerResult;
       try {
-        reviewerResult = await abi?.useABI(FeesABI).view.get_reviewer({
+        reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],
         });
@@ -173,7 +177,7 @@ export const AppManagementProvider = ({
 
       try {
         pendingReviewerResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_pending_reviewer({
             typeArguments: [],
             functionArguments: [],
@@ -196,7 +200,7 @@ export const AppManagementProvider = ({
     void (async () => {
       try {
         const resourceAccountResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_resource_account_address({
             typeArguments: [],
             functionArguments: [],
@@ -215,7 +219,7 @@ export const AppManagementProvider = ({
 
       try {
         const currencyResult = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.get_currency_addr({
             typeArguments: [],
             functionArguments: [],
@@ -235,38 +239,17 @@ export const AppManagementProvider = ({
   }, [abi]);
 
   useEffect(() => {
-    if (!walletAddress) return;
+    if (!walletAddress || !aptos) return;
 
     void (async () => {
       try {
+        let nftAddresses: string[] = [];
         const nftsHolding = await aptos.getAccountOwnedTokens({
           accountAddress: walletAddress as string,
         });
 
-        const moveBotFieldsResult = await abi
-          ?.useABI(SubscriptionABI)
-          .view.get_move_bot_fields({
-            typeArguments: [],
-            functionArguments: [],
-          });
-
-        const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
-
-        const movebotsHolding = nftsHolding.filter(
-          (nft) =>
-            nft.current_token_data?.token_name === moveBotFields.token_name &&
-            nft.current_token_data.current_collection?.creator_address ===
-              moveBotFields.token_creator &&
-            nft.property_version_v1?.toString() ===
-              moveBotFields.token_property_version &&
-            nft.current_token_data?.current_collection?.collection_name ===
-              moveBotFields.token_collection
-        );
-
-        setMoveBotsOwned(movebotsHolding.length || 0);
-
         const configResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.get_subscription_config({
             typeArguments: [],
             functionArguments: [],
@@ -274,8 +257,53 @@ export const AppManagementProvider = ({
 
         const config = configResult?.[0] as ISubscription;
 
+        if (chain === Chain.Aptos) {
+          const moveBotFieldsResult = await abi
+            ?.useABI(subscriptionABI)
+            .view.get_move_bot_fields({
+              typeArguments: [],
+              functionArguments: [],
+            });
+
+          const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+
+          const movebotsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.token_name === moveBotFields.token_name &&
+              nft.current_token_data.current_collection?.creator_address ===
+                moveBotFields.token_creator &&
+              nft.property_version_v1?.toString() ===
+                moveBotFields.token_property_version &&
+              nft.current_token_data?.current_collection?.collection_name ===
+                moveBotFields.token_collection
+          );
+
+          setMoveBotsOwned(movebotsHolding.length || 0);
+
+          const sshiftRecordsNFTCollection = config.collections_discount.find(
+            (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
+          );
+
+          const sshiftRecordsHolding = nftsHolding.filter(
+            (nft) =>
+              nft.current_token_data?.collection_id ===
+              sshiftRecordsNFTCollection?.collection_addr
+          );
+
+          setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
+          nftAddresses = [
+            ...nftAddresses,
+            ...movebotsHolding.map((nft) => nft.token_data_id),
+          ];
+        }
+
+        const qribbleNFTCollectionAddress =
+          chain === Chain.Aptos
+            ? QRIBBLE_NFT_ADDRESS
+            : QRIBBLE_NFT_MOVE_ADDRESS;
+
         const qribbleNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === QRIBBLE_NFT_ADDRESS
+          (c) => c.collection_addr === qribbleNFTCollectionAddress
         );
 
         const qribbleNFTsHolding = nftsHolding.filter(
@@ -286,24 +314,15 @@ export const AppManagementProvider = ({
 
         setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
 
-        const sshiftRecordsNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
-        );
-
-        const sshiftRecordsHolding = nftsHolding.filter(
-          (nft) =>
-            nft.current_token_data?.collection_id ===
-            sshiftRecordsNFTCollection?.collection_addr
-        );
-
-        setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
-        setNftAddressesRequiredOwned([
+        nftAddresses = [
+          ...nftAddresses,
           ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
-          ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
-        ]);
+        ];
+
+        setNftAddressesRequiredOwned([...nftAddresses]);
 
         const hasSubscriptionActiveResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.has_subscription_active({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
@@ -316,7 +335,7 @@ export const AppManagementProvider = ({
 
         if (hasSubscriptionActive) {
           const subscribtionResult = await abi
-            ?.useABI(SubscriptionABI)
+            ?.useABI(subscriptionABI)
             .view.get_plan({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],
@@ -345,27 +364,26 @@ export const AppManagementProvider = ({
         });
       }
     })();
-  }, [connected, walletAddress, abi, hasSubscriptionToClaim]);
+  }, [connected, walletAddress, abi, hasSubscriptionToClaim, aptos]);
 
   const onSubscribe = async (days: number) => {
     try {
       const duration = days * 24 * 60 * 60;
 
-      const tx = await client?.useABI(SubscriptionABI).buy_plan({
+      const tx = await client?.useABI(subscriptionABI).buy_plan({
         type_arguments: [],
         arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
       });
 
       // Wait for transaction to be confirmed
-      const committedTransactionResponse =
-        await aptosClient().waitForTransaction({
-          transactionHash: tx?.hash as string,
-        });
+      const committedTransactionResponse = await aptos.waitForTransaction({
+        transactionHash: tx?.hash as string,
+      });
 
       if (committedTransactionResponse.success) {
         // Check subscription status after successful purchase
         const hasSubscriptionActiveResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.has_subscription_active({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
@@ -377,7 +395,7 @@ export const AppManagementProvider = ({
 
         if (hasSubscriptionActive) {
           const subscriptionResult = await abi
-            ?.useABI(SubscriptionABI)
+            ?.useABI(subscriptionABI)
             .view.get_plan({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],

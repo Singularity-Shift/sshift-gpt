@@ -2,12 +2,13 @@ import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { TopicDto } from './dto/topic.dto';
 import { firstValueFrom } from 'rxjs';
-import { ConfigService } from '../../../lib/nest-modules/src/config/config.service';
-import { TokenDto } from './dto/token.dto';
+import { ConfigService } from '@nest-modules';
 import { CategoryDto } from './dto/category.dto';
 import { PublicationDto } from './dto/publication.dto';
 import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
+import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
+import { Protocol } from '@helpers';
 
 @Injectable()
 export class HandleFinderService {
@@ -24,7 +25,7 @@ export class HandleFinderService {
     this.apiKey = this.configService.get('handleFinder.apiKey');
   }
 
-  async findAllTopics(date: string): Promise<TopicDto[]> {
+  async findAllTopics(date: string, protocol: Protocol): Promise<TopicDto[]> {
     const response = await firstValueFrom(
       await this.httpService.get<TopicDto[]>(`${this.url}/llm/topics`, {
         headers: {
@@ -33,6 +34,7 @@ export class HandleFinderService {
         },
         params: {
           date,
+          protocol,
         },
       })
     );
@@ -40,23 +42,22 @@ export class HandleFinderService {
     return response.data;
   }
 
-  async findTokensMentioned(
+  async findTrendingTokenStats(
     limit: number,
     page: number,
-    date: string
-  ): Promise<TokenDto[]> {
+    protocol: Protocol
+  ): Promise<TrendingTokensStatsDto[]> {
     const response = await firstValueFrom(
-      await this.httpService.get<TokenDto[]>(
-        `${this.url}/llm/tokens/mentions`,
+      await this.httpService.get<TrendingTokensStatsDto[]>(
+        `${this.url}/trending/token-stats`,
         {
           headers: {
             ApiKey: this.apiKey,
-            Address: this.address,
           },
           params: {
             limit,
             page,
-            date,
+            protocol,
           },
         }
       )

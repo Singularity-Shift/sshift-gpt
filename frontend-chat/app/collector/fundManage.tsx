@@ -2,14 +2,13 @@
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { useEffect, useState } from 'react';
-import { FeesABI } from '@aptos';
 import { useToast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { aptosClient } from '../../src/lib/utils';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { convertAmountFromOnChainToHumanReadable } from '@aptos-labs/ts-sdk';
 import { COIN_DECIMALS } from '../../config/env';
 import { Button } from '../../src/components/ui/button';
+import { useChain } from '../../src/context/ChainProvider';
 
 export const FundManage = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -17,20 +16,20 @@ export const FundManage = () => {
   const [feesToClaim, setFeesToClaim] = useState(0);
   const [symbol, setSymbol] = useState('');
   const { account } = useWallet();
-  const { abi } = useAbiClient();
+  const { abi, feesABI } = useAbiClient();
   const { toast } = useToast();
   const { client } = useWalletClient();
-  const aptos = aptosClient();
+  const { aptos } = useChain();
   const { resourceAccount, currency } = useAppManagment();
 
   useEffect(() => {
     void (async () => {
       try {
         const responseIsSubscribed = await abi
-          ?.useABI(FeesABI)
+          ?.useABI(feesABI)
           .view.check_collector_object({
             typeArguments: [],
-            functionArguments: [account?.address as `0x${string}`],
+            functionArguments: [account?.address.toString() as `0x${string}`],
           });
 
         setIsSubscribed(Boolean(responseIsSubscribed?.[0]));
@@ -67,7 +66,7 @@ export const FundManage = () => {
 
         try {
           const balanceResult = await abi
-            ?.useABI(FeesABI)
+            ?.useABI(feesABI)
             .view.get_resource_balance({
               typeArguments: [],
               functionArguments: [],
@@ -85,10 +84,10 @@ export const FundManage = () => {
           }
 
           const feesBalanceResult = await abi
-            ?.useABI(FeesABI)
+            ?.useABI(feesABI)
             .view.get_balance_to_claim({
               typeArguments: [],
-              functionArguments: [account?.address as `0x${string}`],
+              functionArguments: [account?.address.toString() as `0x${string}`],
             });
 
           const feesBalance = feesBalanceResult?.[0];
@@ -112,7 +111,7 @@ export const FundManage = () => {
 
   const onSubscribe = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).create_collector_object({
+      const tx = await client?.useABI(feesABI).create_collector_object({
         type_arguments: [],
         arguments: [],
       });
@@ -142,7 +141,7 @@ export const FundManage = () => {
 
   const onClaim = async () => {
     try {
-      const tx = await client?.useABI(FeesABI).claim_salary({
+      const tx = await client?.useABI(feesABI).claim_salary({
         type_arguments: [],
         arguments: [],
       });

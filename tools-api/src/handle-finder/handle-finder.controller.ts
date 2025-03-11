@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Post, Query } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import { HandleFinderService } from './handle-finder.service';
 import {
   ApiBearerAuth,
@@ -7,17 +7,20 @@ import {
   ApiResponse,
 } from '@nestjs/swagger';
 import { TopicDto } from './dto/topic.dto';
-import { TokenDto } from './dto/token.dto';
 import { GetCategoryDto } from './dto/get-category.dto';
 import { PublicationDto } from './dto/publication.dto';
 import { UserTrendingDto } from './dto/user-trending.dto';
 import { GetTrendingDto } from './dto/get-trending.dto';
 import { TrendingDto } from './dto/trending.dto';
+import { TrendingTokensStatsDto } from './dto/trending-tokens-stats.dto';
+import { ToolsGuard } from '../tools/tools.guard';
+import { Protocol } from '@helpers';
 
 @Controller('handle-finder')
 @ApiBearerAuth('Authorization')
 @ApiResponse({ status: 401, description: 'Unauthorized' })
 @ApiResponse({ status: 500, description: 'Internal server error' })
+@UseGuards(ToolsGuard('handle-finder'))
 export class HandleFinderController {
   constructor(private readonly handleFinderService: HandleFinderService) {}
 
@@ -28,26 +31,39 @@ export class HandleFinderController {
     type: [TopicDto],
     status: 200,
   })
-  async findAllTopics(@Query('date') date: string): Promise<TopicDto[]> {
-    return this.handleFinderService.findAllTopics(date);
+  async findAllTopics(
+    @Query('date') date: string,
+    @Query('protocol') protocol: Protocol
+  ): Promise<TopicDto[]> {
+    return this.handleFinderService.findAllTopics(date, protocol);
   }
 
-  @Get('tokens/mentions')
+  @Get('tokens/stats')
   @ApiQuery({ name: 'limit', type: 'number', required: false, example: 15 })
   @ApiQuery({ name: 'page', type: 'number', required: false, example: 1 })
-  @ApiQuery({ name: 'date', type: Date, required: true })
+  @ApiQuery({
+    name: 'protocol',
+    type: 'enum',
+    enum: Protocol,
+    required: true,
+    description: 'Social fi protocol',
+  })
   @ApiOperation({ summary: 'Get token' })
   @ApiResponse({
     description: 'find tokens mentioned',
-    type: [TokenDto],
+    type: [TrendingTokensStatsDto],
     status: 200,
   })
-  async findTokensMentioned(
+  async findTrendingTokenStats(
     @Query('limit') limit = 15,
     @Query('page') page = 1,
-    @Query('date') date: string
-  ): Promise<TokenDto[]> {
-    return this.handleFinderService.findTokensMentioned(limit, page, date);
+    @Query('protocol') protocol: Protocol
+  ): Promise<TrendingTokensStatsDto[]> {
+    return this.handleFinderService.findTrendingTokenStats(
+      limit,
+      page,
+      protocol
+    );
   }
 
   @Get('categories')

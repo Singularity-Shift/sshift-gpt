@@ -1,12 +1,15 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
-import { MultisignAction } from './enums';
+import { Chain, MultisignAction } from './enums';
+import { ToolsNameList } from 'move-agent-kit-fullstack';
+import { PublicKey } from '@aptos-labs/ts-sdk';
 
 export interface IAuth {
   message: string;
   address: string;
-  publicKey: string;
-  signature: string;
+  chain: Chain;
+  publicKey: string | PublicKey;
+  signature: unknown;
 }
 
 export interface IJwt {
@@ -16,6 +19,7 @@ export interface IJwt {
 export interface IUserAuth {
   auth: string;
   address: string;
+  chain: Chain;
   config: IUserConfig;
 }
 
@@ -267,6 +271,7 @@ export interface ITicker {
 
 export interface IJWTUser {
   account: string;
+  chain: Chain;
   token: string;
 }
 
@@ -296,4 +301,9 @@ export interface IChat {
   createdAt?: number;
   lastUpdated?: number;
   model: string;
+}
+
+export interface IActionFunction {
+  name: ToolsNameList;
+  arguments: string;
 }

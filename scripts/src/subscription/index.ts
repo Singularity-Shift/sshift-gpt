@@ -2,6 +2,10 @@ import 'dotenv/config';
 import fs from 'fs';
 import { parseDocument } from 'yaml';
 import * as cli from '@aptos-labs/ts-sdk/dist/common/cli/index.js';
+import { Network } from '@aptos-labs/ts-sdk';
+
+const APTOS_FOLDER_PATH =
+  process.env.APTOS_FOLDER_PATH || 'contracts/sshift_dao/aptos';
 
 const getConfig = () => {
   if (!process.env.NEXT_PUBLIC_MODULE_ADDRESS) {
@@ -33,7 +37,7 @@ export const compile = async () => {
   const { accountAddress } = getConfig();
 
   await move.compile({
-    packageDirectoryPath: 'contracts/sshift_dao',
+    packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
@@ -44,15 +48,18 @@ export const compile = async () => {
 export const publish = async () => {
   const move = new cli.Move();
 
+  move.init({
+    network: Network.CUSTOM,
+  });
+
   const { accountAddress, profile, config } = getConfig();
 
   await move.publish({
-    packageDirectoryPath: 'contracts/sshift_dao',
+    packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
       sshift_dao_addr: accountAddress,
     },
     extraArguments: [
-      '--move-2',
       '--sender-account',
       accountAddress,
       '--private-key',
@@ -67,7 +74,7 @@ export const test = async () => {
   const move = new cli.Move();
 
   await move.test({
-    packageDirectoryPath: 'contracts/sshift_dao',
+    packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
       sshift_dao_addr: '0x100' as any,
     },

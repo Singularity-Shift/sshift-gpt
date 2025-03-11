@@ -11,6 +11,9 @@ import {
 } from '@nest-modules';
 import { MongooseModule } from '@nestjs/mongoose';
 import { APP_GUARD } from '@nestjs/core';
+import { ElfaModule } from './elfa/elfa.module';
+import { IdeogramModule } from './ideogram/ideogram.module';
+import { AptosOnchainModule } from './aptos-onchain/aptos-onchain.module';
 
 @Module({
   imports: [
@@ -29,6 +32,9 @@ import { APP_GUARD } from '@nestjs/core';
     StorageModule,
     ConfigModule,
     UserModule,
+    ElfaModule,
+    IdeogramModule,
+    AptosOnchainModule,
   ],
   controllers: [],
   providers: [

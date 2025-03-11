@@ -2,13 +2,13 @@
 
 import { useAbiClient } from '../../src/context/AbiProvider';
 import { useWalletClient } from '@thalalabs/surf/hooks';
-import { SubscriptionABI } from '@aptos';
+import { SubscriptionABI, SubscriptionMoveABI } from '@aptos';
 import { useEffect, useState } from 'react';
-import { IMoveBotFields, ISubscription } from '@helpers';
+import { Chain, IMoveBotFields, ISubscription } from '@helpers';
 import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { CollectionDiscoount } from './collectionsDiscount';
 import { toast } from '../../src/components/ui/use-toast';
-import { aptosClient, calculatePrice } from '../../src/lib/utils';
+import { calculatePrice } from '../../src/lib/utils';
 import { truncateAddress, useWallet } from '@aptos-labs/wallet-adapter-react';
 import {
   AccountAddress,
@@ -18,13 +18,14 @@ import {
 import { COIN_DECIMALS } from '../../config/env';
 import { ConfirmButton } from '../../src/components/ui/confirm-button';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
+import { useChain } from '../../src/context/ChainProvider';
 
 export const Subscription = () => {
-  const { abi } = useAbiClient();
+  const { abi, subscriptionABI } = useAbiClient();
   const { client } = useWalletClient();
   const { account } = useWallet();
   const [isLoading, setIsLoading] = useState(false);
-  const aptos = aptosClient();
+  const { aptos, chain } = useChain();
 
   const [subscription, setSubscription] = useState<ISubscription>({
     collections_discount: [],
@@ -37,15 +38,15 @@ export const Subscription = () => {
   });
 
   const disableSubmitCoinfigButton =
-    !subscription.token_creator ||
-    !subscription.token_collection ||
-    !subscription.token_name ||
-    subscription.token_property_version === undefined ||
-    subscription.token_property_version < 0 ||
+    (chain === Chain.Aptos &&
+      (!subscription.token_creator ||
+        !subscription.token_collection ||
+        !subscription.token_name ||
+        subscription.token_property_version === undefined ||
+        subscription.token_property_version < 0)) ||
     subscription.max_days <= 0 ||
     !subscription.collections_discount?.[0]?.collection_addr ||
     subscription.collections_discount?.some((c) => c.discount_per_day <= 0);
-
   const onAddCollectionDiscount = () => {
     setSubscription({
       ...subscription,
@@ -104,6 +105,7 @@ export const Subscription = () => {
   };
 
   const onChangeSubscriptionConfig = async () => {
+    let response;
     try {
       setIsLoading(true);
 
@@ -118,28 +120,43 @@ export const Subscription = () => {
         );
       }
 
-      const response = await client?.useABI(SubscriptionABI).set_plan({
-        type_arguments: [],
-        arguments: [
-          prices,
-          subscription.collections_discount.map((c) => c.collection_addr),
-          subscription.collections_discount.map((c) =>
-            convertAmountFromHumanReadableToOnChain(
-              c.discount_per_day,
-              COIN_DECIMALS
-            )
-          ),
-          subscription.token_creator as `0x${string}`,
-          subscription.token_collection,
-          subscription.token_name,
-          subscription.token_property_version,
-        ],
-      });
-
-      const committedTransactionResponse =
-        await aptosClient().waitForTransaction({
-          transactionHash: response?.hash as string,
+      if (chain === Chain.Aptos) {
+        response = await client?.useABI(SubscriptionABI).set_plan({
+          type_arguments: [],
+          arguments: [
+            prices,
+            subscription.collections_discount.map((c) => c.collection_addr),
+            subscription.collections_discount.map((c) =>
+              convertAmountFromHumanReadableToOnChain(
+                c.discount_per_day,
+                COIN_DECIMALS
+              )
+            ),
+            subscription.token_creator as `0x${string}`,
+            subscription.token_collection,
+            subscription.token_name,
+            subscription.token_property_version,
+          ],
         });
+      } else {
+        response = await client?.useABI(SubscriptionMoveABI).set_plan({
+          type_arguments: [],
+          arguments: [
+            prices,
+            subscription.collections_discount.map((c) => c.collection_addr),
+            subscription.collections_discount.map((c) =>
+              convertAmountFromHumanReadableToOnChain(
+                c.discount_per_day,
+                COIN_DECIMALS
+              )
+            ),
+          ],
+        });
+      }
+
+      const committedTransactionResponse = await aptos.waitForTransaction({
+        transactionHash: response?.hash as string,
+      });
 
       if (committedTransactionResponse.success) {
         toast({
@@ -161,7 +178,9 @@ export const Subscription = () => {
 
   const getNfts = async () => {
     const nfts = await aptos.account.getAccountOwnedTokens({
-      accountAddress: AccountAddress.fromString(account?.address as string),
+      accountAddress: AccountAddress.fromString(
+        account?.address.toString() as string
+      ),
     });
 
     console.log(nfts);
@@ -169,7 +188,9 @@ export const Subscription = () => {
 
   const getCoins = async () => {
     const coins = await aptos.account.getAccountCoinsData({
-      accountAddress: AccountAddress.fromString(account?.address as string),
+      accountAddress: AccountAddress.fromString(
+        account?.address.toString() as string
+      ),
     });
 
     console.log(coins);
@@ -183,7 +204,7 @@ export const Subscription = () => {
         await getNfts();
         await getCoins();
         const subscriptionResult = await abi
-          ?.useABI(SubscriptionABI)
+          ?.useABI(subscriptionABI)
           .view.get_subscription_config({
             functionArguments: [],
             typeArguments: [],
@@ -191,17 +212,19 @@ export const Subscription = () => {
 
         const subscriptionCopy = subscriptionResult?.[0] as ISubscription;
 
-        try {
-          const moveBotFieldsResult = await abi
-            ?.useABI(SubscriptionABI)
-            .view.get_move_bot_fields({
-              functionArguments: [],
-              typeArguments: [],
-            });
+        if (chain === Chain.Aptos) {
+          try {
+            const moveBotFieldsResult = await abi
+              ?.useABI(SubscriptionABI)
+              .view.get_move_bot_fields({
+                functionArguments: [],
+                typeArguments: [],
+              });
 
-          moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
-        } catch (error) {
-          console.error('Move bot fields are not set yet', error);
+            moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
+          } catch (error) {
+            console.error('Move bot fields are not set yet', error);
+          }
         }
 
         if (!subscriptionCopy.collections_discount?.length) {
@@ -248,7 +271,7 @@ export const Subscription = () => {
         setIsLoading(false);
       }
     })();
-  }, [abi]);
+  }, [abi, chain]);
 
   return (
     <div className="space-y-6">
@@ -292,67 +315,69 @@ export const Subscription = () => {
         ))}
       </div>
 
-      <div className="space-y-4">
-        <LabeledInput
-          label="Token Creator"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_creator: e.target.value as `0x${string}`,
-            })
-          }
-          value={subscription.token_creator}
-          type="text"
-          id="subscription-token-creator"
-          required
-          tooltip="Set the Move Bot ID creator"
-        />
+      {chain === Chain.Aptos && (
+        <div className="space-y-4">
+          <LabeledInput
+            label="Token Creator"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_creator: e.target.value as `0x${string}`,
+              })
+            }
+            value={subscription.token_creator}
+            type="text"
+            id="subscription-token-creator"
+            required
+            tooltip="Set the Move Bot ID creator"
+          />
 
-        <LabeledInput
-          label="Token Collection Name"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_collection: e.target.value,
-            })
-          }
-          value={subscription.token_collection}
-          type="text"
-          id="subscription-token-collection"
-          required
-          tooltip="Set the Move Bot ID collection name"
-        />
+          <LabeledInput
+            label="Token Collection Name"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_collection: e.target.value,
+              })
+            }
+            value={subscription.token_collection}
+            type="text"
+            id="subscription-token-collection"
+            required
+            tooltip="Set the Move Bot ID collection name"
+          />
 
-        <LabeledInput
-          label="Token Name"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_name: e.target.value,
-            })
-          }
-          value={subscription.token_name}
-          type="text"
-          id="subscription-token-name"
-          required
-          tooltip="Set the Move Bot ID token name"
-        />
+          <LabeledInput
+            label="Token Name"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_name: e.target.value,
+              })
+            }
+            value={subscription.token_name}
+            type="text"
+            id="subscription-token-name"
+            required
+            tooltip="Set the Move Bot ID token name"
+          />
 
-        <LabeledInput
-          label="Token Property Version"
-          onChange={(e) =>
-            setSubscription({
-              ...subscription,
-              token_property_version: parseInt(e.target.value),
-            })
-          }
-          value={subscription.token_property_version}
-          type="number"
-          id="subscription-token-property-version"
-          required
-          tooltip="Set the Move Bot ID property version"
-        />
-      </div>
+          <LabeledInput
+            label="Token Property Version"
+            onChange={(e) =>
+              setSubscription({
+                ...subscription,
+                token_property_version: parseInt(e.target.value),
+              })
+            }
+            value={subscription.token_property_version}
+            type="number"
+            id="subscription-token-property-version"
+            required
+            tooltip="Set the Move Bot ID property version"
+          />
+        </div>
+      )}
 
       <div className="pt-4">
         <ConfirmButton
@@ -373,15 +398,19 @@ export const Subscription = () => {
                   Amount: {c.discount_per_day}
                 </p>
               ))}
-              <br />
-              Token creator: {truncateAddress(subscription.token_creator)}
-              <br />
-              Token collection: {subscription.token_collection}
-              <br />
-              Token name: {subscription.token_name}
-              <br />
-              Token property version: {subscription.token_property_version}
-              <br />
+              {chain === Chain.Aptos && (
+                <>
+                  <br />
+                  Token creator: {truncateAddress(subscription.token_creator)}
+                  <br />
+                  Token collection: {subscription.token_collection}
+                  <br />
+                  Token name: {subscription.token_name}
+                  <br />
+                  Token property version: {subscription.token_property_version}
+                  <br />
+                </>
+              )}
               Do you agree?
             </p>
           }

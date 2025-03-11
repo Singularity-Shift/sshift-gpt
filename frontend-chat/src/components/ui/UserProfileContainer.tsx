@@ -6,6 +6,8 @@ import { useAppManagment } from '../../../src/context/AppManagment';
 import { Button } from './button';
 import { useRouter } from 'next/navigation';
 import { silkscreen } from '../../../app/fonts';
+import { useChain } from '../../context/ChainProvider';
+import { Chain } from '@helpers';
 
 interface UserProfileContainerProps {
   moveBotsOwned: number;
@@ -18,8 +20,10 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
   qribbleNFTsOwned,
   sshiftRecordsOwned,
 }) => {
-  const { isSubscriptionActive, expirationDate } = useAppManagment();
+  const { isSubscriptionActive, isCollector, expirationDate } =
+    useAppManagment();
   const router = useRouter();
+  const { chain } = useChain();
 
   const handleEnterSShiftGPT = () => {
     router.push('/chat');
@@ -63,27 +67,52 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
       </div>
 
       <div className="flex-grow mt-16 space-y-4">
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-sm font-medium text-gray-700">
-              Move Bot owned:
-            </span>
-            <Link
-              href={config.MOVEBOT_BUY}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-gray-600 hover:text-gray-800 underline block"
-            >
-              Buy
-            </Link>
-          </div>
-          <Input
-            type="number"
-            value={moveBotsOwned}
-            className="w-20 text-right bg-gray-100"
-            readOnly
-          />
-        </div>
+        {chain === Chain.Aptos && (
+          <>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  Move Bot owned:
+                </span>
+                <Link
+                  href={config.MOVEBOT_BUY}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                >
+                  Buy
+                </Link>
+              </div>
+              <Input
+                type="number"
+                value={moveBotsOwned}
+                className="w-20 text-right bg-gray-100"
+                readOnly
+              />
+            </div>
+            <div className="flex justify-between items-center">
+              <div>
+                <span className="text-sm font-medium text-gray-700">
+                  SShift Records owned:
+                </span>
+                <Link
+                  href={config.SSHIFT_RECORDS_BUY}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs text-gray-600 hover:text-gray-800 underline block"
+                >
+                  Buy
+                </Link>
+              </div>
+              <Input
+                type="number"
+                value={sshiftRecordsOwned}
+                className="w-20 text-right bg-gray-100"
+                readOnly
+              />
+            </div>
+          </>
+        )}
         <div className="flex justify-between items-center">
           <div>
             <span className="text-sm font-medium text-gray-700">
@@ -101,27 +130,6 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
           <Input
             type="number"
             value={qribbleNFTsOwned}
-            className="w-20 text-right bg-gray-100"
-            readOnly
-          />
-        </div>
-        <div className="flex justify-between items-center">
-          <div>
-            <span className="text-sm font-medium text-gray-700">
-              SShift Records owned:
-            </span>
-            <Link
-              href={config.SSHIFT_RECORDS_BUY}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs text-gray-600 hover:text-gray-800 underline block"
-            >
-              Buy
-            </Link>
-          </div>
-          <Input
-            type="number"
-            value={sshiftRecordsOwned}
             className="w-20 text-right bg-gray-100"
             readOnly
           />
@@ -154,6 +162,7 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
           whitespace-nowrap
           mt-auto
         `}
+        disabled={!isSubscriptionActive && !isCollector}
         onClick={handleEnterSShiftGPT}
       >
         ENTER SSHIFT GPT

@@ -48,6 +48,6 @@ We may update this Statement periodically to reflect changes in our practices or
 For any questions or concerns regarding this Data Protection Statement, please contact us at:
 
 SShift GPT
-Email: singularityshiftai@gmail.com
+Email: james@sshiftgpt.com
 
 By using our Platform, you acknowledge that you have read and understood this Data Protection Statement and confirm that you are at least 18 years of age.`;

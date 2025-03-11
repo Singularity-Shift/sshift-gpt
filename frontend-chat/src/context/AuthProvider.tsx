@@ -12,6 +12,7 @@ import * as jwtoken from 'jsonwebtoken';
 import { usePathname, useRouter } from 'next/navigation';
 import { DataProtection } from '../content/DataProtection';
 import backend from '../services/backend';
+import { useChain } from './ChainProvider';
 
 export type AuthContextProp = {
   jwt: string;
@@ -24,6 +25,7 @@ const AuthContext = createContext<AuthContextProp>({} as AuthContextProp);
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [jwt, setJwt] = useState<string>('');
   const { signMessage, account, connected, disconnect, wallet } = useWallet();
+  const { chain } = useChain();
   const [walletAddress, setWalletAddress] = useState('');
   const router = useRouter();
   const pathname = usePathname();
@@ -48,17 +50,43 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const message = DataProtection;
+      let publicKey;
+      let signature;
 
       const messageResp = await signMessage({
         message,
         nonce: Math.random().toString(),
       });
 
+      if (
+        (messageResp.signature as any)?.data &&
+        (messageResp.signature as any)?.data?.data instanceof Uint8Array ===
+          false
+      ) {
+        const dataSignature = new Uint8Array(
+          Object.values((messageResp.signature as any).data.data)
+        );
+
+        signature = Buffer.from(dataSignature).toString('hex') as any;
+      } else if (
+        (messageResp.signature as any)?.signature?.ephemeralSignature
+      ) {
+        signature = (messageResp.signature as any).signature.ephemeralSignature
+          .signature;
+      }
+
+      if ((messageResp.signature as any)?.signature) {
+        publicKey = (
+          messageResp.signature as any
+        ).signature.ephemeralPublicKey.publicKey.toString();
+      }
+
       const payload: IAuth = {
         message: messageResp.fullMessage,
-        signature: `${messageResp.signature}`,
-        address: account?.address as string,
-        publicKey: account?.publicKey as string,
+        signature: `${signature || messageResp.signature}`,
+        address: account?.address.toString() as `0x${string}}`,
+        chain,
+        publicKey: publicKey || (account?.publicKey.toString() as string),
       };
 
       const response = await backend.post('/auth/login', { ...payload });
@@ -74,7 +102,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     address: string
   ) => {
     try {
-      const jwtAuth = storedValues?.find((s) => s.account === address);
+      const jwtAuth = storedValues?.find(
+        (s) => s.account === address && s.chain === chain
+      );
 
       let authObj: IJwt | undefined;
 
@@ -91,7 +121,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         setJwt(authObj.authToken);
 
         const jwtUser: IJWTUser = {
-          account: account?.address || '',
+          account: account?.address.toString() || '',
+          chain,
           token: authObj.authToken,
         };
 
@@ -136,7 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return;
     }
 
-    if (storedValue?.some((s) => s.account === account?.address)) {
+    if (storedValue?.some((s) => s.account === account?.address.toString())) {
       localStorage.setItem(
         'jwt',
         JSON.stringify(
@@ -157,7 +188,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     const storedValue = getJwt();
 
-    handleConnectWallet(storedValue, account?.address as string);
+    handleConnectWallet(storedValue, account?.address.toString());
   }, [connected, account]);
 
   const value: AuthContextProp = { jwt, walletAddress, handleDisconnect };

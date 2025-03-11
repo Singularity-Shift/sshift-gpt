@@ -1,0 +1,16 @@
+[package]
+name = "sshift_dao"
+version = "1.0.0"
+authors = []
+
+[addresses]
+sshift_dao_addr = "_"
+
+[dev-addresses]
+
+[dependencies]
+AptosFramework = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "movement", subdir = "aptos-move/framework/aptos-framework" }
+AptosTokenObjects = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "movement", subdir = "aptos-move/framework/aptos-token-objects" }
+AptosToken = { git = "https://github.com/movementlabsxyz/aptos-core.git", rev = "movement", subdir = "aptos-move/framework/aptos-token" }
+
+[dev-dependencies]
