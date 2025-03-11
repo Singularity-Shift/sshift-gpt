@@ -2,12 +2,13 @@ import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSum
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
 import { Chain, MultisignAction } from './enums';
 import { ToolsNameList } from 'move-agent-kit-fullstack';
+import { PublicKey } from '@aptos-labs/ts-sdk';
 
 export interface IAuth {
   message: string;
   address: string;
   chain: Chain;
-  publicKey: string;
+  publicKey: string | PublicKey;
   signature: unknown;
 }
 

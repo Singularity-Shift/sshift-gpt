@@ -13,7 +13,6 @@ import { usePathname, useRouter } from 'next/navigation';
 import { DataProtection } from '../content/DataProtection';
 import backend from '../services/backend';
 import { useChain } from './ChainProvider';
-import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 export type AuthContextProp = {
   jwt: string;
@@ -51,6 +50,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     try {
       const message = DataProtection;
+      let publicKey;
+      let signature;
 
       const messageResp = await signMessage({
         message,
@@ -66,17 +67,26 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           Object.values((messageResp.signature as any).data.data)
         );
 
-        messageResp.signature = Buffer.from(dataSignature).toString(
-          'hex'
-        ) as any;
+        signature = Buffer.from(dataSignature).toString('hex') as any;
+      } else if (
+        (messageResp.signature as any)?.signature?.ephemeralSignature
+      ) {
+        signature = (messageResp.signature as any).signature.ephemeralSignature
+          .signature;
+      }
+
+      if ((messageResp.signature as any)?.signature) {
+        publicKey = (
+          messageResp.signature as any
+        ).signature.ephemeralPublicKey.publicKey.toString();
       }
 
       const payload: IAuth = {
         message: messageResp.fullMessage,
-        signature: `${messageResp.signature}`,
+        signature: `${signature || messageResp.signature}`,
         address: account?.address.toString() as `0x${string}}`,
         chain,
-        publicKey: account?.publicKey.toString() as string,
+        publicKey: publicKey || (account?.publicKey.toString() as string),
       };
 
       const response = await backend.post('/auth/login', { ...payload });
