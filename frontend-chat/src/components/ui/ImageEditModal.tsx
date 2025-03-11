@@ -539,8 +539,21 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
       const isPetraWallet = /Petra/i.test(navigator.userAgent) || window.location.href.includes('petra');
+      
+      // More generalized approach to detect wallet dapp browsers
+      const isDappBrowser = isMobile && (
+        // Common wallet user agent patterns
+        /wallet|dapp|blockchain|crypto/i.test(navigator.userAgent) ||
+        // Check for wallet-specific URLs or embedded views
+        window.location.href.includes('wallet') ||
+        // Check if running in iframe which is common for dapp browsers
+        window !== window.top ||
+        // Petra specific check (keeping for backward compatibility)
+        /Petra/i.test(navigator.userAgent) || 
+        window.location.href.includes('petra')
+      );
 
-      if (isMobile || isPetraWallet) {
+      if (isMobile || isDappBrowser) {
         // Create a download prompt similar to the audio player's native download
         const downloadPrompt = document.createElement('div');
         downloadPrompt.style.position = 'fixed';
