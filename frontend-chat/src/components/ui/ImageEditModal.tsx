@@ -722,7 +722,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-gray-500 hidden sm:inline-block">
-              {/* Removed zoom hint for full display */}
+              
             </span>
             <button
               onClick={onClose}
@@ -734,13 +734,12 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           </div>
         </div>
 
-        {/* Removed mobile zoom hint */}
         
         <div className="flex-1 min-h-0 flex flex-col">
           <div 
             className="relative flex-1 overflow-hidden" 
             style={{ minHeight: 0 }}
-            // Removed zoom related event handlers and ref
+            
           >
             {isProcessing && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
@@ -756,7 +755,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
             )}
             <div 
               className="relative w-full h-full flex items-center justify-center"
-              // Removed inline transform styles related to zoom
+              
             >
               <img
                 ref={imageRef}
@@ -790,7 +789,6 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
               />
             </div>
 
-            {/* Removed zoom reset button since zoom is no longer used */}
 
           </div>
 
