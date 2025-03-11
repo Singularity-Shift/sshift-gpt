@@ -40,48 +40,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const [editedImageUrl, setEditedImageUrl] = useState<string | null>(null);
   const [showOriginal, setShowOriginal] = useState(true);
+  const lastPosition = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   
-  // Zoom functionality
-  const [scale, setScale] = useState(1);
-  const [position, setPosition] = useState({ x: 0, y: 0 });
-  const [isPinching, setIsPinching] = useState(false);
-  const lastDistance = useRef<number | null>(null);
-  const lastPosition = useRef({ x: 0, y: 0 });
-  const imageContainerRef = useRef<HTMLDivElement>(null);
-  const lastTapRef = useRef<number>(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStart = useRef({ x: 0, y: 0 });
-  const positionStart = useRef({ x: 0, y: 0 });
-  const touchStartTimeRef = useRef<number>(0);
-  const touchTimerRef = useRef<NodeJS.Timeout | null>(null);
-  const isTouchIntentDetermined = useRef<boolean>(false);
-
-  // Add effect to ensure canvas dimensions match image while preserving content during zoom
-  useEffect(() => {
-    if (imageLoaded && imageRef.current && canvasRef.current && ctx && scale !== 1) {
-      // Get current canvas content
-      const tempCanvas = document.createElement('canvas');
-      const tempCtx = tempCanvas.getContext('2d');
-      if (!tempCtx) return;
-      
-      // Set temp canvas to same dimensions as current canvas and copy content
-      tempCanvas.width = canvasRef.current.width;
-      tempCanvas.height = canvasRef.current.height;
-      tempCtx.drawImage(canvasRef.current, 0, 0);
-      
-      // Update canvas style dimensions to match image
-      const imgRect = imageRef.current.getBoundingClientRect();
-      const canvasStyle = canvasRef.current.style;
-      canvasStyle.width = `${imgRect.width}px`;
-      canvasStyle.height = `${imgRect.height}px`;
-      
-      // Restore the content
-      ctx.drawImage(tempCanvas, 0, 0);
-      
-      // Clean up
-      tempCanvas.remove();
-    }
-  }, [scale]);
+  // Note: We keep lastPosition as it is used for drawing continuity
 
   // Add effect to ensure canvas position matches image position
   useEffect(() => {
@@ -300,33 +261,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     return getDrawingCoordinates(e.clientX, e.clientY);
   };
 
-  const startDragging = (clientX: number, clientY: number) => {
-    if (scale > 1) {
-      setIsDragging(true);
-      dragStart.current = { x: clientX, y: clientY };
-      positionStart.current = { ...position };
-    }
-  };
-
-  const handleDrag = (clientX: number, clientY: number) => {
-    if (isDragging && scale > 1) {
-      const deltaX = clientX - dragStart.current.x;
-      const deltaY = clientY - dragStart.current.y;
-      
-      setPosition({
-        x: positionStart.current.x + deltaX,
-        y: positionStart.current.y + deltaY
-      });
-    }
-  };
-
-  const stopDragging = () => {
-    setIsDragging(false);
-  };
-
   const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    if (!ctx || isDragging) return;
+    if (!ctx || isDrawing) return;
     const { x, y } = getScaledCoordinates(e);
     
     ctx.beginPath();
@@ -339,7 +276,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    if (!isDrawing || !ctx || isDragging) return;
+    if (!isDrawing || !ctx) return;
     
     const { x, y } = getScaledCoordinates(e);
     
@@ -720,264 +657,36 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   const startDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    if (!ctx || isProcessing || !showOriginal || isDragging) return;
-    
-    // Store the touch start time
-    touchStartTimeRef.current = Date.now();
-    isTouchIntentDetermined.current = false;
-    
-    // Set a timer to start drawing after a short delay
-    // This gives time to detect if a second finger is placed down
-    touchTimerRef.current = setTimeout(() => {
-      if (e.touches.length === 1) {
-        const { x, y } = getTouchCoordinates(e);
-        
-        ctx.beginPath();
-        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        setIsDrawing(true);
-        lastPosition.current = { x, y };
-        isTouchIntentDetermined.current = true;
-      }
-    }, 50); // 50ms delay to detect multi-touch intent
+    if (!ctx || isProcessing || !showOriginal) return;
+    const { x, y } = getTouchCoordinates(e);
+    ctx.beginPath();
+    ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
+    ctx.fill();
+    setIsDrawing(true);
+    lastPosition.current = { x, y };
   };
 
   const drawTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
     e.stopPropagation();
-    
-    // Clear the timer if we're moving before the timer fires
-    if (touchTimerRef.current) {
-      clearTimeout(touchTimerRef.current);
-      touchTimerRef.current = null;
-    }
-    
-    // Only draw if we've determined this is a drawing gesture
-    if (!isDrawing && !isTouchIntentDetermined.current) {
-      // If it's been more than 50ms since touch start and still only one finger, start drawing
-      if (Date.now() - touchStartTimeRef.current > 50 && e.touches.length === 1 && ctx) {
-        const { x, y } = getTouchCoordinates(e);
-        
-        ctx.beginPath();
-        ctx.arc(x, y, brushSize / 2, 0, Math.PI * 2);
-        ctx.fill();
-        
-        setIsDrawing(true);
-        lastPosition.current = { x, y };
-        isTouchIntentDetermined.current = true;
-      }
-      return;
-    }
-    
-    if (!isDrawing || !ctx || isProcessing || !showOriginal || isDragging) return;
-    
+    if (!isDrawing || !ctx || isProcessing || !showOriginal) return;
     const { x, y } = getTouchCoordinates(e);
-    
-    // Get the distance between the current point and the last point
     const dx = x - lastPosition.current.x;
     const dy = y - lastPosition.current.y;
     const distance = Math.sqrt(dx * dx + dy * dy);
-    
     const stepSize = brushSize / 4;
     const numSteps = Math.max(1, Math.floor(distance / stepSize));
-    
     for (let i = 0; i <= numSteps; i++) {
       const pointX = lastPosition.current.x + (dx * i) / numSteps;
       const pointY = lastPosition.current.y + (dy * i) / numSteps;
-      
       ctx.beginPath();
       ctx.arc(pointX, pointY, brushSize / 2, 0, Math.PI * 2);
       ctx.fill();
     }
-    
     lastPosition.current = { x, y };
   };
 
   const stopDrawingTouch = () => {
-    if (touchTimerRef.current) {
-      clearTimeout(touchTimerRef.current);
-      touchTimerRef.current = null;
-    }
-    
     setIsDrawing(false);
-    isTouchIntentDetermined.current = false;
-  };
-
-  // Reset zoom when image changes
-  useEffect(() => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-  }, [imageUrl, editedImageUrl, showOriginal]);
-
-  // Handle pinch to zoom
-  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
-    if ((e.target as HTMLElement).tagName === 'CANVAS') {
-      if (e.touches.length > 1) {
-        // Cancel drawing intent if a second finger is placed
-        if (touchTimerRef.current) {
-          clearTimeout(touchTimerRef.current);
-          touchTimerRef.current = null;
-        }
-        setIsDrawing(false);
-        isTouchIntentDetermined.current = false;
-      }
-      
-      // Let the canvas handle single-touch events
-      if (e.touches.length === 1) return;
-    }
-    
-    const now = new Date().getTime();
-    const timeSince = now - lastTapRef.current;
-    
-    if (e.touches.length === 1 && timeSince < 300 && scale !== 1) {
-      e.preventDefault();
-      e.stopPropagation();
-      resetZoom();
-    }
-    
-    lastTapRef.current = now;
-    
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      // Cancel any drawing that might be in progress
-      setIsDrawing(false);
-      isTouchIntentDetermined.current = false;
-      
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const centerX = (touch1.clientX + touch2.clientX) / 2;
-      const centerY = (touch1.clientY + touch2.clientY) / 2;
-      
-      startDragging(centerX, centerY);
-      
-      setIsPinching(true);
-      
-      const distance = Math.hypot(
-        touch2.clientX - touch1.clientX,
-        touch2.clientY - touch1.clientY
-      );
-      lastDistance.current = distance;
-      lastPosition.current = { x: centerX, y: centerY };
-    } else if (e.touches.length === 1 && (e.target as HTMLElement).tagName !== 'CANVAS') {
-      startDragging(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  };
-
-  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      e.stopPropagation();
-      
-      const touch1 = e.touches[0];
-      const touch2 = e.touches[1];
-      const centerX = (touch1.clientX + touch2.clientX) / 2;
-      const centerY = (touch1.clientY + touch2.clientY) / 2;
-      
-      if (isPinching) {
-        const distance = Math.hypot(
-          touch2.clientX - touch1.clientX,
-          touch2.clientY - touch1.clientY
-        );
-        
-        if (lastDistance.current !== null) {
-          const scaleFactor = 0.01;
-          const newScale = scale * (1 + scaleFactor * (distance - lastDistance.current) / 10);
-          const limitedScale = Math.max(1, Math.min(5, newScale));
-          const deltaX = centerX - lastPosition.current.x;
-          const deltaY = centerY - lastPosition.current.y;
-          
-          if (limitedScale !== scale) {
-            setScale(limitedScale);
-            
-            if (imageContainerRef.current) {
-              const rect = imageContainerRef.current.getBoundingClientRect();
-              const containerCenterX = rect.left + rect.width / 2;
-              const containerCenterY = rect.top + rect.height / 2;
-              const offsetX = centerX - containerCenterX;
-              const offsetY = centerY - containerCenterY;
-              
-              setPosition(prev => ({
-                x: prev.x + deltaX + offsetX * (limitedScale - scale) / limitedScale,
-                y: prev.y + deltaY + offsetY * (limitedScale - scale) / limitedScale
-              }));
-            } else {
-              setPosition(prev => ({
-                x: prev.x + deltaX,
-                y: prev.y + deltaY
-              }));
-            }
-          }
-        }
-        
-        lastDistance.current = Math.hypot(
-          touch2.clientX - touch1.clientX,
-          touch2.clientY - touch1.clientY
-        );
-        lastPosition.current = { x: centerX, y: centerY };
-      } else if (isDragging) {
-        handleDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    } else if (e.touches.length === 1) {
-      if ((e.target as HTMLElement).tagName !== 'CANVAS' && isDragging) {
-        handleDrag(e.touches[0].clientX, e.touches[0].clientY);
-      }
-    }
-  };
-
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    if (isPinching && e.touches.length < 2) {
-      setIsPinching(false);
-      lastDistance.current = null;
-    }
-    
-    if (isDragging && e.touches.length === 0) {
-      stopDragging();
-    }
-    
-    // If we're on the canvas and all touches are removed, stop drawing
-    if ((e.target as HTMLElement).tagName === 'CANVAS' && e.touches.length === 0) {
-      stopDrawingTouch();
-    }
-  };
-
-  const resetZoom = () => {
-    setScale(1);
-    setPosition({ x: 0, y: 0 });
-    setIsDragging(false);
-    setIsPinching(false);
-    lastDistance.current = null;
-    
-    // Update canvas position after zoom reset
-    if (imageLoaded && imageRef.current && canvasRef.current) {
-      const imgRect = imageRef.current.getBoundingClientRect();
-      const canvasStyle = canvasRef.current.style;
-      
-      // Match the canvas position and dimensions to the image
-      canvasStyle.width = `${imgRect.width}px`;
-      canvasStyle.height = `${imgRect.height}px`;
-    }
-  };
-
-  // Add mouse event handlers for dragging
-  const handleMouseDown = (e: React.MouseEvent) => {
-    if ((e.target as HTMLElement).tagName === 'CANVAS') return;
-    if (scale > 1) {
-      e.preventDefault();
-      startDragging(e.clientX, e.clientY);
-    }
-  };
-
-  const handleMouseMove = (e: React.MouseEvent) => {
-    if (isDragging) {
-      e.preventDefault();
-      handleDrag(e.clientX, e.clientY);
-    }
-  };
-
-  const handleMouseUp = () => {
-    stopDragging();
   };
 
   // Handle input focus to prevent viewport shifting
@@ -1013,7 +722,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           <h2 className="text-base sm:text-xl font-semibold">Edit Image</h2>
           <div className="flex items-center gap-2">
             <span className="text-[10px] text-gray-500 hidden sm:inline-block">
-              Pinch to zoom
+              {/* Removed zoom hint for full display */}
             </span>
             <button
               onClick={onClose}
@@ -1025,24 +734,13 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
           </div>
         </div>
 
-        {/* Mobile zoom hint */}
-        <div className="text-[10px] text-gray-500 mb-1 sm:hidden text-center shrink-0">
-          Pinch to zoom • Double-tap to reset
-        </div>
-
+        {/* Removed mobile zoom hint */}
+        
         <div className="flex-1 min-h-0 flex flex-col">
           <div 
-            ref={imageContainerRef}
             className="relative flex-1 overflow-hidden" 
             style={{ minHeight: 0 }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
+            // Removed zoom related event handlers and ref
           >
             {isProcessing && (
               <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
@@ -1058,12 +756,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
             )}
             <div 
               className="relative w-full h-full flex items-center justify-center"
-              style={{
-                transform: `scale(${scale}) translate(${position.x / scale}px, ${position.y / scale}px)`,
-                transformOrigin: 'center',
-                transition: isPinching ? 'none' : 'transform 0.1s ease-out',
-                willChange: 'transform'
-              }}
+              // Removed inline transform styles related to zoom
             >
               <img
                 ref={imageRef}
@@ -1088,7 +781,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 className="absolute top-0 left-0 w-full h-full touch-none"
                 style={{
                   background: 'transparent',
-                  pointerEvents: imageLoaded && !isProcessing && !isPinching && scale === 1 ? 'auto' : 'none',
+                  pointerEvents: imageLoaded && !isProcessing ? 'auto' : 'none',
                   cursor: brushMode === BrushMode.PAINT ? 'crosshair' : 'cell',
                   display: showOriginal ? 'block' : 'none',
                   objectFit: 'contain',
@@ -1096,17 +789,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 }}
               />
             </div>
-            {scale !== 1 && (
-              <button
-                onClick={resetZoom}
-                className="absolute bottom-2 right-2 bg-black/60 text-white text-xs px-2 py-1 rounded-md backdrop-blur-sm shadow-md flex items-center gap-1"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M4 2a1 1 0 011 1v2.101a7.002 7.002 0 0111.601 2.566 1 1 0 11-1.885.666A5.002 5.002 0 005.999 7H9a1 1 0 010 2H4a1 1 0 01-1-1V3a1 1 0 011-1zm.008 9.057a1 1 0 011.276.61A5.002 5.002 0 0014.001 13H11a1 1 0 110-2h5a1 1 0 011 1v5a1 1 0 11-2 0v-2.101a7.002 7.002 0 01-11.601-2.566 1 1 0 01.61-1.276z" clipRule="evenodd" />
-                </svg>
-                {Math.round(scale * 100)}%
-              </button>
-            )}
+
+            {/* Removed zoom reset button since zoom is no longer used */}
+
           </div>
 
           {editedImageUrl && (
@@ -1170,11 +855,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                 <div className="flex gap-1">
                   <button
                     onClick={() => setBrushMode(BrushMode.PAINT)}
-                    className={`p-1 rounded-md flex items-center gap-1 text-xs ${
-                      brushMode === BrushMode.PAINT
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`p-1 rounded-md flex items-center gap-1 text-xs ${brushMode === BrushMode.PAINT ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
                     disabled={isProcessing || !showOriginal}
                     onTouchStart={stopTouchPropagation}
                     onTouchMove={stopTouchPropagation}
@@ -1186,11 +867,7 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
                   </button>
                   <button
                     onClick={() => setBrushMode(BrushMode.ERASE)}
-                    className={`p-1 rounded-md flex items-center gap-1 text-xs ${
-                      brushMode === BrushMode.ERASE
-                        ? 'bg-blue-100 text-blue-600'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
+                    className={`p-1 rounded-md flex items-center gap-1 text-xs ${brushMode === BrushMode.ERASE ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-600'}`}
                     disabled={isProcessing || !showOriginal}
                     onTouchStart={stopTouchPropagation}
                     onTouchMove={stopTouchPropagation}
