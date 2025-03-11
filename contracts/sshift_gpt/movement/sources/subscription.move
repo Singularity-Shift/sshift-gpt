@@ -1,4 +1,4 @@
-module sshift_dao_addr::subscription_beta_1 {
+module sshift_gpt_addr::subscription {
     use std::signer;
     use std::vector;
     use std::string::String;
@@ -10,7 +10,7 @@ module sshift_dao_addr::subscription_beta_1 {
     use aptos_framework::object;
     use aptos_token_objects::token::{Self, Token};
 
-    use sshift_dao_addr::fees_beta_1;
+    use sshift_gpt_addr::fees;
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
     const ECOIN_ADDRESS_NOT_MATCH: u64 = 2;
@@ -88,7 +88,7 @@ module sshift_dao_addr::subscription_beta_1 {
     ) acquires SubscriptionPlan {
         check_admin(sender);
 
-        let subscription_plan = borrow_global_mut<SubscriptionPlan>(@sshift_dao_addr);
+        let subscription_plan = borrow_global_mut<SubscriptionPlan>(@sshift_gpt_addr);
 
         subscription_plan.prices = prices;
 
@@ -118,7 +118,7 @@ module sshift_dao_addr::subscription_beta_1 {
         assert!(!has_subscription_to_claim(account), EHAS_SUBSCRIPTION_TO_CLAIM);
         
 
-        let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
+        let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_gpt_addr);
 
         let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
             let FreeSubscription {
@@ -147,7 +147,7 @@ module sshift_dao_addr::subscription_beta_1 {
     public entry fun claim_subscription(sender: &signer) acquires SubscriptionsGifted, UserSubscription {
         let account_addr = signer::address_of(sender);
 
-        let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_dao_addr);
+        let free_subscriptions = borrow_global_mut<SubscriptionsGifted>(@sshift_gpt_addr);
 
         let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions, |s| {
             let FreeSubscription {
@@ -203,13 +203,13 @@ module sshift_dao_addr::subscription_beta_1 {
 
         assert!(days >= 1, ESHOULD_BE_MORE_THAN_ONE_DAY_SUBSCRIPTION);
 
-        let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
+        let plan = borrow_global<SubscriptionPlan>(@sshift_gpt_addr);
 
-        let currency_addr = fees_beta_1::get_currency_addr();
+        let currency_addr = fees::get_currency_addr();
 
         let currency_metadata = object::address_to_object<Metadata>(currency_addr);
 
-        let resource_account_addr = fees_beta_1::get_resource_account_address();
+        let resource_account_addr = fees::get_resource_account_address();
 
         let price = *vector::borrow(&plan.prices, days - 1);
 
@@ -257,7 +257,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
     #[view]
     public fun get_subscription_config(): SubscriptionPlan acquires SubscriptionPlan {
-        *borrow_global<SubscriptionPlan>(@sshift_dao_addr)
+        *borrow_global<SubscriptionPlan>(@sshift_gpt_addr)
     }
 
 
@@ -270,7 +270,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
     #[view]
     public fun get_prices(): vector<u64> acquires SubscriptionPlan {
-        let plan = borrow_global<SubscriptionPlan>(@sshift_dao_addr);
+        let plan = borrow_global<SubscriptionPlan>(@sshift_gpt_addr);
 
         plan.prices
     }
@@ -292,7 +292,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
     #[view]
     public fun has_subscription_to_claim(account: address): bool acquires SubscriptionsGifted {
-        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
+        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_gpt_addr);
 
         let (has_free_subscription, _index) = vector::find(&free_subscriptions.subscriptions,|s| {
             let FreeSubscription {
@@ -310,7 +310,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
     #[view]
     public fun get_subscription_to_claim(account_addr: address): FreeSubscription acquires SubscriptionsGifted {
-        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_dao_addr);
+        let free_subscriptions = borrow_global<SubscriptionsGifted>(@sshift_gpt_addr);
 
         let (has_free_subscription, index) = vector::find(&free_subscriptions.subscriptions,|s| {
             let FreeSubscription {
@@ -329,7 +329,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
     fun check_admin(sender: &signer) {
         let account_addr = signer::address_of(sender);
-        let admin = fees_beta_1::get_admin();
+        let admin = fees::get_admin();
         assert!(
             admin == account_addr, EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION
         );
@@ -438,16 +438,16 @@ module sshift_dao_addr::subscription_beta_1 {
     fun create_resource_account(sender: &signer, admin: &signer) {
         let admin_addr = signer::address_of(admin);
 
-        fees_beta_1::initialize_for_test(sender);
+        fees::initialize_for_test(sender);
 
-        fees_beta_1::create_resource_account(sender, b"test", vector[admin_addr]);
+        fees::create_resource_account(sender, b"test", vector[admin_addr]);
 
-        fees_beta_1::create_collector_object(admin);
+        fees::create_collector_object(admin);
     }
 
     #[test_only]
     fun create_fa(): Object<Metadata> {
-        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_dao_addr);
+        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_gpt_addr);
         let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
 
         let name = string::utf8(b"usdt test");
@@ -529,9 +529,9 @@ module sshift_dao_addr::subscription_beta_1 {
 
         create_resource_account(sender, admin);
 
-        fees_beta_1::set_pending_admin(sender, admin_addr);
+        fees::set_pending_admin(sender, admin_addr);
 
-        fees_beta_1::accept_admin(admin);
+        fees::accept_admin(admin);
 
 
         let collection_addr_1 = create_collection(
@@ -574,7 +574,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200
         )
     ]
@@ -597,7 +597,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -627,7 +627,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -646,7 +646,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -676,7 +676,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -695,7 +695,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -731,7 +731,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
@@ -746,7 +746,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -786,7 +786,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, token_holding);
 
@@ -803,7 +803,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -833,7 +833,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
 
         let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
@@ -860,7 +860,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -890,7 +890,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         let token_holding = vector::empty();
 
@@ -912,7 +912,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -946,7 +946,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -976,7 +976,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -991,7 +991,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1021,7 +1021,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1038,7 +1038,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1074,7 +1074,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1120,7 +1120,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1158,7 +1158,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1188,7 +1188,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1219,7 +1219,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 100, vector::empty());
 
@@ -1234,7 +1234,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1253,9 +1253,9 @@ module sshift_dao_addr::subscription_beta_1 {
 
         create_resource_account(owner, admin);
 
-        fees_beta_1::set_pending_admin(owner, admin_addr);
+        fees::set_pending_admin(owner, admin_addr);
 
-        fees_beta_1::accept_admin(admin);
+        fees::accept_admin(admin);
 
 
         let collection_addr_1 = create_collection(
@@ -1300,7 +1300,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1331,7 +1331,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user1 = @0x300,
             user2 = @0x400,
@@ -1369,7 +1369,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         let fa_controller = borrow_global<FAController>(fa_addr);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         mint_fa(user2, &fa_controller.mint_ref, 20000000000000);
 
@@ -1388,7 +1388,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300,
         )
@@ -1417,7 +1417,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300,
         )
@@ -1448,7 +1448,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1461,7 +1461,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300,
         )
@@ -1492,7 +1492,7 @@ module sshift_dao_addr::subscription_beta_1 {
 
         mint_fa(user, &fa_controller.mint_ref, 20000000000000);
 
-        fees_beta_1::set_currency(admin, fa_addr);
+        fees::set_currency(admin, fa_addr);
 
         buy_plan(user, 604800, vector::empty());
 
@@ -1505,7 +1505,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
@@ -1542,7 +1542,7 @@ module sshift_dao_addr::subscription_beta_1 {
     #[
         test(
             aptos_framework = @0x1,
-            owner = @sshift_dao_addr,
+            owner = @sshift_gpt_addr,
             admin = @0x200,
             user = @0x300
         )
