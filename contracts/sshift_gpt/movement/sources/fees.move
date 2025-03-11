@@ -19,19 +19,20 @@ module sshift_gpt_addr::fees {
     const EONLY_REVIEWER_CAN_SET_PENDING_REVIEWER: u64 = 8;
     const ENOT_PENDING_ADMIN: u64 = 9;
     const ENOT_PENDING_REVIEWER: u64 = 10;
-    const ENOT_CURRENCY_SET: u64 = 11;
+    const ENOT_CURRENCIES_SET: u64 = 11;
+    const EWRONG_CURRENCY: u64 = 12;
 
     struct Config has key {
         admin_addr: address,
         pending_admin_addr: Option<address>,
         reviewer_addr: address,
         pending_reviewer_addr: Option<address>,
-        currency: Option<address>,
+        currencies: vector<address>,
     }
 
     struct FeesAdmin has key {
         signer_cap: Option<SignerCapability>,
-        salary_not_claimed: u64,
+        fees_not_claimed: u64,
         collectors: vector<address>,
     }
 
@@ -53,7 +54,7 @@ module sshift_gpt_addr::fees {
                 pending_admin_addr: option::none(),
                 reviewer_addr: signer::address_of(sender),
                 pending_reviewer_addr: option::none(),
-                currency: option::none(),
+                currencies: vector::empty(),
             }
         );
 
@@ -61,7 +62,7 @@ module sshift_gpt_addr::fees {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                salary_not_claimed: 0,
+                fees_not_claimed: 0,
                 signer_cap: option::none(),
             }
         );
@@ -160,7 +161,7 @@ module sshift_gpt_addr::fees {
         vector::remove<address>(&mut fees_admin.collectors, index);
     }
 
-    public entry fun claim_salary(account: &signer) acquires FeesAdmin, FeesToClaim, Config {
+    public entry fun claim_fees(account: &signer, currency: address) acquires FeesAdmin, FeesToClaim, Config {
         let account_addr = signer::address_of(account);
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
@@ -169,11 +170,12 @@ module sshift_gpt_addr::fees {
             &fees_admin.collectors, |c| { c == &account_addr }
         );
 
+        assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
+
         let config = borrow_global<Config>(@sshift_gpt_addr);
 
-        assert!(option::is_some(&config.currency), ENOT_CURRENCY_SET);
-
-        assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
+        let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
+        assert!(has_currency, EWRONG_CURRENCY);
 
         let salary_to_claim = borrow_global_mut<FeesToClaim>(account_addr);
 
@@ -183,15 +185,13 @@ module sshift_gpt_addr::fees {
 
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        let currency = option::borrow(&config.currency);
-
-        let metadata = object::address_to_object<Metadata>(*currency);
+        let metadata = object::address_to_object<Metadata>(currency);
 
         primary_fungible_store::transfer(
             &resource_signer, metadata, account_addr, salary_to_claim.amount 
         );
 
-        fees_admin.salary_not_claimed = fees_admin.salary_not_claimed
+        fees_admin.fees_not_claimed = fees_admin.fees_not_claimed
             - salary_to_claim.amount;
 
         event::emit(
@@ -202,7 +202,7 @@ module sshift_gpt_addr::fees {
     }
 
     public entry fun payment(
-        account: &signer, collectors: vector<address>, amounts: vector<u64>,
+        account: &signer, collectors: vector<address>, currency: address, amounts: vector<u64>,
     ) acquires FeesAdmin, Config, FeesToClaim {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_gpt_addr);
@@ -225,14 +225,15 @@ module sshift_gpt_addr::fees {
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
-        let currency = option::borrow(&config.currency);
+        let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
+        assert!(has_currency, EWRONG_CURRENCY);
 
-        let metadata = object::address_to_object<Metadata>(*currency);
+        let metadata = object::address_to_object<Metadata>(currency);
 
         assert!(
             primary_fungible_store::balance(signer::address_of(&resource_signer), metadata)
                 > vector::fold(amounts, 0, |curr, acc| acc + curr)
-                    + fees_admin.salary_not_claimed,
+                    + fees_admin.fees_not_claimed,
             error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE)
         );
 
@@ -247,7 +248,7 @@ module sshift_gpt_addr::fees {
 
                 salary_to_claim.amount = amount;
 
-                fees_admin.salary_not_claimed = fees_admin.salary_not_claimed + amount;
+                fees_admin.fees_not_claimed = fees_admin.fees_not_claimed + amount;
             }
         );
     }
@@ -291,12 +292,12 @@ module sshift_gpt_addr::fees {
         config.pending_reviewer_addr = option::none();
     }
 
-    public entry fun set_currency(sender: &signer, currency: address) acquires Config {
+    public entry fun add_currency(sender: &signer, currency: address) acquires Config {
         let sender_addr = signer::address_of(sender);
         let config = borrow_global_mut<Config>(@sshift_gpt_addr);
         assert!(is_admin(config, sender_addr), EONLY_ADMIN_CAN_SET_PENDING_ADMIN);
-
-        config.currency = option::some(currency);
+        
+        vector::push_back(&mut config.currencies, currency);
     }
 
     #[view]
@@ -335,17 +336,17 @@ module sshift_gpt_addr::fees {
     }
 
     #[view]
-    public fun get_currency_addr(): address acquires Config {
+    public fun get_currencies_addr(): vector<address> acquires Config {
         let config = borrow_global<Config>(@sshift_gpt_addr);
-        *option::borrow(&config.currency)
+        config.currencies
     }
 
 
     #[view]
-    public fun get_resource_balance(): u64 acquires FeesAdmin, Config {
+    public fun get_resource_balances(): (vector<address>, vector<u64>) acquires FeesAdmin, Config {
         let config = borrow_global<Config>(@sshift_gpt_addr);
 
-        assert!(option::is_some(&config.currency), ENOT_CURRENCY_SET);
+        assert!(vector::length(&config.currencies) > 0, ENOT_CURRENCIES_SET);
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
 
@@ -355,11 +356,15 @@ module sshift_gpt_addr::fees {
 
         let resource_signer_addr = signer::address_of(&resource_signer);
 
-        let currency = option::borrow(&config.currency);
+        let metadatas = vector::map<address, Object<Metadata>>(config.currencies, |currency|{
+            object::address_to_object<Metadata>(currency)
+        });
 
-        let metadata = object::address_to_object<Metadata>(*currency);
+        let balances = vector::map<Object<Metadata>, u64>(metadatas, |metadata| {
+            primary_fungible_store::balance(resource_signer_addr, metadata)
+        });
 
-        primary_fungible_store::balance(resource_signer_addr, metadata)
+        (config.currencies, balances)
     }
 
     #[view]
@@ -454,7 +459,7 @@ module sshift_gpt_addr::fees {
                 pending_admin_addr: option::none(),
                 reviewer_addr: signer::address_of(sender),
                 pending_reviewer_addr: option::none(),
-                currency: option::none(),
+                currencies: vector::empty(),
             }
         );
 
@@ -462,7 +467,7 @@ module sshift_gpt_addr::fees {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                salary_not_claimed: 0,
+                fees_not_claimed: 0,
                 signer_cap: option::none()
             }
         );
@@ -584,11 +589,11 @@ module sshift_gpt_addr::fees {
 
         mint_fa(&resource_signer, &fa_controller.mint_ref, 20000000);
 
-        set_currency(user1, fa_addr);
+        add_currency(user1, fa_addr);
 
-        let resource_balance = get_resource_balance();
+        let (_,resource_balances) = get_resource_balances();
 
-        assert!(resource_balance == 20000000, EBALANCE_NOT_EQUAL);
+        assert!(resource_balances[0] == 20000000, EBALANCE_NOT_EQUAL);
 
         add_collector(user1, user4, user2_addr);
         create_collector_object(user2);
@@ -600,6 +605,7 @@ module sshift_gpt_addr::fees {
         payment(
             user1,
             vector[user2_addr, user3_addr, user4_addr],
+            fa_addr,
             vector[2000000, 1000000, 1500000]
         );
 
@@ -611,31 +617,31 @@ module sshift_gpt_addr::fees {
         assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
         assert!(user4_addr_balance == 1500000, EBALANCE_NOT_EQUAL);
 
-        claim_salary(user3);
+        claim_fees(user3, fa_addr);
 
-        let resource_balance_after_user3_claimed = get_resource_balance();
+        let (_,resource_balance_after_user3_claimed) = get_resource_balances();
         let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr);
         let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
         let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
 
         assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balance_after_user3_claimed
-                == resource_balance - user3_addr_balance,
+            resource_balance_after_user3_claimed[0]
+                == resource_balances[0] - user3_addr_balance,
             EBALANCE_NOT_EQUAL
         );
         assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
         assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
 
-        claim_salary(user4);
+        claim_fees(user4, fa_addr);
 
         let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr);
-        let resource_balance_after_user4_claimed = get_resource_balance();
+        let (_,resource_balance_after_user4_claimed) = get_resource_balances();
 
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balance_after_user4_claimed
-                == resource_balance - (user3_addr_balance + user4_addr_balance),
+            resource_balance_after_user4_claimed[0]
+                == resource_balances[0] - (user3_addr_balance + user4_addr_balance),
             EBALANCE_NOT_EQUAL
         );
 
@@ -1029,9 +1035,22 @@ module sshift_gpt_addr::fees {
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
 
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let fa_obj = create_fa();
+        
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
         payment(
             user4,
             vector[user2_addr, user3_addr],
+            fa_addr,
             vector[2000000, 1000000]
         );
     }
@@ -1085,9 +1104,9 @@ module sshift_gpt_addr::fees {
 
         mint_fa(user4, &fa_controller.mint_ref, 2000);
 
-        set_currency(user1, fa_addr);
+        add_currency(user1, fa_addr);
 
-        claim_salary(user4);
+        claim_fees(user4, fa_addr);
     }
 
     #[

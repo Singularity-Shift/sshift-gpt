@@ -35,7 +35,7 @@ module sshift_gpt_addr::subscription {
 
     struct SubscriptionConfig has key {
         stop_app: bool,
-        test_free_days: u64,
+        trial_free_days: u64,
     }
 
     struct CollectionAddressDiscount has key, store, drop, copy {
@@ -114,7 +114,7 @@ module sshift_gpt_addr::subscription {
 
         move_to(sender, SubscriptionConfig {
             stop_app: false,
-            test_free_days: 0,
+            trial_free_days: 0,
         })
     }
 
@@ -260,8 +260,6 @@ module sshift_gpt_addr::subscription {
             );
         };
 
-        subscription.duration = 0;
-
         event::emit(
             UserSubscribed {
                 account: account_addr,
@@ -273,6 +271,8 @@ module sshift_gpt_addr::subscription {
                 upgrades: vector::empty()
             }
         );
+
+        subscription.duration = 0;
     }
 
     public entry fun trial_free_subscription(
@@ -284,10 +284,10 @@ module sshift_gpt_addr::subscription {
         let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
 
         assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
-        assert!(subscription_config.test_free_days > 0, EHAS_NOT_DAYS_TO_TRY);
+        assert!(subscription_config.trial_free_days > 0, EHAS_NOT_DAYS_TO_TRY);
 
         let start_time = timestamp::now_seconds();
-        let duration = subscription_config.test_free_days * 24 * 60 * 60;
+        let duration = subscription_config.trial_free_days * 24 * 60 * 60;
 
         move_to(
             sender,
@@ -320,6 +320,9 @@ module sshift_gpt_addr::subscription {
         credits: vector<u64>,
         currency: address,
     ) acquires SubscriptionPlan, UserSubscription {
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
+
         let buyer_addr = signer::address_of(sender);
 
         assert!(!has_subscription_active(buyer_addr), EHAS_SUBSCRIPTION_ACTIVE);
@@ -426,6 +429,9 @@ module sshift_gpt_addr::subscription {
         extensions: vector<String>,
         currency: address,
     ) acquires SubscriptionPlan, UserSubscription {
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
+
         let buyer_addr = signer::address_of(sender);
 
         let plan = borrow_global<SubscriptionPlan>(@sshift_gpt_addr);
@@ -489,6 +495,9 @@ module sshift_gpt_addr::subscription {
         duration: u64,
         currency: address
     ) acquires SubscriptionPlan, UserSubscription {
+        let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
+        assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
+
         let buyer_addr = signer::address_of(sender);
 
         assert!(has_subscription_active(buyer_addr), ENOT_SUBSCRIPTION_ACTIVE);
