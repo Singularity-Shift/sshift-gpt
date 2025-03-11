@@ -52,6 +52,7 @@ out
 !/credentials/.gitkeep
 
 .aptos
+.movement
 contracts/**/build
 
 .vscode
