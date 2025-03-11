@@ -106,31 +106,59 @@ export const ImageThumbnail: React.FC<ImageThumbnailProps> = ({
       const displayFilename = filename.split('/').pop() || 'image.png';
 
       const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+      const isPetraWallet = /Petra/i.test(navigator.userAgent) || window.location.href.includes('petra');
 
-      if (isMobile) {
-        // Try Web Share API first
-        if (navigator.canShare && navigator.canShare({ files: [] })) {
-          try {
-            const file = new File([blob], displayFilename, { type: blob.type });
-            await navigator.share({
-              files: [file],
-              title: 'Image',
-              text: 'Image from SShift',
-            });
+      if (isMobile || isPetraWallet) {
+        // Create a download prompt similar to the audio player's native download
+        const downloadPrompt = document.createElement('div');
+        downloadPrompt.style.position = 'fixed';
+        downloadPrompt.style.top = '50%';
+        downloadPrompt.style.left = '50%';
+        downloadPrompt.style.transform = 'translate(-50%, -50%)';
+        downloadPrompt.style.backgroundColor = 'rgba(0, 0, 0, 0.8)';
+        downloadPrompt.style.color = 'white';
+        downloadPrompt.style.padding = '20px';
+        downloadPrompt.style.borderRadius = '10px';
+        downloadPrompt.style.zIndex = '10000';
+        downloadPrompt.style.maxWidth = '80%';
+        downloadPrompt.style.textAlign = 'center';
+        downloadPrompt.style.backdropFilter = 'blur(5px)';
+        downloadPrompt.style.boxShadow = '0 4px 6px rgba(0, 0, 0, 0.1)';
+
+        downloadPrompt.innerHTML = `
+          <div style="margin-bottom: 15px;">Do you want to download ${displayFilename}?</div>
+          <div style="display: flex; justify-content: space-between; gap: 10px;">
+            <button id="cancel-download" style="flex: 1; padding: 8px; border: none; border-radius: 5px; background: #555; color: white;">CANCEL</button>
+            <button id="confirm-download" style="flex: 1; padding: 8px; border: none; border-radius: 5px; background: #4CAF50; color: white;">DOWNLOAD</button>
+          </div>
+        `;
+
+        document.body.appendChild(downloadPrompt);
+
+        // Handle cancel button
+        document.getElementById('cancel-download')?.addEventListener('click', () => {
+          document.body.removeChild(downloadPrompt);
+          URL.revokeObjectURL(url);
+        });
+
+        // Handle download button
+        document.getElementById('confirm-download')?.addEventListener('click', () => {
+          // Create an anchor with download attribute
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = displayFilename;
+          a.style.display = 'none';
+          document.body.appendChild(a);
+          a.click();
+          
+          // Clean up
+          setTimeout(() => {
+            document.body.removeChild(a);
+            document.body.removeChild(downloadPrompt);
             URL.revokeObjectURL(url);
-            return;
-          } catch (err) {
-            console.warn('Share failed, falling back to new-tab:', err);
-          }
-        }
+          }, 100);
+        });
 
-        // Mobile fallback: open image in new tab
-        const newTab = window.open(url, '_blank');
-        if (!newTab) {
-          alert('Please allow pop-ups or manually save the image by long-pressing on it.');
-        }
-        // Don't revoke URL immediately as the new tab needs it
-        setTimeout(() => URL.revokeObjectURL(url), 60000); // Revoke after 1 minute
         return;
       }
 
