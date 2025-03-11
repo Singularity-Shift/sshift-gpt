@@ -103,9 +103,76 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     if (isUser) {
       return (
         <>
-          <div className="whitespace-pre-wrap break-words text-sm min-[768px]:text-base overflow-x-auto max-w-full">
-            {parsedContent.text}
-          </div>
+          <MathRender
+            content={parsedContent.text}
+            components={{
+              code: ({ node, inline, className, children, ...props }: any) => {
+                const match = /language-(\w+)/.exec(className || '');
+                return !inline && match ? (
+                  <CodeBlock
+                    language={match[1]}
+                    value={String(children).replace(/\n$/, '')}
+                    onCopy={onCopy}
+                  />
+                ) : (
+                  <code className={className} {...props}>
+                    {children}
+                  </code>
+                );
+              },
+              h1: ({ children }: any) => (
+                <h1 className="text-base font-bold mb-2 min-[768px]:text-2xl">
+                  {children}
+                </h1>
+              ),
+              h2: ({ children }: any) => (
+                <h2 className="text-sm font-bold mb-2 min-[768px]:text-xl">
+                  {children}
+                </h2>
+              ),
+              h3: ({ children }: any) => (
+                <h3 className="text-sm font-bold mb-2 min-[768px]:text-lg">
+                  {children}
+                </h3>
+              ),
+              p: ({ children }: any) => (
+                <div className="mb-2 text-sm min-[768px]:text-base">
+                  {children}
+                </div>
+              ),
+              a: ({ href, children }: any) => {
+                if (href && href.endsWith('.mp3')) {
+                  return <AudioPlayer src={href} />;
+                }
+                return (
+                  <a
+                    href={href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-800 hover:underline"
+                  >
+                    {children}
+                  </a>
+                );
+              },
+              ul: ({ children }: any) => (
+                <ul className="list-disc pl-4 mb-2">{children}</ul>
+              ),
+              ol: ({ children }: any) => (
+                <ol className="list-decimal pl-4 mb-2">{children}</ol>
+              ),
+              li: ({ children }: any) => <li className="mb-1">{children}</li>,
+              img: ({ src, alt }: any) => (
+                <ImageThumbnail
+                  src={src || ''}
+                  onClick={() => setExpandedImage(src || '')}
+                  isExpanded={false}
+                  isAssistantMessage={false}
+                />
+              ),
+            }}
+            className="prose max-w-none"
+          />
 
           {message.images && message.images.length > 0 && (
             <div className="mt-2 flex gap-2 overflow-x-auto">
