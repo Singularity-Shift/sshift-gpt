@@ -4,6 +4,7 @@ import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { PendingActions } from '../pendingActions';
 import { ChangeReviewer } from './changeReviewer';
+import { EnhancedFees } from '../admin/enhancedFees';
 
 const ReviewerPage = () => {
   const { isReviewer, isPendingReviewer } = useAppManagment();
@@ -28,24 +29,37 @@ const ReviewerPage = () => {
       )}
 
       {(isReviewer || isPendingReviewer) && (
-        <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Change reviewer
-            </h2>
+        <div className="max-w-[1600px] mx-auto px-4 space-y-8">
+          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+            <div className="text-center mb-6">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Change reviewer
+              </h2>
+            </div>
+            <ChangeReviewer />
           </div>
-          <ChangeReviewer />
-        </div>
-      )}
 
-      {isReviewer && (
-        <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              Pending actions
-            </h2>
-          </div>
-          <PendingActions />
+          {isReviewer && (
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Fees Management
+                </h2>
+              </div>
+              <EnhancedFees isReviewerMode={true} />
+            </div>
+          )}
+
+          {isReviewer && (
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Pending actions
+                </h2>
+              </div>
+              <PendingActions />
+            </div>
+          )}
         </div>
       )}
     </div>

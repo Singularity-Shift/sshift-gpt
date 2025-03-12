@@ -5,6 +5,7 @@ import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { ChangeAdmin } from './changeAdmin';
 import { Fees } from './fees';
+import { EnhancedFees } from './enhancedFees';
 import { Subscription } from './subscription';
 import { silkscreen } from '../fonts';
 import { Features } from './features';
@@ -12,6 +13,7 @@ import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
 import PromptEditor from './promptEditor';
+import { FreeTrialConfig } from './freeTrialConfig';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
@@ -109,7 +111,7 @@ const AdminPage = () => {
                   Fees Management
                 </h2>
               </div>
-              <Fees />
+              <EnhancedFees />
             </div>
 
             {/* Features Panel */}
@@ -130,6 +132,16 @@ const AdminPage = () => {
                 </h2>
               </div>
               <Actions />
+            </div>
+            
+            {/* Free Trial Configuration Panel */}
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Free Trial Configuration
+                </h2>
+              </div>
+              <FreeTrialConfig />
             </div>
           </div>
         )}
