@@ -319,7 +319,7 @@ module sshift_gpt_addr::subscription {
         extensions: vector<String>,
         credits: vector<u64>,
         currency: address,
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
         assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
@@ -428,7 +428,7 @@ module sshift_gpt_addr::subscription {
         nfts_holding: vector<address>,
         extensions: vector<String>,
         currency: address,
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
         assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
@@ -494,7 +494,7 @@ module sshift_gpt_addr::subscription {
         nfts_holding: vector<address>,
         duration: u64,
         currency: address
-    ) acquires SubscriptionPlan, UserSubscription {
+    ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
         assert!(!subscription_config.stop_app, EAPP_IS_STOPPED);
 
@@ -1006,7 +1006,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1055,7 +1055,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_if_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_if_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1104,7 +1104,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_per_one_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1155,7 +1155,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_per_three_nft(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1210,7 +1210,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_with_highest_holding(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1267,7 +1267,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_discount_holding_move_bot(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1314,7 +1314,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_buy_subscription_with_max_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1400,7 +1400,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_have_active_subscription_after_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1445,7 +1445,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_have_active_duration_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1643,7 +1643,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 8, location = Self)]
-    fun should_not_buy_subscription_for_less_one_day(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun should_not_buy_subscription_for_less_one_day(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1792,7 +1792,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 4, location = Self)]
-    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, FAController, UserSubscription {
+    fun buying_subscription_pretending_having_discount_with_nft_that_account_not_hold(aptos_framework: &signer, owner: &signer, admin: &signer, user1: &signer, user2: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1877,7 +1877,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 9, location = Self)]
-    fun should_not_gift_subscription_an_account_which_has_on_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_gift_subscription_an_account_which_has_on_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1921,7 +1921,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 9, location = Self)]
-    fun should_not_buy_subscription_when_account_has_one_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController {
+    fun should_not_buy_subscription_when_account_has_one_activated(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, FAController, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 

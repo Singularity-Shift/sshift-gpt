@@ -8,7 +8,7 @@ module sshift_gpt_addr::fees {
     use aptos_framework::account::{Self, SignerCapability};
     use aptos_framework::fungible_asset::Metadata;
     use aptos_framework::primary_fungible_store;
-    use aptos_framework::object;
+    use aptos_framework::object::{Self, Object};
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
     const ECOLLECTOR_NOT_FOUND: u64 = 2;
@@ -424,9 +424,6 @@ module sshift_gpt_addr::fees {
     use aptos_framework::coin;
 
     #[test_only]
-    use aptos_framework::object::{Object};
-
-    #[test_only]
     use std::string;
 
     #[test_only]
@@ -593,7 +590,9 @@ module sshift_gpt_addr::fees {
 
         let (_,resource_balances) = get_resource_balances();
 
-        assert!(resource_balances[0] == 20000000, EBALANCE_NOT_EQUAL);
+        let resource_balance = vector::borrow(&resource_balances, 0);
+
+        assert!(*resource_balance == 20000000, EBALANCE_NOT_EQUAL);
 
         add_collector(user1, user4, user2_addr);
         create_collector_object(user2);
@@ -624,10 +623,12 @@ module sshift_gpt_addr::fees {
         let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
         let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
 
+        let resource_balance_user3 = vector::borrow(&resource_balance_after_user3_claimed, 0);
+
         assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balance_after_user3_claimed[0]
-                == resource_balances[0] - user3_addr_balance,
+            *resource_balance_user3
+                == *resource_balance - user3_addr_balance,
             EBALANCE_NOT_EQUAL
         );
         assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
@@ -638,10 +639,12 @@ module sshift_gpt_addr::fees {
         let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr);
         let (_,resource_balance_after_user4_claimed) = get_resource_balances();
 
+        let resource_balance_user4 = vector::borrow(&resource_balance_after_user4_claimed, 0);
+
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balance_after_user4_claimed[0]
-                == resource_balances[0] - (user3_addr_balance + user4_addr_balance),
+            *resource_balance_user4
+                == *resource_balance - (user3_addr_balance + user4_addr_balance),
             EBALANCE_NOT_EQUAL
         );
 
@@ -1010,7 +1013,7 @@ module sshift_gpt_addr::fees {
         user2: &signer,
         user3: &signer,
         user4: &signer
-    ) acquires FeesAdmin, Config, FeesToClaim {
+    ) acquires FeesAdmin, Config, FeesToClaim, FAController {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
