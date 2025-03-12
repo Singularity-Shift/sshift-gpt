@@ -207,7 +207,7 @@ module sshift_gpt_addr::fees {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_gpt_addr);
         assert!(
-            is_admin(config, account_addr),
+            is_admin(config, account_addr) || is_reviewer(config, account_addr),
             error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION)
         );
 
