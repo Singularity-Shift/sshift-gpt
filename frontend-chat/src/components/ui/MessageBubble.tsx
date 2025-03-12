@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from './CodeBlock';
@@ -8,6 +8,7 @@ import { AssistantButtonArray } from './assistantButtonArray';
 import { UserButtonArray } from './userButtonArray';
 import { IMessage } from '@helpers';
 import { MathRender } from './mathRender';
+import TwitterMentionsRenderer from './TwitterMentionsRenderer';
 
 interface MessageBubbleProps {
   message: IMessage;
@@ -28,11 +29,15 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
   const [parsedContent, setParsedContent] = useState<{
     text: string;
     images?: string[];
+    twitterData?: any;
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<
     number | null
   >(null);
+  
+  // Add a ref to track if content has been processed to prevent infinite loops
+  const contentProcessedRef = useRef(false);
 
   // Extract audio URLs before rendering
   const audioUrls = useMemo(() => {
@@ -56,8 +61,91 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return urls;
   }, [parsedContent.text]);
 
-  React.useEffect(() => {
+  // Check if content contains Twitter mentions
+  const containsTwitterMentions = useMemo(() => {
+    return (
+      parsedContent.text.includes('mentions of cryptocurrency on Twitter') ||
+      parsedContent.text.includes('crypto mentions on Twitter') ||
+      (parsedContent.text.includes('crypto mentions') && parsedContent.text.includes('Twitter')) ||
+      parsedContent.twitterData !== undefined
+    );
+  }, [parsedContent.text, parsedContent.twitterData]);
+
+  // Add this function before the useEffect
+  const safelyParseTwitterData = useMemo(() => {
+    // Don't reprocess if not needed
+    if (!message.content || contentProcessedRef.current) return null;
+    
     try {
+      // Check if the content is JSON that might contain Twitter data
+      const contentObj = JSON.parse(message.content);
+      
+      // Check for Twitter data in different possible structures
+      if (
+        contentObj.final_message?.twitter_mentions ||
+        contentObj.twitter_mentions ||
+        (contentObj.final_message?.content && 
+         typeof contentObj.final_message.content === 'string' &&
+         (contentObj.final_message.content.includes('Twitter') || 
+          contentObj.final_message.content.includes('mentions')))
+      ) {
+        // For structured Twitter data
+        if (contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions) {
+          const mentions = contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions;
+          return {
+            text: contentObj.final_message?.content || contentObj.content || message.content,
+            twitterData: mentions,
+            images: contentObj.final_message?.images || contentObj.images || []
+          };
+        }
+        
+        // For Twitter data embedded as text
+        return {
+          text: contentObj.final_message?.content || contentObj.content || message.content,
+          images: contentObj.final_message?.images || contentObj.images || []
+        };
+      }
+      
+      // Standard JSON formatting
+      if (contentObj.final_message) {
+        return {
+          text: contentObj.final_message.content,
+          images: contentObj.final_message.images || []
+        };
+      }
+      
+      return null;
+    } catch (e) {
+      // Not JSON or parsing failed
+      return null;
+    }
+  }, [message.content]);
+
+  React.useEffect(() => {
+    // Reset the ref when message content changes
+    contentProcessedRef.current = false;
+  }, [message.content]);
+
+  React.useEffect(() => {
+    // Only process the content if it hasn't been processed yet
+    if (contentProcessedRef.current) return;
+    
+    // Use the memoized parser result if available
+    const parsedResult = safelyParseTwitterData;
+    if (parsedResult) {
+      contentProcessedRef.current = true;
+      setParsedContent({
+        text: parsedResult.text,
+        images: parsedResult.images,
+        twitterData: parsedResult.twitterData
+      });
+      return;
+    }
+    
+    try {
+      // Set the ref to true to prevent re-processing
+      contentProcessedRef.current = true;
+      
       const contentObj = JSON.parse(message.content);
       if (contentObj.final_message) {
         setParsedContent({
@@ -68,9 +156,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         setParsedContent({ text: message.content });
       }
     } catch (e) {
+      // For non-JSON content, just set it directly
+      contentProcessedRef.current = true;
       setParsedContent({ text: message.content });
     }
-  }, [message.content]);
+  }, [message.content, safelyParseTwitterData]);
 
   // Add useEffect to sync editedContent with message.content when edit mode changes
   React.useEffect(() => {
@@ -140,6 +230,21 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
         </>
+      );
+    }
+
+    // Special handling for Twitter mentions data using the dedicated component
+    if (containsTwitterMentions) {
+      return (
+        <TwitterMentionsRenderer
+          content={parsedContent.text}
+          mentions={parsedContent.twitterData}
+          images={parsedContent.images}
+          onImageClick={(index) => setExpandedThumbnailIndex(
+            expandedThumbnailIndex === index ? null : index
+          )}
+          expandedImageIndex={expandedThumbnailIndex}
+        />
       );
     }
 
