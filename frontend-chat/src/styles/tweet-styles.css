@@ -1,5 +1,5 @@
 /* Twitter Mentions Styling */
-.twitter-mentions-direct {
+.twitter-mentions-direct, .twitter-mentions-structured {
   width: 100%;
   padding: 8px 0;
 }
@@ -29,6 +29,17 @@
 .tweet-handle {
   color: #4a5568;
   margin-left: 0.25rem;
+}
+
+/* Tweet Entry Styling */
+.tweet-entry {
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.tweet-entry:last-child {
+  border-bottom: none;
 }
 
 /* Content Styling */
@@ -71,7 +82,7 @@
 }
 
 /* Link Styling */
-.twitter-mentions-direct a, .profile-link {
+.twitter-mentions-direct a, .profile-link, .twitter-mentions-structured a {
   color: #3182ce;
   text-decoration: none;
   display: inline-block;
@@ -80,7 +91,7 @@
   margin-bottom: 0.75rem;
 }
 
-.twitter-mentions-direct a:hover, .profile-link:hover {
+.twitter-mentions-direct a:hover, .profile-link:hover, .twitter-mentions-structured a:hover {
   text-decoration: underline;
 }
 
@@ -123,11 +134,19 @@
   border-left-color: #4a5568;
 }
 
+.dark-theme .tweet-metric {
+  color: #a0aec0;
+}
+
+.dark-theme .tweet-entry {
+  border-bottom-color: #4a5568;
+}
+
 .dark-theme .metric-value {
   color: #a0aec0;
 }
 
-.dark-theme .twitter-mentions-direct a, .dark-theme .profile-link {
+.dark-theme .twitter-mentions-direct a, .dark-theme .profile-link, .dark-theme .twitter-mentions-structured a {
   color: #63b3ed;
 }
 

@@ -51,17 +51,28 @@ export const TwitterMentionsRenderer: React.FC<TwitterMentionsProps> = memo(({ c
     return urls;
   };
 
+  // Check if content has the third format (numbered list with Content/Metrics/Profile)
+  const hasThirdFormat = (text: string): boolean => {
+    return (
+      text.includes('Content:') && 
+      text.includes('Metrics:') && 
+      text.includes('Profile')
+    );
+  };
+
   // Try to extract tweet IDs from the content
   const tweetIds = extractTweetIds(content);
   const profileUrls = extractProfileUrls(content);
+  const isThirdFormat = hasThirdFormat(content);
   
   // For debugging - log what we found
   useEffect(() => {
     console.log('Content:', content);
     console.log('Tweet IDs found:', tweetIds);
     console.log('Profile URLs found:', profileUrls);
+    console.log('Is third format:', isThirdFormat);
     
-    setDebugInfo(`Found ${tweetIds.length} tweet IDs and ${profileUrls.length} profile URLs`);
+    setDebugInfo(`Found ${tweetIds.length} tweet IDs, ${profileUrls.length} profile URLs, Third format: ${isThirdFormat}`);
   }, [content]);
 
   // If we have tweet IDs, render them using react-tweet
@@ -71,6 +82,80 @@ export const TwitterMentionsRenderer: React.FC<TwitterMentionsProps> = memo(({ c
         {tweetIds.map((id) => (
           <div key={id} className="tweet-embed-wrapper my-3">
             <Tweet id={id} />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Process the third format (numbered list with Content/Metrics/Profile)
+  if (isThirdFormat) {
+    // Extract structured data from the content
+    const processThirdFormat = (text: string) => {
+      // Split by numbered entries (1., 2., 3., etc.)
+      const entries = text.split(/\d+\.\s+/).filter(entry => entry.trim().length > 0);
+      
+      return entries.map((entry, index) => {
+        // Extract username
+        const usernameMatch = entry.match(/^([^\n]+)/);
+        const username = usernameMatch ? usernameMatch[1].trim() : 'Unknown User';
+        
+        // Extract content
+        const contentMatch = entry.match(/Content:\s+(.*?)(?=Metrics:|Profile|$)/s);
+        const content = contentMatch ? contentMatch[1].trim() : '';
+        
+        // Extract metrics
+        const metricsMatch = entry.match(/Metrics:\s+(.*?)(?=Profile|$)/s);
+        const metricsText = metricsMatch ? metricsMatch[1].trim() : '';
+        
+        // Parse metrics
+        const likesMatch = metricsText.match(/(\d+)\s+likes/);
+        const repliesMatch = metricsText.match(/(\d+)\s+replies/);
+        const repostsMatch = metricsText.match(/(\d+)\s+reposts/);
+        
+        const metrics = {
+          likes: likesMatch ? likesMatch[1] : '0',
+          replies: repliesMatch ? repliesMatch[1] : '0',
+          reposts: repostsMatch ? repostsMatch[1] : '0'
+        };
+        
+        return {
+          index: index + 1,
+          username,
+          content,
+          metrics
+        };
+      });
+    };
+    
+    const tweetEntries = processThirdFormat(content);
+    
+    return (
+      <div className="twitter-mentions-structured">
+        {tweetEntries.map((tweet, index) => (
+          <div key={index} className="tweet-entry">
+            <div className="tweet-header">
+              <span className="tweet-number">{tweet.index}.</span>
+              <span className="tweet-author">{tweet.username}</span>
+            </div>
+            
+            <div className="content-label">Content:</div>
+            <div className="tweet-content">{tweet.content}</div>
+            
+            <div className="metrics-container">
+              <div className="tweet-metric">
+                <span className="metric-label">Likes:</span>
+                <span className="metric-value">{tweet.metrics.likes}</span>
+              </div>
+              <div className="tweet-metric">
+                <span className="metric-label">Replies:</span>
+                <span className="metric-value">{tweet.metrics.replies}</span>
+              </div>
+              <div className="tweet-metric">
+                <span className="metric-label">Reposts:</span>
+                <span className="metric-value">{tweet.metrics.reposts}</span>
+              </div>
+            </div>
           </div>
         ))}
       </div>
