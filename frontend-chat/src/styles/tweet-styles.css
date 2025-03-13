@@ -1,5 +1,5 @@
 /* Twitter Mentions Styling */
-.twitter-mentions-direct, .twitter-mentions-structured {
+.twitter-mentions-direct {
   width: 100%;
   padding: 8px 0;
 }
@@ -26,30 +26,14 @@
   color: #1a202c;
 }
 
-.tweet-handle {
-  color: #4a5568;
-  margin-left: 0.25rem;
-}
-
-/* Tweet Entry Styling */
-.tweet-entry {
-  margin-bottom: 1.5rem;
-  padding-bottom: 1rem;
-  border-bottom: 1px solid #e2e8f0;
-}
-
-.tweet-entry:last-child {
-  border-bottom: none;
-}
-
 /* Content Styling */
-.content-label, .description-label {
+.content-label {
   font-weight: 500;
   margin-left: 1.5rem;
   margin-top: 0.25rem;
 }
 
-.tweet-content, .tweet-description {
+.tweet-content {
   margin-left: 1.5rem;
   padding-left: 0.5rem;
   border-left: 2px solid #e2e8f0;
@@ -59,15 +43,8 @@
 }
 
 /* Metrics Styling */
-.metrics-container {
-  margin-left: 1.5rem;
-  margin-top: 0.5rem;
-  margin-bottom: 0.5rem;
-  display: flex;
-  flex-wrap: wrap;
-}
-
 .tweet-metric {
+  margin-left: 1.5rem;
   margin-bottom: 0.125rem;
   display: inline-block;
   margin-right: 1rem;
@@ -82,7 +59,7 @@
 }
 
 /* Link Styling */
-.twitter-mentions-direct a, .profile-link, .twitter-mentions-structured a {
+.twitter-mentions-direct a {
   color: #3182ce;
   text-decoration: none;
   display: inline-block;
@@ -91,7 +68,7 @@
   margin-bottom: 0.75rem;
 }
 
-.twitter-mentions-direct a:hover, .profile-link:hover, .twitter-mentions-structured a:hover {
+.twitter-mentions-direct a:hover {
   text-decoration: underline;
 }
 
@@ -114,46 +91,22 @@
   width: 100% !important;
 }
 
-/* Debug info styling */
-.debug-info {
-  font-family: monospace;
-  background-color: #f8f9fa;
-}
-
 /* Dark Mode Support */
 .dark-theme .tweet-author {
   color: #e2e8f0;
 }
 
-.dark-theme .tweet-handle {
-  color: #a0aec0;
-}
-
-.dark-theme .tweet-content, .dark-theme .tweet-description {
+.dark-theme .tweet-content {
   color: #cbd5e0;
   border-left-color: #4a5568;
-}
-
-.dark-theme .tweet-metric {
-  color: #a0aec0;
-}
-
-.dark-theme .tweet-entry {
-  border-bottom-color: #4a5568;
 }
 
 .dark-theme .metric-value {
   color: #a0aec0;
 }
 
-.dark-theme .twitter-mentions-direct a, .dark-theme .profile-link, .dark-theme .twitter-mentions-structured a {
+.dark-theme .twitter-mentions-direct a {
   color: #63b3ed;
-}
-
-.dark-theme .debug-info {
-  background-color: #2d3748;
-  color: #e2e8f0;
-  border-color: #4a5568;
 }
 
 /* Keep the responsive adjustments */
@@ -164,9 +117,5 @@
   
   .twitter-embeds-container {
     max-width: 100%;
-  }
-  
-  .metrics-container {
-    flex-direction: column;
   }
 } 
