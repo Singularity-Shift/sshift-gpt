@@ -9,6 +9,7 @@ import { UserButtonArray } from './userButtonArray';
 import { IMessage } from '@helpers';
 import { MathRender } from './mathRender';
 import TwitterMentionsRenderer from './TwitterMentionsRenderer';
+import { useTheme } from 'next-themes';
 
 interface MessageBubbleProps {
   message: IMessage;
@@ -17,19 +18,20 @@ interface MessageBubbleProps {
   onEdit: (message: IMessage, newContent: string) => void;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   message,
   onCopy,
   onRegenerate,
   onEdit,
 }) => {
+  const { theme } = useTheme();
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [parsedContent, setParsedContent] = useState<{
     text: string;
     images?: string[];
-    twitterData?: any;
+    twitter_mentions?: any[];
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<
@@ -61,48 +63,103 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return urls;
   }, [parsedContent.text]);
 
-  // Check if content contains Twitter mentions
+  // Update the containsTwitterMentions function to detect both text-based mentions and embedded tweet URLs
   const containsTwitterMentions = useMemo(() => {
-    return (
-      parsedContent.text.includes('mentions of cryptocurrency on Twitter') ||
-      parsedContent.text.includes('crypto mentions on Twitter') ||
-      (parsedContent.text.includes('crypto mentions') && parsedContent.text.includes('Twitter')) ||
-      parsedContent.twitterData !== undefined
-    );
-  }, [parsedContent.text, parsedContent.twitterData]);
+    if (!parsedContent.text) return false;
+    
+    // Check for text-based Twitter format
+    const hasTextFormat = 
+      parsedContent.text.match(/\d+\.\s+\*\*.*\*\*/) !== null &&
+      parsedContent.text.includes('**Content**:') &&
+      parsedContent.text.includes('**Likes**:');
+    
+    // Check for embedded tweet URLs (twitter.com/username/status/id or x.com/username/status/id)
+    const hasTweetUrls = 
+      parsedContent.text.match(/https:\/\/(?:twitter|x)\.com\/[^\/]+\/status\/\d+/i) !== null;
+    
+    return hasTextFormat || hasTweetUrls;
+  }, [parsedContent.text]);
 
   // Add this function before the useEffect
   const safelyParseTwitterData = useMemo(() => {
     // Don't reprocess if not needed
     if (!message.content || contentProcessedRef.current) return null;
     
+    // Helper function to parse Twitter mentions from formatted text
+    const parseTwitterMentionsFromText = (text) => {
+      if (!text) return [];
+      
+      // Format 1 - numbered list with details (from the screenshot):
+      // 1. CZ 🔶 BNB (@cz_binance):
+      //    Content: "Sorry to disappoint. The WSJ article got the facts wrong..."
+      //    Likes: 4,171
+      //    View Tweet
+      const pattern1 = /(\d+)\.\s+(.*?)(?:\(@([^)]+)\))?:\s*\n\s*Content:\s*"([^"]*)"\s*\n\s*Likes:\s*([\d,]+)/g;
+      
+      // Alternative format if the first one doesn't match
+      // 1. Walter Bloomberg (@Deltaone):
+      //    • 🔥 TRUMP FAMILY HAS BEEN IN TALKS FOR STAKE IN CRYPTO EXCHANGE BINANCE, SOURCES SAY -- WSJ"
+      //    • Likes: 972
+      const pattern2 = /(\d+)\.\s+(.*?)(?:\(@([^)]+)\))?:[\s\S]*?[•*]\s*(.*?)[\s\S]*?[•*]\s*Likes:\s*([\d,]+)/g;
+      
+      const mentions = [];
+      let match;
+      
+      // Try first pattern
+      while ((match = pattern1.exec(text)) !== null) {
+        const [_, num, name, username, content, likesStr] = match;
+        const likes = parseInt(likesStr.replace(/,/g, ''));
+        
+        mentions.push({
+          content: content,
+          like_count: isNaN(likes) ? 0 : likes,
+          twitter_account_info: {
+            username: username,
+            name: name.trim()
+          }
+        });
+      }
+      
+      // If no matches, try second pattern
+      if (mentions.length === 0) {
+        while ((match = pattern2.exec(text)) !== null) {
+          const [_, num, name, username, content, likesStr] = match;
+          const likes = parseInt(likesStr.replace(/,/g, ''));
+          
+          mentions.push({
+            content: content,
+            like_count: isNaN(likes) ? 0 : likes,
+            twitter_account_info: {
+              username: username,
+              name: name.trim()
+            }
+          });
+        }
+      }
+      
+      return mentions;
+    };
+    
     try {
-      // Check if the content is JSON that might contain Twitter data
+      // Check if the content is JSON
       const contentObj = JSON.parse(message.content);
       
-      // Check for Twitter data in different possible structures
-      if (
-        contentObj.final_message?.twitter_mentions ||
-        contentObj.twitter_mentions ||
-        (contentObj.final_message?.content && 
-         typeof contentObj.final_message.content === 'string' &&
-         (contentObj.final_message.content.includes('Twitter') || 
-          contentObj.final_message.content.includes('mentions')))
-      ) {
-        // For structured Twitter data
-        if (contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions) {
-          const mentions = contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions;
+      // First, try to extract directly from text if it has Twitter mention patterns
+      if (contentObj.final_message?.content) {
+        const extractedMentions = parseTwitterMentionsFromText(contentObj.final_message.content);
+        if (extractedMentions.length > 0) {
           return {
-            text: contentObj.final_message?.content || contentObj.content || message.content,
-            twitterData: mentions,
-            images: contentObj.final_message?.images || contentObj.images || []
+            text: contentObj.final_message.content,
+            twitter_mentions: extractedMentions
           };
         }
-        
-        // For Twitter data embedded as text
+      }
+      
+      // Check for twitter_mentions array in the response
+      if (contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions) {
         return {
-          text: contentObj.final_message?.content || contentObj.content || message.content,
-          images: contentObj.final_message?.images || contentObj.images || []
+          text: contentObj.final_message?.content || contentObj.content || "",
+          twitter_mentions: contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions
         };
       }
       
@@ -116,7 +173,26 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       
       return null;
     } catch (e) {
-      // Not JSON or parsing failed
+      // Not JSON or parsing failed, try to parse directly from text
+      const extractedMentions = parseTwitterMentionsFromText(message.content);
+      if (extractedMentions.length > 0) {
+        return {
+          text: message.content,
+          twitter_mentions: extractedMentions
+        };
+      }
+      
+      // If the message looks like it contains Twitter mentions but we couldn't parse them,
+      // just return the text as-is for direct rendering
+      if (message.content.includes('Content:') && 
+          message.content.includes('Likes:') && 
+          message.content.match(/\d+\.\s+.*(?:\(@.*\))?:/)) {
+        return {
+          text: message.content,
+          twitter_mentions: [] // Empty array so we know to use direct rendering
+        };
+      }
+      
       return null;
     }
   }, [message.content]);
@@ -137,7 +213,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       setParsedContent({
         text: parsedResult.text,
         images: parsedResult.images,
-        twitterData: parsedResult.twitterData
+        twitter_mentions: parsedResult.twitter_mentions
       });
       return;
     }
@@ -233,18 +309,13 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       );
     }
 
+    // Simplify the renderContent function for Twitter mentions
     // Special handling for Twitter mentions data using the dedicated component
     if (containsTwitterMentions) {
       return (
-        <TwitterMentionsRenderer
-          content={parsedContent.text}
-          mentions={parsedContent.twitterData}
-          images={parsedContent.images}
-          onImageClick={(index) => setExpandedThumbnailIndex(
-            expandedThumbnailIndex === index ? null : index
-          )}
-          expandedImageIndex={expandedThumbnailIndex}
-        />
+        <div className={theme === 'dark' ? 'dark-theme' : 'light-theme'}>
+          <TwitterMentionsRenderer content={parsedContent.text} />
+        </div>
       );
     }
 
@@ -400,4 +471,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       )}
     </div>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';
