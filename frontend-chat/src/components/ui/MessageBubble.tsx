@@ -86,7 +86,7 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     if (!message.content || contentProcessedRef.current) return null;
     
     // Helper function to parse Twitter mentions from formatted text
-    const parseTwitterMentionsFromText = (text) => {
+    const parseTwitterMentionsFromText = (text: string) => {
       if (!text) return [];
       
       // Format 1 - numbered list with details (from the screenshot):
