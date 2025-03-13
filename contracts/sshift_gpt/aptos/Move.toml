@@ -4,7 +4,7 @@ version = "1.0.0"
 authors = []
 
 [addresses]
-sshift_gpt_addr = "_"
+sshift_gpt_addr = "0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d"
 
 [dev-addresses]
 

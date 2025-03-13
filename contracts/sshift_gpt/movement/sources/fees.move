@@ -21,6 +21,7 @@ module sshift_gpt_addr::fees {
     const ENOT_PENDING_REVIEWER: u64 = 10;
     const ENOT_CURRENCIES_SET: u64 = 11;
     const EWRONG_CURRENCY: u64 = 12;
+    const ENOT_CURRENCY_FOUND: u64 = 13;
 
     struct Config has key {
         admin_addr: address,
@@ -32,18 +33,21 @@ module sshift_gpt_addr::fees {
 
     struct FeesAdmin has key {
         signer_cap: Option<SignerCapability>,
-        fees_not_claimed: u64,
+        fees_not_claimed: vector<u64>,
+        currencies: vector<address>,
         collectors: vector<address>,
     }
 
     struct FeesToClaim has key {
-        amount: u64
+        currencies: vector<address>,
+        amounts: vector<u64>
     }
 
     #[event]
     struct Claimed has store, drop {
         collector: address,
-        amount: u64
+        amount: u64,
+        currency: address,
     }
 
     fun init_module(sender: &signer) {
@@ -62,7 +66,8 @@ module sshift_gpt_addr::fees {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                fees_not_claimed: 0,
+                fees_not_claimed: vector::empty(),
+                currencies: vector::empty(),
                 signer_cap: option::none(),
             }
         );
@@ -121,7 +126,7 @@ module sshift_gpt_addr::fees {
 
         assert!(is_found, error::not_found(ECOLLECTOR_NOT_FOUND));
 
-        move_to(account, FeesToClaim { amount: 0 });
+        move_to(account, FeesToClaim { amounts: vector::empty(), currencies: vector::empty() });
     }
 
     public entry fun add_collector(
@@ -177,9 +182,13 @@ module sshift_gpt_addr::fees {
         let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
         assert!(has_currency, EWRONG_CURRENCY);
 
-        let salary_to_claim = borrow_global_mut<FeesToClaim>(account_addr);
+        let fees_to_claim = borrow_global_mut<FeesToClaim>(account_addr);
 
-        assert!(salary_to_claim.amount > 0, error::invalid_state(ENOTHING_TO_CLAIM));
+        let (fees_to_claim_currency_exists, fees_to_claim_currency_index) = vector::find(&fees_to_claim.currencies, |c| c == &currency);
+
+        let fees_to_claim_amount = vector::borrow(&fees_to_claim.amounts, fees_to_claim_currency_index);
+
+        assert!(fees_to_claim_currency_exists && *fees_to_claim_amount > 0, error::invalid_state(ENOTHING_TO_CLAIM));
 
         let signer_cap = get_signer_cap(&fees_admin.signer_cap);
 
@@ -188,17 +197,47 @@ module sshift_gpt_addr::fees {
         let metadata = object::address_to_object<Metadata>(currency);
 
         primary_fungible_store::transfer(
-            &resource_signer, metadata, account_addr, salary_to_claim.amount 
+            &resource_signer, metadata, account_addr, *fees_to_claim_amount
         );
 
-        fees_admin.fees_not_claimed = fees_admin.fees_not_claimed
-            - salary_to_claim.amount;
+        let (fees_admin_currency_exists, fees_admin_currency_index) = vector::find(&fees_admin.currencies, |c| c == &currency);
+
+        assert!(fees_admin_currency_exists, ENOT_CURRENCY_FOUND);
+
+
+        let index = 0;
+
+        fees_admin.fees_not_claimed = vector::map(fees_admin.fees_not_claimed, |f| {
+            let amount_not_claimed = if (index == fees_admin_currency_index) { 
+                f - *fees_to_claim_amount
+            } else {
+                f
+            };
+
+            index = index + 1;
+
+            amount_not_claimed
+        });
+
+        let fees_admin_not_claimed = vector::borrow(&fees_admin.fees_not_claimed, fees_admin_currency_index);
 
         event::emit(
-            Claimed { collector: account_addr, amount: salary_to_claim.amount }
+            Claimed { collector: account_addr, amount: *fees_admin_not_claimed, currency }
         );
 
-        salary_to_claim.amount = 0;
+        let index = 0;
+
+        fees_to_claim.amounts = vector::map(fees_to_claim.amounts, |f| {
+            let amount_to_claim = if (index == fees_to_claim_currency_index) { 
+                0
+            } else {
+                f
+            };
+
+            index = index + 1;
+
+            amount_to_claim
+        });
     }
 
     public entry fun payment(
@@ -226,29 +265,79 @@ module sshift_gpt_addr::fees {
         let resource_signer = account::create_signer_with_capability(signer_cap);
 
         let (has_currency, _) = vector::find(&config.currencies, |c| c == &currency);
+
         assert!(has_currency, EWRONG_CURRENCY);
 
         let metadata = object::address_to_object<Metadata>(currency);
 
+        let (fees_admin_currency_exists, fees_admin_currency_index) = vector::find(&fees_admin.currencies, |c| c == &currency);
+
+
+        let fees_admin_not_claimed = if (fees_admin_currency_exists) {
+            *vector::borrow(&fees_admin.fees_not_claimed, fees_admin_currency_index)
+        } else {
+            0
+        };
+        
         assert!(
             primary_fungible_store::balance(signer::address_of(&resource_signer), metadata)
                 > vector::fold(amounts, 0, |curr, acc| acc + curr)
-                    + fees_admin.fees_not_claimed,
-            error::invalid_state(EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE)
+                    + fees_admin_not_claimed,
+            EFEES_SET_AMOUNT_HIGHER_THAN_BALANCE
         );
-
+        
         vector::for_each(
             collectors,
             |e| {
                 let (_has_amount, index) = vector::index_of(&collectors, &e);
 
-                let amount = *vector::borrow<u64>(&amounts, index);
+                let amount = vector::borrow<u64>(&amounts, index);
 
-                let salary_to_claim = borrow_global_mut<FeesToClaim>(e);
+                let fees_to_claim = borrow_global_mut<FeesToClaim>(e);
 
-                salary_to_claim.amount = amount;
+                let (fees_to_claim_currency_exits, fees_to_claim_currency_index) = vector::find(&fees_to_claim.currencies, |c| c == &currency);
 
-                fees_admin.fees_not_claimed = fees_admin.fees_not_claimed + amount;
+                let index = 0;
+
+                if(fees_to_claim_currency_exits) {
+                    fees_to_claim.amounts = vector::map(fees_to_claim.amounts, |f| {
+                        let amount_to_claim = if (index == fees_to_claim_currency_index) { 
+                            f + *amount
+                        } else {
+                            f
+                        };
+
+                        index = index + 1;
+
+                        amount_to_claim
+                    });
+                    
+                } else {
+                    vector::push_back(&mut fees_to_claim.currencies, currency);
+                    vector::push_back(&mut fees_to_claim.amounts, *amount);
+                };
+
+                index = 0;
+
+                if (fees_admin_currency_exists) {
+                    fees_admin.fees_not_claimed = vector::map(fees_admin.fees_not_claimed, |f| {
+                        let amount_not_claimed = if (index == fees_admin_currency_index) { 
+                            f + *amount
+                        } else {
+                            f
+                        };
+
+                        index = index + 1;
+
+                        amount_not_claimed
+                    });
+                } else {
+                    fees_admin_not_claimed = primary_fungible_store::balance(signer::address_of(&resource_signer), metadata);
+
+                    vector::push_back(&mut fees_admin.currencies, currency);
+                    vector::push_back(&mut fees_admin.fees_not_claimed, fees_admin_not_claimed);
+
+                };
             }
         );
     }
@@ -373,9 +462,19 @@ module sshift_gpt_addr::fees {
     }
 
     #[view]
-    public fun get_balance_to_claim(account_addr: address): u64 acquires FeesToClaim {
+    public fun get_balance_to_claim(account_addr: address, currency: address): u64 acquires FeesToClaim {
         let fees_to_claim = borrow_global<FeesToClaim>(account_addr);
-        fees_to_claim.amount
+
+        let (fees_to_claim_currency_exists, fees_to_claim_currency_index) = vector::find(&fees_to_claim.currencies, |c| c == &currency);
+
+        let amount = if(!fees_to_claim_currency_exists) {
+            0
+        } else {
+            *vector::borrow(&fees_to_claim.amounts, fees_to_claim_currency_index)
+
+        };
+
+        amount
     }
 
     #[view]
@@ -464,8 +563,9 @@ module sshift_gpt_addr::fees {
             sender,
             FeesAdmin {
                 collectors: vector::empty(),
-                fees_not_claimed: 0,
-                signer_cap: option::none()
+                fees_not_claimed: vector::empty(),
+                signer_cap: option::none(),
+                currencies: vector::empty(),
             }
         );
     }
@@ -608,9 +708,9 @@ module sshift_gpt_addr::fees {
             vector[2000000, 1000000, 1500000]
         );
 
-        let user2_addr_balance = get_balance_to_claim(user2_addr);
-        let user3_addr_balance = get_balance_to_claim(user3_addr);
-        let user4_addr_balance = get_balance_to_claim(user4_addr);
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr);
 
         assert!(user2_addr_balance == 2000000, EBALANCE_NOT_EQUAL);
         assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
@@ -619,9 +719,9 @@ module sshift_gpt_addr::fees {
         claim_fees(user3, fa_addr);
 
         let (_,resource_balance_after_user3_claimed) = get_resource_balances();
-        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr);
-        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr);
-        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr);
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr);
 
         let resource_balance_user3 = vector::borrow(&resource_balance_after_user3_claimed, 0);
 
@@ -636,7 +736,7 @@ module sshift_gpt_addr::fees {
 
         claim_fees(user4, fa_addr);
 
-        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr);
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr);
         let (_,resource_balance_after_user4_claimed) = get_resource_balances();
 
         let resource_balance_user4 = vector::borrow(&resource_balance_after_user4_claimed, 0);
@@ -1013,7 +1113,7 @@ module sshift_gpt_addr::fees {
         user2: &signer,
         user3: &signer,
         user4: &signer
-    ) acquires FeesAdmin, Config, FeesToClaim, FAController {
+    ) acquires FeesAdmin, Config, FeesToClaim {
         let user1_addr = signer::address_of(user1);
         let user2_addr = signer::address_of(user2);
         let user3_addr = signer::address_of(user3);
@@ -1042,13 +1142,9 @@ module sshift_gpt_addr::fees {
 
         let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
 
-        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
-
         let fa_obj = create_fa();
         
         let fa_addr = object::object_address(&fa_obj);
-
-        let fa_controller = borrow_global<FAController>(fa_addr);
 
         payment(
             user4,

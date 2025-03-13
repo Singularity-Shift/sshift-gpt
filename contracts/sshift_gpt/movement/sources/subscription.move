@@ -109,7 +109,7 @@ module sshift_gpt_addr::subscription {
         );
 
         move_to(sender, SubscriptionConfig {
-            stop_app: false,
+            stop_app: true,
             trial_free_days: 0,
         })
     }
@@ -560,6 +560,20 @@ module sshift_gpt_addr::subscription {
         );
     }
 
+    public entry fun trigger_app(sender: &signer) acquires SubscriptionConfig {
+        check_authorization(sender);
+
+        let config = borrow_global_mut<SubscriptionConfig>(@sshift_gpt_addr);
+
+        config.stop_app = !config.stop_app;
+    }
+
+    #[view]
+    public fun get_app_status(): bool acquires SubscriptionConfig {
+        let config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
+
+        config.stop_app
+    }
 
     #[view]
     public fun get_subscription_config(): SubscriptionPlan acquires SubscriptionPlan {
@@ -657,6 +671,16 @@ module sshift_gpt_addr::subscription {
         let admin = fees::get_admin();
         assert!(
             admin == account_addr, EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION
+        );
+    }
+
+    fun check_authorization(sender: &signer) {
+        let account_addr = signer::address_of(sender);
+        let admin = fees::get_admin();
+        let reviewer = fees::get_reviewer();
+
+        assert!(
+            admin == account_addr || reviewer == account_addr, EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION
         );
     }
 
@@ -858,7 +882,7 @@ module sshift_gpt_addr::subscription {
     }
 
     #[test_only]
-    fun create_subscription(sender: &signer, admin: &signer): (address, address) acquires SubscriptionPlan {
+    fun create_subscription(sender: &signer, admin: &signer): (address, address) acquires SubscriptionPlan, SubscriptionConfig {
         let admin_addr = signer::address_of(admin);
 
         create_resource_account(sender, admin);
@@ -893,6 +917,7 @@ module sshift_gpt_addr::subscription {
         vector::push_back(&mut discounts, 2000000);
 
         init_module(sender);
+        trigger_app(sender);
 
         let prices: vector<u64> = vector[200000000,326000000,434000000,531000000,622000000,707000000,789000000,866000000,941000000,1014000000,1084000000,1153000000,1220000000,1285000000,1350000000,1412000000,1474000000,1535000000,1594000000,1653000000,1711000000,1768000000,1824000000,1880000000,1935000000,1989000000,2043000000,2096000000,2148000000,2200000000];
 
@@ -912,7 +937,7 @@ module sshift_gpt_addr::subscription {
             admin = @0x200
         )
     ]
-    fun should_create_subscription(aptos_framework: &signer, owner: &signer, admin: &signer) acquires SubscriptionPlan {
+    fun should_create_subscription(aptos_framework: &signer, owner: &signer, admin: &signer) acquires SubscriptionPlan, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
 
         let admin_addr = signer::address_of(admin);
@@ -1251,7 +1276,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_claim_free_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1377,7 +1402,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_have_active_subscription_after_claim(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
           let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1413,7 +1438,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_be_able_to_gift_again_after_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_be_able_to_gift_again_after_previous_expired(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1459,7 +1484,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_have_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1497,7 +1522,7 @@ module sshift_gpt_addr::subscription {
             user = @0x300
         )
     ]
-    fun should_not_have_active_subscription_without_claiming_or_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription {
+    fun should_not_have_active_subscription_without_claiming_or_buying(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1574,7 +1599,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 1, location = Self)]
-    fun set_plan_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan {
+    fun set_plan_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1618,6 +1643,7 @@ module sshift_gpt_addr::subscription {
         
 
         init_module(owner);
+        trigger_app(owner);
 
         let prices: vector<u64> = vector[200000000,326000000,434000000,531000000,622000000,707000000,789000000,866000000,941000000,1014000000,1084000000,1153000000,1220000000,1285000000,1350000000,1412000000,1474000000,1535000000,1594000000,1653000000,1711000000,1768000000,1824000000,1880000000,1935000000,1989000000,2043000000,2096000000,2148000000,2200000000];
 
@@ -1640,7 +1666,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 1, location = Self)]
-    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionsGifted, UserSubscription {
+    fun gift_subscription_with_not_admin_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionsGifted, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1728,7 +1754,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 10, location = Self)]
-    fun should_not_gift_subscription_an_account_which_has_already_one(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_gift_subscription_an_account_which_has_already_one(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1845,7 +1871,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 6, location = Self)]
-    fun should_not_claim_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_claim_active_free_subscription_after_expire(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
@@ -1882,7 +1908,7 @@ module sshift_gpt_addr::subscription {
         )
     ]
     #[expected_failure(abort_code = 6, location = Self)]
-    fun should_not_claim_active_free_subscription_if_already_claimed(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription {
+    fun should_not_claim_active_free_subscription_if_already_claimed(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionsGifted, SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
         timestamp::set_time_has_started_for_testing(aptos_framework);
 
