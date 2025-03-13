@@ -11,6 +11,21 @@ import { MathRender } from './mathRender';
 import TwitterMentionsRenderer from './TwitterMentionsRenderer';
 import { useTheme } from 'next-themes';
 
+interface TwitterMetrics {
+  likes: number;
+  quotes: number;
+  replies: number;
+  reposts: number;
+  views: number;
+}
+
+interface TwitterMention {
+  number: number;
+  username: string;
+  content: string;
+  metrics: TwitterMetrics;
+}
+
 interface MessageBubbleProps {
   message: IMessage;
   onCopy: (text: string) => void;
@@ -86,55 +101,27 @@ export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
     if (!message.content || contentProcessedRef.current) return null;
     
     // Helper function to parse Twitter mentions from formatted text
-    const parseTwitterMentionsFromText = (text) => {
+    const parseTwitterMentionsFromText = (text: string): TwitterMention[] => {
       if (!text) return [];
       
       // Format 1 - numbered list with details (from the screenshot):
-      // 1. CZ 🔶 BNB (@cz_binance):
-      //    Content: "Sorry to disappoint. The WSJ article got the facts wrong..."
-      //    Likes: 4,171
-      //    View Tweet
-      const pattern1 = /(\d+)\.\s+(.*?)(?:\(@([^)]+)\))?:\s*\n\s*Content:\s*"([^"]*)"\s*\n\s*Likes:\s*([\d,]+)/g;
+      const mentions: TwitterMention[] = [];
+      const mentionRegex = /(\d+)\.\s+\*\*([^*]+)\*\*\s*:\s*"([^"]+)"\s*(?:Likes:\s*(\d+)\s*\|\s*Quotes:\s*(\d+)\s*\|\s*Replies:\s*(\d+)\s*\|\s*Reposts:\s*(\d+)\s*\|\s*Views:\s*(\d+))?/g;
       
-      // Alternative format if the first one doesn't match
-      // 1. Walter Bloomberg (@Deltaone):
-      //    • 🔥 TRUMP FAMILY HAS BEEN IN TALKS FOR STAKE IN CRYPTO EXCHANGE BINANCE, SOURCES SAY -- WSJ"
-      //    • Likes: 972
-      const pattern2 = /(\d+)\.\s+(.*?)(?:\(@([^)]+)\))?:[\s\S]*?[•*]\s*(.*?)[\s\S]*?[•*]\s*Likes:\s*([\d,]+)/g;
-      
-      const mentions = [];
       let match;
-      
-      // Try first pattern
-      while ((match = pattern1.exec(text)) !== null) {
-        const [_, num, name, username, content, likesStr] = match;
-        const likes = parseInt(likesStr.replace(/,/g, ''));
-        
+      while ((match = mentionRegex.exec(text)) !== null) {
         mentions.push({
-          content: content,
-          like_count: isNaN(likes) ? 0 : likes,
-          twitter_account_info: {
-            username: username,
-            name: name.trim()
+          number: parseInt(match[1]),
+          username: match[2].trim(),
+          content: match[3].trim(),
+          metrics: {
+            likes: parseInt(match[4]) || 0,
+            quotes: parseInt(match[5]) || 0,
+            replies: parseInt(match[6]) || 0,
+            reposts: parseInt(match[7]) || 0,
+            views: parseInt(match[8]) || 0
           }
         });
-      }
-      
-      // If no matches, try second pattern
-      if (mentions.length === 0) {
-        while ((match = pattern2.exec(text)) !== null) {
-          const [_, num, name, username, content, likesStr] = match;
-          const likes = parseInt(likesStr.replace(/,/g, ''));
-          
-          mentions.push({
-            content: content,
-            like_count: isNaN(likes) ? 0 : likes,
-            twitter_account_info: {
-              username: username,
-              name: name.trim()
-            }
-          });
-        }
       }
       
       return mentions;
