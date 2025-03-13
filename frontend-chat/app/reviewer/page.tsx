@@ -5,6 +5,8 @@ import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { PendingActions } from '../pendingActions';
 import { ChangeReviewer } from './changeReviewer';
 import { EnhancedFees } from '../admin/enhancedFees';
+import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
+import StableCoinsV2PaymentBox from '../../src/components/payment/StableCoinsV2PaymentBox';
 
 const ReviewerPage = () => {
   const { isReviewer, isPendingReviewer } = useAppManagment();
@@ -58,6 +60,24 @@ const ReviewerPage = () => {
                 </h2>
               </div>
               <PendingActions />
+            </div>
+          )}
+
+          {isReviewer && (
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Stable Coins V2 Payment</h2>
+              </div>
+              <StableCoinsV2PaymentBox />
+            </div>
+          )}
+
+          {isReviewer && (
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Coins V1 Payment</h2>
+              </div>
+              <CoinsV1PaymentBox />
             </div>
           )}
         </div>

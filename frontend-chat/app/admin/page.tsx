@@ -14,6 +14,7 @@ import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
 import PromptEditor from './promptEditor';
 import { FreeTrialConfig } from './freeTrialConfig';
+import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
@@ -142,6 +143,14 @@ const AdminPage = () => {
                 </h2>
               </div>
               <FreeTrialConfig />
+            </div>
+
+            {/* Coins V1 Payment Panel */}
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">Coins V1 Payment</h2>
+              </div>
+              <CoinsV1PaymentBox />
             </div>
           </div>
         )}
