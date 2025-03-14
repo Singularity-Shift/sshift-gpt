@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { Avatar, AvatarImage, AvatarFallback } from './avatar';
 import ReactMarkdown from 'react-markdown';
 import { CodeBlock } from './CodeBlock';
@@ -8,6 +8,23 @@ import { AssistantButtonArray } from './assistantButtonArray';
 import { UserButtonArray } from './userButtonArray';
 import { IMessage } from '@helpers';
 import { MathRender } from './mathRender';
+import TwitterMentionsRenderer from './TwitterMentionsRenderer';
+import { useTheme } from 'next-themes';
+
+interface TwitterMetrics {
+  likes: number;
+  quotes: number;
+  replies: number;
+  reposts: number;
+  views: number;
+}
+
+interface TwitterMention {
+  number: number;
+  username: string;
+  content: string;
+  metrics: TwitterMetrics;
+}
 
 interface MessageBubbleProps {
   message: IMessage;
@@ -16,23 +33,28 @@ interface MessageBubbleProps {
   onEdit: (message: IMessage, newContent: string) => void;
 }
 
-export const MessageBubble: React.FC<MessageBubbleProps> = ({
+export const MessageBubble: React.FC<MessageBubbleProps> = React.memo(({
   message,
   onCopy,
   onRegenerate,
   onEdit,
 }) => {
+  const { theme } = useTheme();
   const isUser = message.role === 'user';
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [parsedContent, setParsedContent] = useState<{
     text: string;
     images?: string[];
+    twitter_mentions?: any[];
   }>({ text: message.content });
   const [expandedImage, setExpandedImage] = useState<string | null>(null);
   const [expandedThumbnailIndex, setExpandedThumbnailIndex] = useState<
     number | null
   >(null);
+  
+  // Add a ref to track if content has been processed to prevent infinite loops
+  const contentProcessedRef = useRef(false);
 
   // Extract audio URLs before rendering
   const audioUrls = useMemo(() => {
@@ -56,8 +78,137 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
     return urls;
   }, [parsedContent.text]);
 
-  React.useEffect(() => {
+  // Update the containsTwitterMentions function to detect both text-based mentions and embedded tweet URLs
+  const containsTwitterMentions = useMemo(() => {
+    if (!parsedContent.text) return false;
+    
+    // Check for text-based Twitter format
+    const hasTextFormat = 
+      parsedContent.text.match(/\d+\.\s+\*\*.*\*\*/) !== null &&
+      parsedContent.text.includes('**Content**:') &&
+      parsedContent.text.includes('**Likes**:');
+    
+    // Check for embedded tweet URLs (twitter.com/username/status/id or x.com/username/status/id)
+    const hasTweetUrls = 
+      parsedContent.text.match(/https:\/\/(?:twitter|x)\.com\/[^\/]+\/status\/\d+/i) !== null;
+    
+    return hasTextFormat || hasTweetUrls;
+  }, [parsedContent.text]);
+
+  // Add this function before the useEffect
+  const safelyParseTwitterData = useMemo(() => {
+    // Don't reprocess if not needed
+    if (!message.content || contentProcessedRef.current) return null;
+    
+    // Helper function to parse Twitter mentions from formatted text
+    const parseTwitterMentionsFromText = (text: string): TwitterMention[] => {
+      if (!text) return [];
+      
+      // Format 1 - numbered list with details (from the screenshot):
+      const mentions: TwitterMention[] = [];
+      const mentionRegex = /(\d+)\.\s+\*\*([^*]+)\*\*\s*:\s*"([^"]+)"\s*(?:Likes:\s*(\d+)\s*\|\s*Quotes:\s*(\d+)\s*\|\s*Replies:\s*(\d+)\s*\|\s*Reposts:\s*(\d+)\s*\|\s*Views:\s*(\d+))?/g;
+      
+      let match;
+      while ((match = mentionRegex.exec(text)) !== null) {
+        mentions.push({
+          number: parseInt(match[1]),
+          username: match[2].trim(),
+          content: match[3].trim(),
+          metrics: {
+            likes: parseInt(match[4]) || 0,
+            quotes: parseInt(match[5]) || 0,
+            replies: parseInt(match[6]) || 0,
+            reposts: parseInt(match[7]) || 0,
+            views: parseInt(match[8]) || 0
+          }
+        });
+      }
+      
+      return mentions;
+    };
+    
     try {
+      // Check if the content is JSON
+      const contentObj = JSON.parse(message.content);
+      
+      // First, try to extract directly from text if it has Twitter mention patterns
+      if (contentObj.final_message?.content) {
+        const extractedMentions = parseTwitterMentionsFromText(contentObj.final_message.content);
+        if (extractedMentions.length > 0) {
+          return {
+            text: contentObj.final_message.content,
+            twitter_mentions: extractedMentions
+          };
+        }
+      }
+      
+      // Check for twitter_mentions array in the response
+      if (contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions) {
+        return {
+          text: contentObj.final_message?.content || contentObj.content || "",
+          twitter_mentions: contentObj.final_message?.twitter_mentions || contentObj.twitter_mentions
+        };
+      }
+      
+      // Standard JSON formatting
+      if (contentObj.final_message) {
+        return {
+          text: contentObj.final_message.content,
+          images: contentObj.final_message.images || []
+        };
+      }
+      
+      return null;
+    } catch (e) {
+      // Not JSON or parsing failed, try to parse directly from text
+      const extractedMentions = parseTwitterMentionsFromText(message.content);
+      if (extractedMentions.length > 0) {
+        return {
+          text: message.content,
+          twitter_mentions: extractedMentions
+        };
+      }
+      
+      // If the message looks like it contains Twitter mentions but we couldn't parse them,
+      // just return the text as-is for direct rendering
+      if (message.content.includes('Content:') && 
+          message.content.includes('Likes:') && 
+          message.content.match(/\d+\.\s+.*(?:\(@.*\))?:/)) {
+        return {
+          text: message.content,
+          twitter_mentions: [] // Empty array so we know to use direct rendering
+        };
+      }
+      
+      return null;
+    }
+  }, [message.content]);
+
+  React.useEffect(() => {
+    // Reset the ref when message content changes
+    contentProcessedRef.current = false;
+  }, [message.content]);
+
+  React.useEffect(() => {
+    // Only process the content if it hasn't been processed yet
+    if (contentProcessedRef.current) return;
+    
+    // Use the memoized parser result if available
+    const parsedResult = safelyParseTwitterData;
+    if (parsedResult) {
+      contentProcessedRef.current = true;
+      setParsedContent({
+        text: parsedResult.text,
+        images: parsedResult.images,
+        twitter_mentions: parsedResult.twitter_mentions
+      });
+      return;
+    }
+    
+    try {
+      // Set the ref to true to prevent re-processing
+      contentProcessedRef.current = true;
+      
       const contentObj = JSON.parse(message.content);
       if (contentObj.final_message) {
         setParsedContent({
@@ -68,9 +219,11 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
         setParsedContent({ text: message.content });
       }
     } catch (e) {
+      // For non-JSON content, just set it directly
+      contentProcessedRef.current = true;
       setParsedContent({ text: message.content });
     }
-  }, [message.content]);
+  }, [message.content, safelyParseTwitterData]);
 
   // Add useEffect to sync editedContent with message.content when edit mode changes
   React.useEffect(() => {
@@ -207,6 +360,16 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
             </div>
           )}
         </>
+      );
+    }
+
+    // Simplify the renderContent function for Twitter mentions
+    // Special handling for Twitter mentions data using the dedicated component
+    if (containsTwitterMentions) {
+      return (
+        <div className={theme === 'dark' ? 'dark-theme' : 'light-theme'}>
+          <TwitterMentionsRenderer content={parsedContent.text} />
+        </div>
       );
     }
 
@@ -362,4 +525,6 @@ export const MessageBubble: React.FC<MessageBubbleProps> = ({
       )}
     </div>
   );
-};
+});
+
+MessageBubble.displayName = 'MessageBubble';
