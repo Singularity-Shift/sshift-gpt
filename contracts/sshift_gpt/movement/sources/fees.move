@@ -311,7 +311,6 @@ module sshift_gpt_addr::fees {
 
                         amount_to_claim
                     });
-                    
                 } else {
                     vector::push_back(&mut fees_to_claim.currencies, currency);
                     vector::push_back(&mut fees_to_claim.amounts, *amount);
