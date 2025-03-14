@@ -73,6 +73,13 @@
 }
 
 /* Twitter Embed Styling */
+.twitter-embeds-outer-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
 .twitter-embeds-container {
   width: 100%;
   max-width: 550px;
@@ -84,11 +91,48 @@
   overflow: hidden;
   margin-bottom: 16px;
   background-color: white;
+  transform-origin: center top;
+  position: relative;
 }
 
 /* Make the embeds responsive */
 .tweet-embed-wrapper iframe {
   width: 100% !important;
+}
+
+/* Base styling for react-tweet component */
+.twitter-embeds-container .react-tweet-theme {
+  --tweet-body-font-size: 0.95rem;
+  --tweet-container-margin: 0;
+  --tweet-header-font-size: 0.9rem;
+  --tweet-container-width: 100%;
+  --tweet-container-padding: 16px;
+}
+
+/* Tweet interaction elements styling */
+.twitter-embeds-container button,
+.twitter-embeds-container a {
+  font-size: 14px;
+}
+
+/* Specific container styling for different screen sizes */
+.tweet-sm-container article {
+  padding: 12px !important;
+}
+
+.tweet-xs-container article {
+  padding: 8px !important;
+}
+
+.tweet-tiny-container article {
+  padding: 6px !important;
+}
+
+/* Force minimum width for specific elements */
+.tweet-tiny-container [data-testid="like"],
+.tweet-tiny-container [data-testid="reply"],
+.tweet-tiny-container [data-testid="copy"] {
+  min-width: auto !important;
 }
 
 /* Dark Mode Support */
@@ -109,13 +153,436 @@
   color: #63b3ed;
 }
 
-/* Keep the responsive adjustments */
-@media (max-width: 640px) {
-  .twitter-mentions-list {
-    width: 100%;
+/* Large screens (default) */
+.twitter-embeds-outer-container.lg-screen .twitter-embeds-container {
+  max-width: 550px;
+}
+
+/* Medium screens */
+.twitter-embeds-outer-container.md-screen .twitter-embeds-container {
+  max-width: 500px;
+}
+
+.twitter-embeds-outer-container.md-screen .react-tweet-theme {
+  --tweet-body-font-size: 0.9rem;
+  --tweet-header-font-size: 0.85rem;
+}
+
+/* Small screens */
+.twitter-embeds-outer-container.sm-screen .twitter-embeds-container {
+  max-width: 450px;
+}
+
+.twitter-embeds-outer-container.sm-screen .tweet-embed-wrapper {
+  margin-bottom: 12px;
+}
+
+.twitter-embeds-outer-container.sm-screen .react-tweet-theme {
+  --tweet-body-font-size: 0.85rem;
+  --tweet-header-font-size: 0.8rem;
+  --tweet-container-padding: 12px;
+}
+
+/* Reduce size of interaction elements on small screens */
+.twitter-embeds-outer-container.sm-screen button,
+.twitter-embeds-outer-container.sm-screen a {
+  font-size: 13px;
+}
+
+/* Extra small screens (mobile) */
+.twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+  max-width: 380px;
+  width: 95%;
+}
+
+.twitter-embeds-outer-container.xs-screen .tweet-embed-wrapper {
+  margin-bottom: 8px;
+  width: 100%;
+}
+
+.twitter-embeds-outer-container.xs-screen .react-tweet-theme {
+  --tweet-body-font-size: 0.8rem;
+  --tweet-header-font-size: 0.75rem;
+  --tweet-container-padding: 10px;
+  --tweet-container-margin: 0;
+}
+
+/* Significantly reduce size of interaction elements on extra small screens */
+.twitter-embeds-outer-container.xs-screen button,
+.twitter-embeds-outer-container.xs-screen a {
+  font-size: 12px !important;
+  padding: 4px !important;
+}
+
+/* Target specific interaction elements */
+.twitter-embeds-outer-container.xs-screen [data-testid="like"],
+.twitter-embeds-outer-container.xs-screen [data-testid="reply"],
+.twitter-embeds-outer-container.xs-screen [data-testid="copy"] {
+  transform: scale(0.85);
+  margin-right: 8px !important;
+}
+
+/* Specific styling for the "Read replies" button */
+.twitter-embeds-outer-container.xs-screen a[role="button"] {
+  font-size: 11px !important;
+  padding: 4px 8px !important;
+}
+
+/* Adjust spacing between interaction elements */
+.twitter-embeds-outer-container.xs-screen footer div {
+  gap: 4px !important;
+  margin: 0 !important;
+}
+
+/* Adjust the timestamp and other metadata */
+.twitter-embeds-outer-container.xs-screen time,
+.twitter-embeds-outer-container.xs-screen span {
+  font-size: 11px !important;
+}
+
+/* Fix for "Copy link" text on narrow screens */
+.twitter-embeds-outer-container.xs-screen [data-testid="copy"] span {
+  font-size: 10px !important;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 55px;
+}
+
+/* Enhanced styling for narrow screens (420px - 440px) */
+@media screen and (min-width: 420px) and (max-width: 440px) {
+  /* Make interaction elements even smaller */
+  .twitter-embeds-outer-container.xs-screen button,
+  .twitter-embeds-outer-container.xs-screen a {
+    font-size: 11px !important;
+    padding: 3px !important;
   }
   
-  .twitter-embeds-container {
-    max-width: 100%;
+  /* Further reduce the size of action buttons */
+  .twitter-embeds-outer-container.xs-screen [data-testid="like"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="reply"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] {
+    transform: scale(0.8);
+    margin-right: 6px !important;
   }
+  
+  /* Make the "Read replies" button smaller */
+  .twitter-embeds-outer-container.xs-screen a[role="button"] {
+    font-size: 10px !important;
+    padding: 3px 6px !important;
+  }
+  
+  /* Reduce horizontal spacing between elements */
+  .twitter-embeds-outer-container.xs-screen footer div {
+    gap: 2px !important;
+  }
+  
+  /* Ensure the copy link text is not cut off */
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] span {
+    font-size: 10px !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 60px;
+  }
+}
+
+/* Unified approach for screens between 360px and 430px */
+@media screen and (min-width: 360px) and (max-width: 430px) {
+  /* Apply consistent container styling across this range */
+  .twitter-embeds-outer-container.xs-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .twitter-embeds-outer-container.xs-screen .twitter-embeds-container,
+  .twitter-embeds-outer-container.sm-screen .twitter-embeds-container {
+    width: 98%;
+    margin: 0 auto;
+    transform: none;
+  }
+  
+  /* Progressive width adjustments based on screen size */
+  @media screen and (min-width: 420px) and (max-width: 430px) {
+    .twitter-embeds-outer-container.xs-screen .twitter-embeds-container,
+    .twitter-embeds-outer-container.sm-screen .twitter-embeds-container {
+      max-width: 420px;
+    }
+  }
+  
+  @media screen and (min-width: 400px) and (max-width: 419px) {
+    .twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+      max-width: 410px;
+    }
+  }
+  
+  @media screen and (min-width: 380px) and (max-width: 399px) {
+    .twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+      max-width: 390px;
+    }
+  }
+  
+  @media screen and (min-width: 360px) and (max-width: 379px) {
+    .twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+      max-width: 370px;
+    }
+  }
+  
+  /* Consistent padding across this range */
+  .twitter-embeds-outer-container.xs-screen .react-tweet-theme,
+  .twitter-embeds-outer-container.sm-screen .react-tweet-theme {
+    --tweet-container-padding: 14px;
+  }
+  
+  /* Consistent margins and layout */
+  .twitter-embeds-outer-container.xs-screen .tweet-embed-wrapper,
+  .twitter-embeds-outer-container.sm-screen .tweet-embed-wrapper {
+    margin-bottom: 10px;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Progressively adjust font sizes for smaller screens */
+  @media screen and (min-width: 360px) and (max-width: 399px) {
+    .twitter-embeds-outer-container.xs-screen .react-tweet-theme {
+      --tweet-body-font-size: 0.75rem;
+      --tweet-header-font-size: 0.7rem;
+    }
+    
+    .twitter-embeds-outer-container.xs-screen button,
+    .twitter-embeds-outer-container.xs-screen a {
+      font-size: 10px !important;
+      padding: 3px !important;
+    }
+    
+    .twitter-embeds-outer-container.xs-screen [data-testid="like"],
+    .twitter-embeds-outer-container.xs-screen [data-testid="reply"],
+    .twitter-embeds-outer-container.xs-screen [data-testid="copy"] {
+      transform: scale(0.75);
+      margin-right: 4px !important;
+    }
+  }
+}
+
+/* Very small screens (below 360px) */
+@media screen and (max-width: 359px) {
+  /* Apply transform scaling to the entire tweet container */
+  .twitter-embeds-outer-container.xs-screen {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100%;
+    overflow-x: hidden;
+  }
+  
+  .twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+    max-width: 480px; /* Wider than the screen to allow scaling */
+    width: 100%;
+    transform: scale(0.7);
+    transform-origin: center top;
+    margin: 0 auto; /* Center the container */
+  }
+  
+  /* Adjust spacing to account for scaling */
+  .twitter-embeds-outer-container.xs-screen .tweet-embed-wrapper {
+    margin-bottom: 0;
+    display: flex;
+    justify-content: center;
+  }
+  
+  /* Extreme compression for very small screens */
+  .twitter-embeds-outer-container.xs-screen .react-tweet-theme {
+    --tweet-body-font-size: 0.7rem;
+    --tweet-header-font-size: 0.65rem;
+    --tweet-container-padding: 8px;
+  }
+  
+  /* Make interaction elements tiny */
+  .twitter-embeds-outer-container.xs-screen button,
+  .twitter-embeds-outer-container.xs-screen a {
+    font-size: 9px !important;
+    padding: 2px !important;
+  }
+  
+  .twitter-embeds-outer-container.xs-screen [data-testid="like"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="reply"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] {
+    transform: scale(0.7);
+    margin-right: 2px !important;
+  }
+  
+  /* Show only icons for interaction elements */
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] span {
+    max-width: 40px;
+  }
+}
+
+/* Additional specific styling for Galaxy S8 and similar devices */
+@media screen and (min-width: 410px) and (max-width: 414px) {
+  .twitter-embeds-outer-container.xs-screen .twitter-embeds-container {
+    max-width: 410px;
+    width: 100%;
+    transform: none !important;
+  }
+  
+  /* Ensure buttons and text are properly sized */
+  .twitter-embeds-outer-container.xs-screen [data-testid="like"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="reply"],
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] {
+    transform: scale(0.85);
+    margin-right: 5px !important;
+  }
+  
+  /* Ensure the copy link text is not cut off */
+  .twitter-embeds-outer-container.xs-screen [data-testid="copy"] span {
+    max-width: 50px;
+  }
+}
+
+/* Tooltip styling */
+.tweet-tooltip {
+  position: absolute;
+  top: -40px;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: rgba(0, 0, 0, 0.75);
+  color: white;
+  padding: 6px 12px;
+  border-radius: 4px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: tooltip-fade 3s forwards;
+  white-space: nowrap;
+}
+
+.tweet-tooltip::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+  border-width: 6px 6px 0;
+  border-style: solid;
+  border-color: rgba(0, 0, 0, 0.75) transparent transparent;
+}
+
+@keyframes tooltip-fade {
+  0%, 80% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Fullscreen Tweet Modal Styling */
+.tweet-fullscreen-modal {
+  z-index: 9999;
+}
+
+.tweet-fullscreen-modal .tweet-embed-wrapper {
+  margin: 0 auto;
+  max-width: 550px;
+  width: 100%;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Add a subtle animation for the modal */
+@keyframes tweet-modal-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.tweet-modal-content {
+  animation: tweet-modal-fade-in 0.2s ease-out;
+}
+
+/* Ensure the tweet in fullscreen mode has proper spacing */
+.tweet-fullscreen-container {
+  padding: 16px;
+  background-color: white;
+  border-radius: 12px;
+  max-width: 550px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* Mobile-specific styling for fullscreen modal */
+@media screen and (max-width: 768px) {
+  .tweet-fullscreen-modal {
+    align-items: flex-start; /* Align to top on mobile */
+  }
+  
+  .tweet-modal-content {
+    border-radius: 0; /* Full screen on mobile */
+    max-height: 100% !important;
+    height: 100% !important;
+  }
+  
+  .tweet-fullscreen-container {
+    padding: 8px;
+    border-radius: 0;
+  }
+  
+  /* Fix for zoomed state on mobile */
+  .tweet-fullscreen-container .react-tweet-theme {
+    --tweet-container-width: 100% !important;
+    --tweet-container-padding: 12px !important;
+    --tweet-body-font-size: 0.9rem !important;
+    --tweet-header-font-size: 0.85rem !important;
+  }
+  
+  /* Ensure the tweet fits within the viewport */
+  .tweet-fullscreen-container article {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  /* Prevent any scaling that might cause zoom issues */
+  .tweet-fullscreen-container * {
+    transform: none !important;
+  }
+}
+
+/* Specific fixes for iPhone and other narrow devices */
+@media screen and (max-width: 430px) {
+  .tweet-fullscreen-container {
+    padding: 4px;
+  }
+  
+  .tweet-fullscreen-container .react-tweet-theme {
+    --tweet-container-padding: 10px !important;
+    --tweet-body-font-size: 0.85rem !important;
+    --tweet-header-font-size: 0.8rem !important;
+  }
+  
+  /* Reduce padding and margins for narrow screens */
+  .tweet-fullscreen-container article {
+    padding: 8px !important;
+  }
+  
+  /* Adjust interaction elements for better touch targets */
+  .tweet-fullscreen-container [data-testid="like"],
+  .tweet-fullscreen-container [data-testid="reply"],
+  .tweet-fullscreen-container [data-testid="copy"] {
+    padding: 6px !important;
+  }
+}
+
+/* Dark mode support for fullscreen modal */
+.dark-theme .tweet-fullscreen-container {
+  background-color: #1a1a1a;
 } 
