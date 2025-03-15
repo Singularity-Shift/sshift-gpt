@@ -6,6 +6,7 @@ import { PendingActions } from '../pendingActions';
 import { ChangeReviewer } from './changeReviewer';
 import { EnhancedFees } from '../admin/enhancedFees';
 import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
+import AppStatusControl from '../../src/components/admin/AppStatusControl';
 
 const ReviewerPage = () => {
   const { isReviewer, isPendingReviewer } = useAppManagment();
@@ -69,6 +70,17 @@ const ReviewerPage = () => {
                 <p className="text-sm text-gray-600 mt-1">Distribute coins to collectors</p>
               </div>
               <CoinsV1PaymentBox />
+            </div>
+          )}
+
+          {isReviewer && (
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  App Status Control
+                </h2>
+                <AppStatusControl />
+              </div>
             </div>
           )}
         </div>
