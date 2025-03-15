@@ -6,7 +6,6 @@ import { PendingActions } from '../pendingActions';
 import { ChangeReviewer } from './changeReviewer';
 import { EnhancedFees } from '../admin/enhancedFees';
 import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
-import StableCoinsV2PaymentBox from '../../src/components/payment/StableCoinsV2PaymentBox';
 
 const ReviewerPage = () => {
   const { isReviewer, isPendingReviewer } = useAppManagment();
@@ -48,7 +47,7 @@ const ReviewerPage = () => {
                   Fees Management
                 </h2>
               </div>
-              <EnhancedFees isReviewerMode={true} />
+              <EnhancedFees isReviewerMode={true} disableAddCurrency={true} />
             </div>
           )}
 
@@ -66,16 +65,8 @@ const ReviewerPage = () => {
           {isReviewer && (
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Stable Coins V2 Payment</h2>
-              </div>
-              <StableCoinsV2PaymentBox />
-            </div>
-          )}
-
-          {isReviewer && (
-            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] mx-auto">
-              <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">Coins V1 Payment</h2>
+                <p className="text-sm text-gray-600 mt-1">Distribute coins to collectors</p>
               </div>
               <CoinsV1PaymentBox />
             </div>

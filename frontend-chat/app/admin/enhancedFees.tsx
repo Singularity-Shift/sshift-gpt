@@ -24,9 +24,14 @@ interface Currency {
   isStableCoin: boolean;
 }
 
-export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: boolean }) => {
+export const EnhancedFees = ({ 
+  isReviewerMode = false, 
+  disableAddCurrency = false 
+}: { 
+  isReviewerMode?: boolean;
+  disableAddCurrency?: boolean;
+}) => {
   const { abi, feesABI } = useAbiClient();
-  const [isCurrencySet, setIsCurrencySet] = useState(false);
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
   const [isResourceAccountSet, setIsResourceAccountSet] = useState<boolean>(false);
   const [collectorsSubscribed, setCollectorsSubscribed] = useState<`0x${string}`[]>([]);
@@ -92,7 +97,6 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
 
       setIsResourceAccountSet(isResourceAccountExists);
       setCurrency(currencyCopy || null);
-      setIsCurrencySet(Boolean(currency));
     })();
   }, [isResourceAccountSet, abi]);
 
@@ -223,36 +227,6 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
     }
   };
 
-  const onUptateCurrency = async () => {
-    try {
-      const tx = await client?.useABI(feesABI).set_currency({
-        type_arguments: [],
-        arguments: [currency as `0x${string}`],
-      });
-
-      toast({
-        title: 'Set Currency',
-        description: (
-          <a
-            href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
-            target="_blank"
-          >
-            {tx?.hash}
-          </a>
-        ),
-        variant: 'default',
-      });
-
-      setIsCurrencySet(true);
-    } catch (error) {
-      toast({
-        title: 'Error setting the currency',
-        description: `${error}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
   const onAddCurrency = () => {
     if (!newCurrency.address || !newCurrency.name || !newCurrency.symbol) {
       toast({
@@ -345,103 +319,12 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
   };
 
   // Calculate if resource account creation should be disabled
-  const disabledCreateResourceAccount = !initialCollectors.length || !isCurrencySet;
+  const disabledCreateResourceAccount = !initialCollectors.length;
 
   // Reuse the existing render logic but add the new currency management UI
   return (
     <div className="space-y-6">
-      {/* Currency Management Section */}
-      <div className="space-y-4 border-b pb-6">
-        <h3 className="font-semibold text-lg">Currency Management</h3>
-        
-        {/* Available Currencies */}
-        <div className="space-y-2">
-          <Label>Available Currencies</Label>
-          <div className="space-y-2 max-h-[200px] overflow-y-auto p-2 border rounded-md">
-            {currencies.map((curr, index) => (
-              <div key={index} className="flex items-center justify-between p-2 bg-gray-50 rounded-md">
-                <div>
-                  <span className="font-medium">{curr.symbol}</span>
-                  <span className="text-sm text-gray-500 ml-2">({curr.name})</span>
-                  <span className="text-xs text-gray-400 block truncate" title={curr.address}>
-                    {curr.address}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {curr.isStableCoin ? 'Stable Coin' : 'Crypto Currency'}
-                  </span>
-                </div>
-                <Button 
-                  variant="ghost" 
-                  size="sm"
-                  onClick={() => onRemoveCurrency(curr.address)}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-            ))}
-          </div>
-        </div>
-        
-        {/* Add New Currency */}
-        <div className="space-y-2 p-4 bg-gray-50 rounded-md">
-          <h4 className="font-medium">Add New Currency</h4>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <LabeledInput
-              id="currency-address"
-              label="Currency Address"
-              tooltip="The blockchain address of the currency"
-              required={true}
-              value={newCurrency.address}
-              onChange={(e) => setNewCurrency({...newCurrency, address: e.target.value as `0x${string}`})}
-              type="text"
-            />
-            <LabeledInput
-              id="currency-name"
-              label="Currency Name"
-              tooltip="The full name of the currency"
-              required={true}
-              value={newCurrency.name}
-              onChange={(e) => setNewCurrency({...newCurrency, name: e.target.value})}
-              type="text"
-            />
-            <LabeledInput
-              id="currency-symbol"
-              label="Currency Symbol"
-              tooltip="The symbol/ticker of the currency"
-              required={true}
-              value={newCurrency.symbol}
-              onChange={(e) => setNewCurrency({...newCurrency, symbol: e.target.value})}
-              type="text"
-            />
-            <div className="flex items-center space-x-2 mt-6">
-              <input
-                type="checkbox"
-                id="is-stable-coin"
-                checked={newCurrency.isStableCoin}
-                onChange={(e) => setNewCurrency({...newCurrency, isStableCoin: e.target.checked})}
-                className="h-4 w-4"
-              />
-              <Label htmlFor="is-stable-coin">Is Stable Coin</Label>
-            </div>
-          </div>
-          <Button
-            className="w-full mt-4"
-            variant="outline"
-            onClick={onAddCurrency}
-            disabled={!newCurrency.address || !newCurrency.name || !newCurrency.symbol}
-          >
-            Add Currency
-          </Button>
-        </div>
-        
-        <Button
-          className="w-full"
-          variant="green"
-          onClick={onSaveCurrencies}
-        >
-          Save Currency List
-        </Button>
-      </div>
+      {/* Currency Management Section - REMOVED */}
       
       {/* Collector Payment Currency Selection */}
       <div className="space-y-4 pt-4 border-b pb-6">
@@ -452,10 +335,10 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
             value={selectedPaymentCurrency} 
             onValueChange={(value) => setSelectedPaymentCurrency(value as `0x${string}`)}
           >
-            <SelectTrigger className="w-full">
+            <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Select a currency" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="bg-white">
               {currencies.map((curr, index) => (
                 <SelectItem key={index} value={curr.address}>
                   {curr.symbol} - {curr.name}
@@ -464,13 +347,7 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
             </SelectContent>
           </Select>
         </div>
-        <Button
-          className="w-full"
-          variant="green"
-          onClick={onSavePaymentCurrency}
-        >
-          Save Payment Currency
-        </Button>
+        {/* Save Payment Currency button - REMOVED */}
       </div>
       
       {/* Original Fees Component UI */}
@@ -487,6 +364,7 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
                 value={resourceAccount as `0x${string}`}
                 type="text"
                 readOnly
+                required={true}
               />
               <LabeledInput
                 id={'resource-account-balance-input'}
@@ -494,13 +372,7 @@ export const EnhancedFees = ({ isReviewerMode = false }: { isReviewerMode?: bool
                 value={resourceAccountBalance.toString()}
                 type="text"
                 readOnly
-              />
-              <LabeledInput
-                id={'resource-account-currency-input'}
-                label="Current Currency"
-                value={currency || ''}
-                type="text"
-                readOnly
+                required={true}
               />
             </div>
 
