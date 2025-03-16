@@ -546,6 +546,13 @@ module sshift_gpt_addr::fees {
     }
 
     #[test_only]
+    struct FAController2 has key {
+        mint_ref: MintRef,
+        transfer_ref: TransferRef,
+    }
+
+
+    #[test_only]
     public fun initialize_for_test(sender: &signer) {
         move_to(
             sender,
@@ -600,6 +607,44 @@ module sshift_gpt_addr::fees {
         let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
 
         move_to(fa_obj_signer, FAController {
+            mint_ref,
+            transfer_ref,
+        });
+
+        fa_obj
+    }
+
+    #[test_only]
+    fun create_fa_2(): Object<Metadata> {
+        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_gpt_addr);
+        let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
+
+        let name = string::utf8(b"usdt test");
+
+        let fa_obj_constructor_ref = &object::create_named_object(
+            fa_owner_obj_signer,
+            *string::bytes(&name),
+        );
+
+        let fa_obj_signer = &object::generate_signer(fa_obj_constructor_ref);
+
+
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            fa_obj_constructor_ref,
+            option::none(),
+            name,
+            string::utf8(b"USDT"),
+            8,
+            string::utf8(b"test"),
+            string::utf8(b"usdt_project"),
+        );
+
+        let fa_obj = object::object_from_constructor_ref<Metadata>(fa_obj_constructor_ref);
+
+        let mint_ref = fungible_asset::generate_mint_ref(fa_obj_constructor_ref);
+        let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
+
+        move_to(fa_obj_signer, FAController2 {
             mint_ref,
             transfer_ref,
         });
@@ -754,6 +799,203 @@ module sshift_gpt_addr::fees {
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
     }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_gpt_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
+    fun test_payment_different_currency(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+        user3: &signer,
+        user4: &signer
+    ) acquires Config, FeesAdmin, FeesToClaim, FAController, FAController2 {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+        let user3_addr = signer::address_of(user3);
+        let user4_addr = signer::address_of(user4);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+        account::create_account_for_test(user3_addr);
+        account::create_account_for_test(user4_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        set_pending_reviewer(sender, user4_addr);
+        accept_reviewer(user4);
+
+        create_resource_account(user1, b"test", vector[user3_addr, user4_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let fa_obj = create_fa();
+        
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(&resource_signer, &fa_controller.mint_ref, 20000000);
+
+        add_currency(user1, fa_addr);
+
+        let (_, resource_balances) = get_resource_balances();
+
+        let resource_balance = vector::borrow(&resource_balances, 0);
+
+        assert!(*resource_balance == 20000000, EBALANCE_NOT_EQUAL);
+
+        add_collector(user1, user4, user2_addr);
+        create_collector_object(user2);
+        add_collector(user1, user4, user3_addr);
+        create_collector_object(user3);
+        add_collector(user1, user4, user4_addr);
+        create_collector_object(user4);
+
+        payment(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            fa_addr,
+            vector[2000000, 1000000, 1500000]
+        );
+
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr);
+
+        assert!(user2_addr_balance == 2000000, EBALANCE_NOT_EQUAL);
+        assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(user4_addr_balance == 1500000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user3, fa_addr);
+
+        let (_, resource_balances_after_user3_claimed) = get_resource_balances();
+
+        let resource_balance_after_user3_claimed = vector::borrow(&resource_balances_after_user3_claimed, 0);
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr);
+
+        assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            *resource_balance_after_user3_claimed
+                == *resource_balance - user3_addr_balance,
+            EBALANCE_NOT_EQUAL
+        );
+        assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
+        assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user4, fa_addr);
+
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr);
+        let (_,resource_balances_after_user4_claimed) = get_resource_balances();
+
+        let resource_balance_after_user4_claimed = vector::borrow(&resource_balances_after_user4_claimed, 0);
+
+        assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            *resource_balance_after_user4_claimed
+                == *resource_balance - (user3_addr_balance + user4_addr_balance),
+            EBALANCE_NOT_EQUAL
+        );
+
+        assert!(primary_fungible_store::balance(user2_addr, fa_obj) == 0, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user3_addr, fa_obj) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user4_addr, fa_obj) == 1500000, EBALANCE_NOT_EQUAL);
+
+        let fa_obj_2 = create_fa_2();
+        
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(&resource_signer, &fa_controller_2.mint_ref, 20000000);
+
+        add_currency(user1, fa_addr_2);
+
+        let (_, resource_balances) = get_resource_balances();
+
+        let resource_balance_1 = vector::borrow(&resource_balances, 1);
+
+        assert!(*resource_balance_1 == 20000000, EBALANCE_NOT_EQUAL);
+
+        payment(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            fa_addr_2,
+            vector[2000000, 1000000, 1500000]
+        );
+
+        let user2_addr_balance = get_balance_to_claim(user2_addr, fa_addr_2);
+        let user3_addr_balance = get_balance_to_claim(user3_addr, fa_addr_2);
+        let user4_addr_balance = get_balance_to_claim(user4_addr, fa_addr_2);
+
+        assert!(user2_addr_balance == 2000000, EBALANCE_NOT_EQUAL);
+        assert!(user3_addr_balance == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(user4_addr_balance == 1500000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user3, fa_addr_2);
+
+        let (_, resource_balances_after_user3_claimed) = get_resource_balances();
+        let resource_balance_after_user3_claimed = vector::borrow(&resource_balances_after_user3_claimed, 1);
+
+        let user3_addr_balance_after_claimed = get_balance_to_claim(user3_addr, fa_addr_2);
+        let user4_addr_balance_after_user3_claimed = get_balance_to_claim(user4_addr, fa_addr_2);
+        let user2_addr_balance_after_user3_claimed = get_balance_to_claim(user2_addr, fa_addr_2);
+
+        assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            *resource_balance_after_user3_claimed
+                == *resource_balance_1 - user3_addr_balance,
+            EBALANCE_NOT_EQUAL
+        );
+        assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
+        assert!(user2_addr_balance_after_user3_claimed == 2000000, EBALANCE_NOT_EQUAL);
+
+        claim_fees(user4, fa_addr_2);
+
+        let user4_addr_balance_after_claimed = get_balance_to_claim(user4_addr, fa_addr_2);
+        let (_,resource_balances_after_user4_claimed) = get_resource_balances();
+        let resource_balance_after_user4_claimed = vector::borrow(&resource_balances_after_user4_claimed, 1);
+
+        assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
+        assert!(
+            *resource_balance_after_user4_claimed
+                == *resource_balance_1 - (user3_addr_balance + user4_addr_balance),
+            EBALANCE_NOT_EQUAL
+        );
+
+        assert!(primary_fungible_store::balance(user2_addr, fa_obj_2) == 0, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user3_addr, fa_obj_2) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(primary_fungible_store::balance(user4_addr, fa_obj_2) == 1500000, EBALANCE_NOT_EQUAL);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
 
     #[
         test(
@@ -1138,8 +1380,6 @@ module sshift_gpt_addr::fees {
         accept_admin(user1);
 
         let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
-
-        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
 
         let fa_obj = create_fa();
         

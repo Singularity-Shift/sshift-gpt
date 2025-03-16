@@ -145,6 +145,14 @@ module sshift_gpt_addr::subscription {
         subscription_plan.collections_discount = collections_discount
     }
 
+    public entry fun set_trial_subscription_duration(sender: &signer, days: u64) acquires SubscriptionConfig {
+        check_admin(sender);
+
+        let subscription_config = borrow_global_mut<SubscriptionConfig>(@sshift_gpt_addr);
+
+        subscription_config.trial_free_days = days
+    }    
+
     public entry fun add_extension(sender: &signer, name: String, prices: vector<u64>, credits: u64) acquires SubscriptionPlan {
         check_admin(sender);
 
@@ -303,7 +311,6 @@ module sshift_gpt_addr::subscription {
         duration: u64,
         nfts_holding: vector<address>,
         extensions: vector<String>,
-        credits: vector<u64>,
         currency: address,
     ) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
         let subscription_config = borrow_global<SubscriptionConfig>(@sshift_gpt_addr);
@@ -360,20 +367,22 @@ module sshift_gpt_addr::subscription {
 
         let start_time = timestamp::now_seconds();
 
-        let filtered_extensions = vector::filter(extensions, |e| vector::any(&plan.extensions, |ext| {
+        let filtered_extensions = vector::filter(plan.extensions, |e| vector::any(&extensions, |ext| {
             let Extension {
                 name, prices: _prices, credits: _credits
-            } = *ext;
+            } = *e;
             
-            &name == e
+            &name == ext
         }));
 
-        let upgrades = vector::map<String, Upgrade>(filtered_extensions, |f| {
-            let (_, i) = vector::index_of(&filtered_extensions, &f);
+        let upgrades = vector::map<Extension, Upgrade>(filtered_extensions, |f| {
+            let Extension { 
+                name, prices: _prices, credits
+            } = f;
 
             Upgrade {
-                name: f,
-                credits: *vector::borrow(&credits, i),
+                name,
+                credits,
             }
         });
 
@@ -582,10 +591,10 @@ module sshift_gpt_addr::subscription {
 
 
     #[view]
-    public fun get_plan(account: address): (u64, u64) acquires UserSubscription {
+    public fun get_plan(account: address): (u64, u64, vector<Upgrade>, bool) acquires UserSubscription {
         let user_subsciption = borrow_global<UserSubscription>(account);
 
-        (user_subsciption.start_time, user_subsciption.end_time)
+        (user_subsciption.start_time, user_subsciption.end_time, user_subsciption.upgrades, user_subsciption.trial_version)
     }
 
     #[view]
@@ -766,9 +775,6 @@ module sshift_gpt_addr::subscription {
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef};
 
     #[test_only]
-    use aptos_std::debug::print;
-
-    #[test_only]
     use std::option;
 
     #[test_only]
@@ -787,7 +793,28 @@ module sshift_gpt_addr::subscription {
     const EPRICES_LIST_SHOULD_HAVE_30_ELEMENTS: u64 = 11;
 
     #[test_only]
+    const EBALANCE_SHOULD_BE_HIGHER: u64 = 24;
+
+    #[test_only]
+    const ETIMESTAMP_SHOULD_BE_HIGHER: u64 = 25;
+
+    #[test_only]
+    const ETIMESTAMP_SHOULD_BE_EQUAL: u64 = 26;
+
+    #[test_only]
+    const ESHOULD_BE_TRIAL_VERSION: u64 = 27;
+
+    #[test_only]
+    const ESHOULD_MATCH_APP_STATUS: u64 = 28;
+
+    #[test_only]
     struct FAController has key {
+        mint_ref: MintRef,
+        transfer_ref: TransferRef,
+    }
+
+    #[test_only]
+    struct FAController2 has key {
         mint_ref: MintRef,
         transfer_ref: TransferRef,
     }
@@ -834,6 +861,44 @@ module sshift_gpt_addr::subscription {
         let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
 
         move_to(fa_obj_signer, FAController {
+            mint_ref,
+            transfer_ref,
+        });
+
+        fa_obj
+    }
+
+    #[test_only]
+    fun create_fa_2(): Object<Metadata> {
+        let fa_owner_obj_constructor_ref = &object::create_object(@sshift_gpt_addr);
+        let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
+
+        let name = string::utf8(b"usdt test");
+
+        let fa_obj_constructor_ref = &object::create_named_object(
+            fa_owner_obj_signer,
+            *string::bytes(&name),
+        );
+
+        let fa_obj_signer = &object::generate_signer(fa_obj_constructor_ref);
+
+
+        primary_fungible_store::create_primary_store_enabled_fungible_asset(
+            fa_obj_constructor_ref,
+            option::none(),
+            name,
+            string::utf8(b"USDT"),
+            8,
+            string::utf8(b"test"),
+            string::utf8(b"usdt_project"),
+        );
+
+        let fa_obj = object::object_from_constructor_ref<Metadata>(fa_obj_constructor_ref);
+
+        let mint_ref = fungible_asset::generate_mint_ref(fa_obj_constructor_ref);
+        let transfer_ref = fungible_asset::generate_transfer_ref(fa_obj_constructor_ref);
+
+        move_to(fa_obj_signer, FAController2 {
             mint_ref,
             transfer_ref,
         });
@@ -930,6 +995,44 @@ module sshift_gpt_addr::subscription {
         (collection_addr_1, collection_addr_2)
     }
 
+    #[test_only]
+    fun create_extension(admin: &signer, name: String) acquires SubscriptionPlan {
+        let prices: vector<u64> = vector[
+            20000000,
+            32600000,
+            43400000,
+            53100000,
+            62200000,
+            70700000,
+            78900000,
+            86600000,
+            94100000,
+            101400000,
+            108400000,
+            115300000,
+            122000000,
+            128500000,
+            135000000,
+            141200000,
+            147400000,
+            153500000,
+            159400000,
+            165300000,
+            171100000,
+            176800000,
+            182400000,
+            188000000,
+            193500000,
+            198900000,
+            204300000,
+            209600000,
+            214800000,
+            220000000
+        ];
+
+        add_extension(admin, name, prices, 10);
+    }
+
     #[
         test(
             aptos_framework = @0x1,
@@ -948,6 +1051,136 @@ module sshift_gpt_addr::subscription {
         aptos_coin::mint(aptos_framework, admin_addr, 20000000);
 
         create_subscription(owner, admin);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+     #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_trigger_the_app(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionConfig, SubscriptionPlan {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        trigger_app(admin);
+
+        let is_stopped = get_app_status();
+
+        assert!(is_stopped == true, ESHOULD_MATCH_APP_STATUS);
+
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_resume_the_app(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        trigger_app(admin);
+
+        let is_stopped = get_app_status();
+
+        assert!(is_stopped == true, ESHOULD_MATCH_APP_STATUS);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        trigger_app(admin);
+
+        let is_stopped = get_app_status();
+
+        assert!(is_stopped == false, ESHOULD_MATCH_APP_STATUS);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_get_trial_subscription(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        set_trial_subscription_duration(admin, 3);
+
+        trial_free_subscription(user);
+
+        let (_start_time, end_time, _upgrades, trial_version) = get_plan(user_addr);
+
+        assert!(end_time == 3 * 60 * 60 * 24, ETIMESTAMP_SHOULD_BE_EQUAL);
+        assert!(trial_version == true, ESHOULD_BE_TRIAL_VERSION);
+
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -988,7 +1221,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
@@ -1037,11 +1270,11 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800,  vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800,  vector::empty(), vector::empty(), fa_addr);
 
         timestamp::update_global_time_for_test_secs(804800);
 
-        buy_plan(user, 604800,  vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800,  vector::empty(), vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
@@ -1092,7 +1325,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, token_holding, vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
@@ -1147,11 +1380,9 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, token_holding, vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
-
-        print(&user_balance);
 
         assert!(user_balance == 19999232000000, EINCORRECT_BALANCE);
 
@@ -1205,7 +1436,7 @@ module sshift_gpt_addr::subscription {
         vector::push_back(&mut token_holding, token_addr_2);
         vector::push_back(&mut token_holding, token_addr_3);
 
-        buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, token_holding, vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
@@ -1258,11 +1489,300 @@ module sshift_gpt_addr::subscription {
             vector::push_back(&mut token_holding, token_addr);
         };
 
-        buy_plan(user, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, token_holding, vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
         assert!(user_balance == 19999605500000, EINCORRECT_BALANCE);
+        
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_subscription_with_extensions(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(admin, string::utf8(b"video"));
+
+        buy_plan(user, 604800, vector::empty(), extensions, fa_addr);
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj);  
+
+        assert!(user_balance == 19999124400000, EINCORRECT_BALANCE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_extensions(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(admin, string::utf8(b"video"));
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        buy_extension(user, vector::empty(), extensions, fa_addr);
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj);  
+
+        assert!(user_balance == 19999124400000, EINCORRECT_BALANCE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_duration(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        let (_start_time, end_time, _upgrades, _trial_version) = get_plan(user_addr);
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj); 
+
+        buy_duration(user, vector::empty(), 60 * 60 * 24 * 5, fa_addr);
+
+        let user_balance_extended = primary_fungible_store::balance(user_addr, fa_obj);  
+
+        let (_start_time_extended, end_time_extended, _upgrades_extended, _trial_version) = get_plan(user_addr);
+
+        assert!(end_time_extended > end_time, ETIMESTAMP_SHOULD_BE_HIGHER);
+        assert!(user_balance > user_balance_extended, EBALANCE_SHOULD_BE_HIGHER);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_extensions_with_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        let (collection_addr_1, _collection_addr_2) = create_subscription(owner, admin);
+
+        let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_2 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n2 v1"), string::utf8(b"Sshift token n2"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_3 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n3 v1"), string::utf8(b"Sshift token n3"), string::utf8(b"Sshift"), user_addr);
+
+        let token_holding = vector::empty();
+
+        vector::push_back(&mut token_holding, token_addr_1);
+        vector::push_back(&mut token_holding, token_addr_2);
+        vector::push_back(&mut token_holding, token_addr_3);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(admin, string::utf8(b"video"));
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        buy_extension(user, token_holding, extensions, fa_addr);
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj);  
+
+        assert!(user_balance == 19999145400000, EINCORRECT_BALANCE);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    fun should_buy_duration_with_discount(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        let (collection_addr_1, _collection_addr_2) = create_subscription(owner, admin);
+
+        let token_addr_1 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n1 v1"), string::utf8(b"Sshift token n1"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_2 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n2 v1"), string::utf8(b"Sshift token n2"), string::utf8(b"Sshift"), user_addr);
+        let token_addr_3 = mint_nft(admin, collection_addr_1, string::utf8(b"Sshift token n3 v1"), string::utf8(b"Sshift token n3"), string::utf8(b"Sshift"), user_addr);
+
+        let token_holding = vector::empty();
+
+        vector::push_back(&mut token_holding, token_addr_1);
+        vector::push_back(&mut token_holding, token_addr_2);
+        vector::push_back(&mut token_holding, token_addr_3);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        let (_start_time, end_time, _upgrades, _trial_version) = get_plan(user_addr);
+
+        let user_balance = primary_fungible_store::balance(user_addr, fa_obj); 
+
+        buy_duration(user, token_holding, 60 * 60 * 24 * 5, fa_addr);
+
+        let user_balance_extended = primary_fungible_store::balance(user_addr, fa_obj);  
+
+        let (_start_time_extended, end_time_extended, _upgrades_extended, _trial_version) = get_plan(user_addr);
+
+        assert!(end_time_extended > end_time, ETIMESTAMP_SHOULD_BE_HIGHER);
+        assert!(user_balance > user_balance_extended, EBALANCE_SHOULD_BE_HIGHER);
+        assert!(user_balance_extended == 19998604000000, EINCORRECT_BALANCE);
         
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1294,7 +1814,7 @@ module sshift_gpt_addr::subscription {
 
         claim_subscription(user);
 
-        let (start_time, end_time) = get_plan(user_addr);
+        let (start_time, end_time, _upgrades, _trial_version) = get_plan(user_addr);
 
         assert!(start_time > 0 && end_time > start_time, ECLAIM_FREE_SUBSCRIPTION);
 
@@ -1337,7 +1857,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
         let is_active = has_subscription_active(user_addr);
 
@@ -1382,7 +1902,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
         timestamp::update_global_time_for_test_secs(804800);
 
@@ -1580,7 +2100,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 100, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 100, vector::empty(), vector::empty(), fa_addr);
 
         let user_balance = primary_fungible_store::balance(user_addr, fa_obj);
 
@@ -1739,7 +2259,7 @@ module sshift_gpt_addr::subscription {
 
         vector::push_back(&mut token_holding, token_addr_1);
 
-        buy_plan(user2, 604800, token_holding, vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user2, 604800, token_holding, vector::empty(), fa_addr);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1810,7 +2330,7 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
         gift_subscription(admin, user_addr, 604800);
 
@@ -1854,9 +2374,9 @@ module sshift_gpt_addr::subscription {
 
         fees::add_currency(admin, fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
-        buy_plan(user, 604800, vector::empty(), vector::empty(), vector::empty(), fa_addr);
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);
@@ -1929,6 +2449,497 @@ module sshift_gpt_addr::subscription {
         claim_subscription(user);
 
         claim_subscription(user);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 1, location = Self)]
+    fun should_not_add_extension_not_authorized_account(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(user, string::utf8(b"video"));
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 11, location = Self)]
+    fun should_not_buy_subscription_with_not_register_fa(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, FAController2, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(user, &fa_controller_2.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr_2);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 11, location = Self)]
+    fun should_not_buy_extensions_with_not_register_fa(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, FAController2, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(user, &fa_controller_2.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(admin, string::utf8(b"video"));
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        buy_extension(user, vector::empty(), extensions, fa_addr_2);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 11, location = Self)]
+    fun should_not_buy_duration_with_not_register_fa(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, FAController2, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        let fa_obj_2 = create_fa_2();
+
+        let fa_addr_2 = object::object_address(&fa_obj_2);
+
+        let fa_controller_2 = borrow_global<FAController2>(fa_addr_2);
+
+        mint_fa(user, &fa_controller_2.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        buy_duration(user, vector::empty(), 60 * 60 * 24 * 5, fa_addr_2);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+    
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 17, location = Self)]
+    fun should_not_get_trial_subscription_again(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        set_trial_subscription_duration(admin, 3);
+
+        trial_free_subscription(user);
+
+        timestamp::fast_forward_seconds(60*60*24*5);
+
+        trial_free_subscription(user);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 16, location = Self)]
+    fun should_not_get_trial_subscription_if_trial_free_days_is_zero(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        trial_free_subscription(user);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 18, location = Self)]
+    fun should_not_get_trial_subscription_if_app_is_stopped(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        trigger_app(admin);
+
+        trial_free_subscription(user);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 18, location = Self)]
+    fun should_not_buy_subscription_when_app_is_stopped(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+
+        trigger_app(admin);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 18, location = Self)]
+    fun should_not_buy_duration_with_when_app_is_stopped(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        trigger_app(admin);
+
+        buy_duration(user, vector::empty(), 60 * 60 * 24 * 5, fa_addr);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 18, location = Self)]
+    fun should_not_buy_extensions_when_app_is_stopped(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionPlan, FAController, UserSubscription, SubscriptionConfig {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        let extensions = vector::empty();
+        vector::push_back(&mut extensions, string::utf8(b"video"));
+
+        create_subscription(owner, admin);
+
+        let fa_obj = create_fa();
+
+        let fa_addr = object::object_address(&fa_obj);
+
+        let fa_controller = borrow_global<FAController>(fa_addr);
+
+        mint_fa(user, &fa_controller.mint_ref, 20000000000000);
+
+        fees::add_currency(admin, fa_addr);
+
+        create_extension(admin, string::utf8(b"video"));
+
+        buy_plan(user, 604800, vector::empty(), vector::empty(), fa_addr);
+
+        trigger_app(admin);
+
+        buy_extension(user, vector::empty(), extensions, fa_addr);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            owner = @sshift_gpt_addr,
+            admin = @0x200,
+            user = @0x300
+        )
+    ]
+    #[expected_failure(abort_code = 1, location = Self)]
+    fun should_not_unauthorized_user_trigger_the_app(aptos_framework: &signer, owner: &signer, admin: &signer, user: &signer) acquires SubscriptionConfig, SubscriptionPlan {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+
+        let admin_addr = signer::address_of(admin);
+        let user_addr = signer::address_of(user);
+        
+        account::create_account_for_test(admin_addr);
+        coin::register<AptosCoin>(admin);
+
+        aptos_coin::mint(aptos_framework, admin_addr, 20000000);
+
+        account::create_account_for_test(user_addr);
+        coin::register<AptosCoin>(user);
+
+        create_subscription(owner, admin);
+
+        trigger_app(user);
 
         coin::destroy_burn_cap(burn_cap);
         coin::destroy_mint_cap(mint_cap);

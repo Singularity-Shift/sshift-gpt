@@ -10,6 +10,7 @@ module sshift_gpt_addr::fees {
     use aptos_framework::primary_fungible_store;
     use aptos_framework::object::{Self, Object};
     use aptos_framework::coin;
+    use aptos_framework::aptos_account;
     use aptos_std::type_info;
 
     const EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION: u64 = 1;
@@ -292,7 +293,7 @@ module sshift_gpt_addr::fees {
         );
     }
 
-    public entry fun payment_v1<CoinType>(account: &signer, collectors: vector<address>, amounts: vector<u64>) acquires FeesAdmin, Config, FeesToClaim {
+    public entry fun payment_v1<CoinType>(account: &signer, collectors: vector<address>, amounts: vector<u64>) acquires FeesAdmin, Config {
         let account_addr = signer::address_of(account);
         let config = borrow_global<Config>(@sshift_gpt_addr);
         assert!(is_admin(config, account_addr) || is_reviewer(config, account_addr), error::permission_denied(EONLY_AUTHORIZED_ACCOUNTS_CAN_EXECUTE_THIS_OPERATION));
@@ -328,27 +329,7 @@ module sshift_gpt_addr::fees {
 
                 let amount = vector::borrow<u64>(&amounts, index);
 
-                let fees_to_claim = borrow_global_mut<FeesToClaim>(e);
-
-                let (fees_to_claim_currency_exits, fees_to_claim_currency_index) = vector::find(&fees_to_claim.currencies, |c| c == &currency);
-
-                if(fees_to_claim_currency_exits) {
-                    fees_to_claim.amounts[fees_to_claim_currency_index] = fees_to_claim.amounts[fees_to_claim_currency_index] + *amount;
-                    
-                } else {
-                    vector::push_back(&mut fees_to_claim.currencies, currency);
-                    vector::push_back(&mut fees_to_claim.amounts, *amount);
-                };
-
-                if (fees_admin_currency_exists) {
-                    fees_admin.fees_not_claimed[fees_admin_currency_index] = fees_admin_not_claimed + *amount;
-                } else {
-                    fees_admin_not_claimed = coin::balance<CoinType>(signer::address_of(&resource_signer));
-
-                    vector::push_back(&mut fees_admin.currencies, currency);
-                    vector::push_back(&mut fees_admin.fees_not_claimed, fees_admin_not_claimed);
-
-                };
+                aptos_account::transfer_coins<CoinType>(&resource_signer, e, *amount)
             }
         );
     }
@@ -572,7 +553,8 @@ module sshift_gpt_addr::fees {
         transfer_ref: TransferRef,
     }
 
-
+    #[test_only]
+    struct TestCoin {}
 
     #[test_only]
     public fun initialize_for_test(sender: &signer) {
@@ -636,7 +618,7 @@ module sshift_gpt_addr::fees {
         fa_obj
     }
 
-        #[test_only]
+    #[test_only]
     fun create_fa_2(): Object<Metadata> {
         let fa_owner_obj_constructor_ref = &object::create_object(@sshift_gpt_addr);
         let fa_owner_obj_signer = &object::generate_signer(fa_owner_obj_constructor_ref);
@@ -679,6 +661,25 @@ module sshift_gpt_addr::fees {
         let account_addr = signer::address_of(sender);
 
         primary_fungible_store::mint(mint_ref, account_addr, amount);
+    }
+
+    #[test_only]
+    fun mint_coin<CoinType>(admin: &signer, amount: u64, to: &signer) {
+        let (burn_cap, freeze_cap, mint_cap) = coin::initialize<CoinType>(
+            admin,
+            string::utf8(b"Test"),
+            string::utf8(b"Test coin"),
+            8,
+            true,
+        );
+
+        coin::register<CoinType>(to);
+        
+        let coins = coin::mint<CoinType>(amount, &mint_cap);
+        coin::deposit<CoinType>(signer::address_of(to), coins);
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+        coin::destroy_freeze_cap(freeze_cap);
     }
 
     #[test_only]
@@ -948,7 +949,7 @@ module sshift_gpt_addr::fees {
 
         let (_, resource_balances) = get_resource_balances();
 
-        assert!(resource_balances[0] == 20000000, EBALANCE_NOT_EQUAL);
+        assert!(resource_balances[1] == 20000000, EBALANCE_NOT_EQUAL);
 
         payment(
             user1,
@@ -974,8 +975,8 @@ module sshift_gpt_addr::fees {
 
         assert!(user3_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balances_after_user3_claimed[0]
-                == resource_balances[0] - user3_addr_balance,
+            resource_balances_after_user3_claimed[1]
+                == resource_balances[1] - user3_addr_balance,
             EBALANCE_NOT_EQUAL
         );
         assert!(user4_addr_balance_after_user3_claimed == 1500000, EBALANCE_NOT_EQUAL);
@@ -988,8 +989,8 @@ module sshift_gpt_addr::fees {
 
         assert!(user4_addr_balance_after_claimed == 0, EBALANCE_NOT_EQUAL);
         assert!(
-            resource_balances_after_user4_claimed[0]
-                == resource_balances[0] - (user3_addr_balance + user4_addr_balance),
+            resource_balances_after_user4_claimed[1]
+                == resource_balances[1] - (user3_addr_balance + user4_addr_balance),
             EBALANCE_NOT_EQUAL
         );
 
@@ -1001,6 +1002,94 @@ module sshift_gpt_addr::fees {
         coin::destroy_mint_cap(mint_cap);
     }
 
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_gpt_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
+    fun test_payment_v1(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+        user3: &signer,
+        user4: &signer
+    ) acquires Config, FeesAdmin {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+        let user3_addr = signer::address_of(user3);
+        let user4_addr = signer::address_of(user4);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+        account::create_account_for_test(user3_addr);
+        account::create_account_for_test(user4_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        set_pending_reviewer(sender, user4_addr);
+        accept_reviewer(user4);
+
+        create_resource_account(user1, b"test", vector[user3_addr, user4_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let resource_signer_addr = signer::address_of(&resource_signer);
+
+
+        mint_coin<TestCoin>(sender, 20000000, &resource_signer);
+
+    
+        let coin_type = type_info::type_of<TestCoin>();
+        let currency = type_info::account_address(&coin_type);
+
+        add_currency(user1, currency);
+
+        let resource_balance = coin::balance<TestCoin>(resource_signer_addr);
+
+        assert!(resource_balance == 20000000, EBALANCE_NOT_EQUAL);
+
+        add_collector(user1, user4, user2_addr);
+        create_collector_object(user2);
+        add_collector(user1, user4, user3_addr);
+        create_collector_object(user3);
+        add_collector(user1, user4, user4_addr);
+        create_collector_object(user4);
+
+        payment_v1<TestCoin>(
+            user1,
+            vector[user2_addr, user3_addr, user4_addr],
+            vector[2000000, 1000000, 1500000]
+        );
+
+
+        assert!(coin::balance<TestCoin>(user2_addr) == 2000000, EBALANCE_NOT_EQUAL);
+        assert!(coin::balance<TestCoin>(user3_addr) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(coin::balance<TestCoin>(user4_addr) == 1500000, EBALANCE_NOT_EQUAL);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
+    }
 
     #[
         test(
@@ -1406,6 +1495,96 @@ module sshift_gpt_addr::fees {
             fa_addr,
             vector[2000000, 1000000]
         );
+    }
+
+    #[
+        test(
+            aptos_framework = @0x1,
+            sender = @sshift_gpt_addr,
+            user1 = @0x200,
+            user2 = @0x201,
+            user3 = @0x202,
+            user4 = @0x203
+        )
+    ]
+    #[expected_failure(abort_code = 327681, location = Self)]
+    fun test_payment_v1_with_not_autorized_account(
+        aptos_framework: &signer,
+        sender: &signer,
+        user1: &signer,
+        user2: &signer,
+        user3: &signer,
+        user4: &signer
+    ) acquires Config, FeesAdmin {
+        let (burn_cap, mint_cap) = aptos_coin::initialize_for_test(aptos_framework);
+        let user1_addr = signer::address_of(user1);
+        let user2_addr = signer::address_of(user2);
+        let user3_addr = signer::address_of(user3);
+        let user4_addr = signer::address_of(user4);
+
+        // current timestamp is 0 after initialization
+        timestamp::set_time_has_started_for_testing(aptos_framework);
+        account::create_account_for_test(user1_addr);
+        account::create_account_for_test(user2_addr);
+        account::create_account_for_test(user3_addr);
+        account::create_account_for_test(user4_addr);
+
+        coin::register<AptosCoin>(user1);
+        coin::register<AptosCoin>(user2);
+
+        aptos_coin::mint(aptos_framework, user1_addr, 20000000);
+
+        init_module(sender);
+
+        set_pending_admin(sender, user1_addr);
+        accept_admin(user1);
+
+        set_pending_reviewer(sender, user4_addr);
+        accept_reviewer(user4);
+
+        create_resource_account(user1, b"test", vector[user3_addr, user4_addr]);
+
+        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
+
+        let resource_sign_cap = get_signer_cap(&fees_admin.signer_cap);
+
+        let resource_signer = account::create_signer_with_capability(resource_sign_cap);
+
+        let resource_signer_addr = signer::address_of(&resource_signer);
+
+
+        mint_coin<TestCoin>(sender, 20000000, &resource_signer);
+
+    
+        let coin_type = type_info::type_of<TestCoin>();
+        let currency = type_info::account_address(&coin_type);
+
+        add_currency(user1, currency);
+
+        let resource_balance = coin::balance<TestCoin>(resource_signer_addr);
+
+        assert!(resource_balance == 20000000, EBALANCE_NOT_EQUAL);
+
+        add_collector(user1, user4, user2_addr);
+        create_collector_object(user2);
+        add_collector(user1, user4, user3_addr);
+        create_collector_object(user3);
+        add_collector(user1, user4, user4_addr);
+        create_collector_object(user4);
+
+        payment_v1<TestCoin>(
+            user2,
+            vector[user2_addr, user3_addr, user4_addr],
+            vector[2000000, 1000000, 1500000]
+        );
+
+
+        assert!(coin::balance<TestCoin>(user2_addr) == 2000000, EBALANCE_NOT_EQUAL);
+        assert!(coin::balance<TestCoin>(user3_addr) == 1000000, EBALANCE_NOT_EQUAL);
+        assert!(coin::balance<TestCoin>(user4_addr) == 1500000, EBALANCE_NOT_EQUAL);
+
+        coin::destroy_burn_cap(burn_cap);
+        coin::destroy_mint_cap(mint_cap);
     }
 
     #[
