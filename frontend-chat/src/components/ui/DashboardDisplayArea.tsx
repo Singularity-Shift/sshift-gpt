@@ -4,6 +4,12 @@ import { UserProfileContainer } from './UserProfileContainer';
 import { SubscriptionUpgradeContainer } from './SubscriptionUpgradeContainer';
 import UserDashboardTitle from './UserDashboardTitle';
 
+interface StableCoin {
+  symbol: string;
+  name: string;
+  icon: string;
+}
+
 interface DashboardDisplayAreaProps {
   days: number;
   setDays: React.Dispatch<React.SetStateAction<number>>;
@@ -13,6 +19,9 @@ interface DashboardDisplayAreaProps {
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
+  selectedStableCoin: StableCoin;
+  setSelectedStableCoin: React.Dispatch<React.SetStateAction<StableCoin>>;
+  availableStableCoins: StableCoin[];
 }
 
 const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
@@ -24,6 +33,9 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
   moveBotsOwned,
   qribbleNFTsOwned,
   sshiftRecordsOwned,
+  selectedStableCoin,
+  setSelectedStableCoin,
+  availableStableCoins,
 }) => {
   return (
     <div className="flex flex-col items-center w-full">
@@ -36,6 +48,9 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
           price={price}
           dates={dates}
           discount={discount}
+          selectedStableCoin={selectedStableCoin}
+          setSelectedStableCoin={setSelectedStableCoin}
+          availableStableCoins={availableStableCoins}
         />
 
         {/* User Profile Container */}
