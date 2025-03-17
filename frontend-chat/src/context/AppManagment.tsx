@@ -39,6 +39,7 @@ export interface AppManagmentContextType {
   sshiftRecordsOwned: number;
   nftAddressesRequiredOwned: string[];
   onSubscribe: (days: number) => Promise<void>;
+  startFreeTrial: () => Promise<void>;
   isSubscriptionActive: boolean;
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
   expirationDate: string | null;
@@ -68,6 +69,7 @@ export const AppManagmentContext = createContext<AppManagmentContextType>({
   sshiftRecordsOwned: 0,
   nftAddressesRequiredOwned: [],
   onSubscribe: async () => {},
+  startFreeTrial: async () => {},
   isSubscriptionActive: false,
   setIsSubscriptionActive: () => {},
   expirationDate: null,
@@ -465,6 +467,87 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     }
   };
 
+  const startFreeTrial = async () => {
+    try {
+      // Free trial duration - 2 days
+      const duration = 2 * 24 * 60 * 60;
+
+      const tx = await client?.useABI(subscriptionABI).buy_plan({
+        type_arguments: [],
+        arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
+      });
+
+      // Wait for transaction to be confirmed
+      const committedTransactionResponse = await aptos.waitForTransaction({
+        transactionHash: tx?.hash as string,
+      });
+
+      if (committedTransactionResponse.success) {
+        // Check subscription status after successful purchase
+        const hasSubscriptionActiveResult = await abi
+          ?.useABI(subscriptionABI)
+          .view.has_subscription_active({
+            typeArguments: [],
+            functionArguments: [walletAddress as `0x${string}`],
+          });
+
+        const hasSubscriptionActive =
+          hasSubscriptionActiveResult?.[0] as boolean;
+        setIsSubscriptionActive(hasSubscriptionActive);
+
+        if (hasSubscriptionActive) {
+          const subscriptionResult = await abi
+            ?.useABI(subscriptionABI)
+            .view.get_plan({
+              typeArguments: [],
+              functionArguments: [walletAddress as `0x${string}`],
+            });
+
+          const subscription = subscriptionResult?.[1];
+
+          if (subscription?.[1]) {
+            const expireDate = parseInt(subscription) * 1000;
+            setExpirationDate(
+              new Date(expireDate).toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            );
+          }
+        }
+
+        toast({
+          title: 'Free Trial Started',
+          description: (
+            <a
+              href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              View transaction
+            </a>
+          ),
+        });
+      } else {
+        toast({
+          title: 'Error starting free trial',
+          description: 'Transaction failed',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error starting free trial',
+        description: `${error}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
   const setAppRunning = (isRunning: boolean) => {
     setIsAppRunning(isRunning);
     // In a real implementation, you might want to persist this to a backend
@@ -486,6 +569,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     sshiftRecordsOwned,
     nftAddressesRequiredOwned,
     onSubscribe,
+    startFreeTrial,
     isSubscriptionActive,
     setIsSubscriptionActive,
     expirationDate,

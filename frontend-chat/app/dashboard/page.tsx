@@ -34,8 +34,13 @@ export default function SubscriptionPage() {
   const [selectedStableCoin, setSelectedStableCoin] = React.useState(AVAILABLE_STABLE_COINS[0]);
   const { chain } = useChain();
 
-  const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
-    useAppManagment();
+  const { 
+    moveBotsOwned, 
+    qribbleNFTsOwned, 
+    sshiftRecordsOwned,
+    isSubscriptionActive,
+    startFreeTrial
+  } = useAppManagment();
   const [discount, setDiscount] = useState(0);
 
   // Get the appropriate buy link based on chain and selected stable coin
@@ -88,6 +93,8 @@ export default function SubscriptionPage() {
             selectedStableCoin={selectedStableCoin}
             setSelectedStableCoin={setSelectedStableCoin}
             availableStableCoins={AVAILABLE_STABLE_COINS}
+            isSubscriptionActive={isSubscriptionActive}
+            startFreeTrial={startFreeTrial}
           />
           <div className="mt-6 text-center">
             <Link

@@ -134,6 +134,8 @@ export function SubscriptionContainer({
             )}
           </div>
         </div>
+      </div>
+      <div className="mt-auto">
         <Button
           disabled={isSubscriptionActive || isCollector}
           onClick={() => onSubscribe(days)}
