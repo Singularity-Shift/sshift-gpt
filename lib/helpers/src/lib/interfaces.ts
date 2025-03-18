@@ -307,3 +307,10 @@ export interface IActionFunction {
   name: ToolsNameList;
   arguments: string;
 }
+
+export interface Currency {
+  address: `0x${string}`;
+  name: string;
+  symbol: string;
+  isStableCoin: boolean;
+}

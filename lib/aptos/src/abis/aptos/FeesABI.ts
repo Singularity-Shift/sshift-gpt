@@ -1,6 +1,6 @@
 export const FeesABI = {
-  address: '0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d',
-  name: 'fees_v3',
+  address: '0x2033b72957c2f0b66cf5be479a2aa098d5bf18c36477907eba8be39435f2811',
+  name: 'fees',
   friends: [],
   exposed_functions: [
     {
@@ -40,6 +40,15 @@ export const FeesABI = {
       return: [],
     },
     {
+      name: 'add_currency',
+      visibility: 'public',
+      is_entry: true,
+      is_view: false,
+      generic_type_params: [],
+      params: ['&signer', 'address'],
+      return: [],
+    },
+    {
       name: 'check_collector_object',
       visibility: 'public',
       is_entry: false,
@@ -49,12 +58,12 @@ export const FeesABI = {
       return: ['bool'],
     },
     {
-      name: 'claim_salary',
+      name: 'claim_fees',
       visibility: 'public',
       is_entry: true,
       is_view: false,
       generic_type_params: [],
-      params: ['&signer'],
+      params: ['&signer', 'address'],
       return: [],
     },
     {
@@ -81,7 +90,7 @@ export const FeesABI = {
       is_entry: false,
       is_view: true,
       generic_type_params: [],
-      params: ['address'],
+      params: ['address', 'address'],
       return: ['u64'],
     },
     {
@@ -94,13 +103,13 @@ export const FeesABI = {
       return: ['vector<address>'],
     },
     {
-      name: 'get_currency_addr',
+      name: 'get_currencies_addr',
       visibility: 'public',
       is_entry: false,
       is_view: true,
       generic_type_params: [],
       params: [],
-      return: ['address'],
+      return: ['vector<address>'],
     },
     {
       name: 'get_pending_admin',
@@ -130,13 +139,13 @@ export const FeesABI = {
       return: ['address'],
     },
     {
-      name: 'get_resource_balance',
+      name: 'get_resource_balances',
       visibility: 'public',
       is_entry: false,
       is_view: true,
       generic_type_params: [],
       params: [],
-      return: ['u64'],
+      return: ['vector<address>', 'vector<u64>'],
     },
     {
       name: 'get_reviewer',
@@ -153,6 +162,15 @@ export const FeesABI = {
       is_entry: true,
       is_view: false,
       generic_type_params: [],
+      params: ['&signer', 'vector<address>', 'address', 'vector<u64>'],
+      return: [],
+    },
+    {
+      name: 'payment_v1',
+      visibility: 'public',
+      is_entry: true,
+      is_view: false,
+      generic_type_params: [{ constraints: [] }],
       params: ['&signer', 'vector<address>', 'vector<u64>'],
       return: [],
     },
@@ -163,6 +181,15 @@ export const FeesABI = {
       is_view: false,
       generic_type_params: [],
       params: ['&signer', '&signer', 'address'],
+      return: [],
+    },
+    {
+      name: 'remove_currency',
+      visibility: 'public',
+      is_entry: true,
+      is_view: false,
+      generic_type_params: [],
+      params: ['&signer', 'address'],
       return: [],
     },
     {
@@ -182,15 +209,6 @@ export const FeesABI = {
       generic_type_params: [],
       params: [],
       return: ['bool'],
-    },
-    {
-      name: 'set_currency',
-      visibility: 'public',
-      is_entry: true,
-      is_view: false,
-      generic_type_params: [],
-      params: ['&signer', 'address'],
-      return: [],
     },
     {
       name: 'set_pending_admin',
@@ -221,6 +239,7 @@ export const FeesABI = {
       fields: [
         { name: 'collector', type: 'address' },
         { name: 'amount', type: 'u64' },
+        { name: 'currency', type: 'address' },
       ],
     },
     {
@@ -234,7 +253,7 @@ export const FeesABI = {
         { name: 'pending_admin_addr', type: '0x1::option::Option<address>' },
         { name: 'reviewer_addr', type: 'address' },
         { name: 'pending_reviewer_addr', type: '0x1::option::Option<address>' },
-        { name: 'currency', type: '0x1::option::Option<address>' },
+        { name: 'currencies', type: 'vector<address>' },
       ],
     },
     {
@@ -248,7 +267,8 @@ export const FeesABI = {
           name: 'signer_cap',
           type: '0x1::option::Option<0x1::account::SignerCapability>',
         },
-        { name: 'salary_not_claimed', type: 'u64' },
+        { name: 'fees_not_claimed', type: 'vector<u64>' },
+        { name: 'currencies', type: 'vector<address>' },
         { name: 'collectors', type: 'vector<address>' },
       ],
     },
@@ -258,7 +278,10 @@ export const FeesABI = {
       is_event: false,
       abilities: ['key'],
       generic_type_params: [],
-      fields: [{ name: 'amount', type: 'u64' }],
+      fields: [
+        { name: 'currencies', type: 'vector<address>' },
+        { name: 'amounts', type: 'vector<u64>' },
+      ],
     },
   ],
 } as const;

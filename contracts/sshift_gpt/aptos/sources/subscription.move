@@ -588,10 +588,19 @@ module sshift_gpt_addr::subscription {
         config.stop_app
     }
 
+    #[view]
+    public fun exists_subscription_plan(): bool {
+        exists<SubscriptionPlan>(@sshift_gpt_addr)
+    }
 
     #[view]
     public fun get_subscription_config(): SubscriptionPlan acquires SubscriptionPlan {
         *borrow_global<SubscriptionPlan>(@sshift_gpt_addr)
+    }
+
+    #[view]
+    public fun exists_user_subscription(account: address): bool {
+        exists<UserSubscription>(account)
     }
 
     #[view]

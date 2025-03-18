@@ -1379,8 +1379,6 @@ module sshift_gpt_addr::fees {
         set_pending_admin(sender, user1_addr);
         accept_admin(user1);
 
-        let fees_admin = borrow_global_mut<FeesAdmin>(@sshift_gpt_addr);
-
         let fa_obj = create_fa();
         
         let fa_addr = object::object_address(&fa_obj);

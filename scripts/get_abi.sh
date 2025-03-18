@@ -2,19 +2,17 @@
  
 # replace it with the network your contract lives on
 NETWORK_APTOS=testnet
-NETWORK_MOVEMENT=testnet.porto
+NETWORK_MOVEMENT=bardok
 # replace it with your contract address
-CONTRACT_ADDRESS="0x28af3805f23612b4dfa86202a454f5144159702559aea86393ac0d50f577568d"
+CONTRACT_ADDRESS="0x02033b72957c2f0b66cf5be479a2aa098d5bf18c36477907eba8be39435f2811"
 # replace it with your module name, every .move file except move script has module_address::module_name {}
-MODULE_FEES_APTOS=fees_v3
-MODULE_SUBSCRIPTION_APTOS=subscription_v3
-MODULE_FEES_MOVEMENT=fees_beta_1
-MODULE_SUBSCRIPTION_MOVEMENT=subscription_beta_1
+MODULE_FEES=fees
+MODULE_SUBSCRIPTION=subscription
 
  
 # save the ABI to a TypeScript file
-echo "export const ABI = $(curl https://fullnode.$NETWORK_APTOS.aptoslabs.com/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_FEES_APTOS | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftFeesAbiAptos.ts
-echo "export const ABI = $(curl https://fullnode.$NETWORK_APTOS.aptoslabs.com/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_SUBSCRIPTION_APTOS | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftSubscriptionAbiAptos.ts
-echo "export const ABI = $(curl https://aptos.$NETWORK_MOVEMENT.movementlabs.xyz/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_FEES_MOVEMENT | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftFeesAbiMovement.ts
-echo "export const ABI = $(curl https://aptos.$NETWORK_MOVEMENT.movementlabs.xyz/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_SUBSCRIPTION_MOVEMENT | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftSubscriptionAbiMovement.ts
+echo "export const ABI = $(curl https://fullnode.$NETWORK_APTOS.aptoslabs.com/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_FEES| sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftFeesAbiAptos.ts
+echo "export const ABI = $(curl https://fullnode.$NETWORK_APTOS.aptoslabs.com/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_SUBSCRIPTION | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftSubscriptionAbiAptos.ts
+# echo "export const ABI = $(curl https://testnet.$NETWORK_MOVEMENT.movementnetwork.xyz/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_FEES | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftFeesAbiMovement.ts
+# echo "export const ABI = $(curl https://testnet.$NETWORK_MOVEMENT.movementnetwork.xyz/v1/accounts/$CONTRACT_ADDRESS/module/$MODULE_SUBSCRIPTION | sed -n 's/.*"abi":\({.*}\).*}$/\1/p') as const" > SshiftSubscriptionAbiMovement.ts
 

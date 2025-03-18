@@ -12,56 +12,47 @@ import { LabeledInput } from '../../src/components/ui/labeled-input';
 import { Button } from '../../src/components/ui/button';
 import { RESOURCE_ACCOUNT_SEED } from '../../config/env';
 import { useAppManagment } from '../../src/context/AppManagment';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../src/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../../src/components/ui/select';
 import { Label } from '../../src/components/ui/label';
-import { X } from 'lucide-react';
+import { FeesABI } from '@aptos';
+import { useChain } from '../../src/context/ChainProvider';
 
-// Interface for currency
-interface Currency {
-  address: `0x${string}`;
-  name: string;
-  symbol: string;
-  isStableCoin: boolean;
-}
-
-export const EnhancedFees = ({ 
-  isReviewerMode = false, 
-  disableAddCurrency = false 
-}: { 
-  isReviewerMode?: boolean;
-  disableAddCurrency?: boolean;
-}) => {
+export const EnhancedFees = () => {
   const { abi, feesABI } = useAbiClient();
   const [newAddress, setNewAddress] = useState<`0x${string}`>();
-  const [isResourceAccountSet, setIsResourceAccountSet] = useState<boolean>(false);
-  const [collectorsSubscribed, setCollectorsSubscribed] = useState<`0x${string}`[]>([]);
-  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<`0x${string}`[]>([]);
-  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>([]);
+  const [collectorsSubscribed, setCollectorsSubscribed] = useState<
+    `0x${string}`[]
+  >([]);
+  const [collectorsNotSubscribed, setCollectorsNotSubscribed] = useState<
+    `0x${string}`[]
+  >([]);
+  const [initialCollectors, setInitialCollectors] = useState<`0x${string}`[]>(
+    []
+  );
   const [fees, setFees] = useState<number[]>([]);
-  const [resourceAccountBalance, setResourceAccountBalance] = useState<number>(0);
+  const [resourceAccountBalance, setResourceAccountBalance] =
+    useState<number>(0);
   const { connected } = useWallet();
   const { client } = useWalletClient();
-  const { resourceAccount, setResourceAccount, currency, setCurrency } = useAppManagment();
-  
+  const { resourceAccount, setResourceAccount, currencies, setCurrencies } =
+    useAppManagment();
+
+  const { aptos } = useChain();
+
   // New state for enhanced currency management
-  const [currencies, setCurrencies] = useState<Currency[]>([
-    // Updated to use USDC and USDT as the default currencies
-    { address: '0x1::usdc::USDC' as `0x${string}`, name: 'USD Coin', symbol: 'USDC', isStableCoin: true },
-    { address: '0x1::usdt::USDT' as `0x${string}`, name: 'Tether USD', symbol: 'USDT', isStableCoin: true },
-  ]);
-  const [newCurrency, setNewCurrency] = useState<Currency>({
-    address: '' as `0x${string}`,
-    name: '',
-    symbol: '',
-    isStableCoin: false
-  });
-  const [selectedPaymentCurrency, setSelectedPaymentCurrency] = useState<`0x${string}`>(
-    '0x1::usdc::USDC' as `0x${string}`
-  );
+  const [newCurrency, setNewCurrency] = useState<`0x${string}`>();
+  const [selectedPaymentCurrency, setSelectedPaymentCurrency] =
+    useState<`0x${string}`>('0x1::usdc::USDC' as `0x${string}`);
 
   // Reuse existing useEffects and functions from the original Fees component
   useEffect(() => {
-    if (isResourceAccountSet) {
+    if (resourceAccount) {
       void (async () => {
         const balance = await abi?.useABI(feesABI).view.get_resource_balance({
           typeArguments: [],
@@ -72,33 +63,12 @@ export const EnhancedFees = ({
           convertAmountFromOnChainToHumanReadable(Number(balance?.[0]), 8)
         );
       })();
-    }
-    void (async () => {
-      let currencyCopy;
-      const resourceAccountExists = await abi
-        ?.useABI(feesABI)
-        .view.resource_account_exists({
-          typeArguments: [],
-          functionArguments: [],
-        });
 
-      const isResourceAccountExists = Boolean(resourceAccountExists?.[0]);
-
-      if (isResourceAccountExists) {
-        const currencyResult = await abi
-          ?.useABI(feesABI)
-          .view.get_currency_addr({
-            typeArguments: [],
-            functionArguments: [],
-          });
-
-        currencyCopy = currencyResult?.[0];
+      if (currencies.length) {
+        setSelectedPaymentCurrency(currencies[0].address);
       }
-
-      setIsResourceAccountSet(isResourceAccountExists);
-      setCurrency(currencyCopy || null);
-    })();
-  }, [isResourceAccountSet, abi]);
+    }
+  }, [abi, resourceAccount, currencies]);
 
   useEffect(() => {
     void (async () => {
@@ -132,7 +102,7 @@ export const EnhancedFees = ({
         ) as `0x${string}`[]),
       ]);
     })();
-  }, [abi, isResourceAccountSet]);
+  }, [abi, resourceAccount]);
 
   const onAddInitialCollector = async () => {
     setCollectorsNotSubscribed([
@@ -183,8 +153,6 @@ export const EnhancedFees = ({
         });
 
       setResourceAccount(resourceAccountAddressResult?.[0] as `0x${string}`);
-
-      setIsResourceAccountSet(true);
     } catch (error) {
       toast({
         title: 'Error creating resource account',
@@ -227,18 +195,9 @@ export const EnhancedFees = ({
     }
   };
 
-  const onAddCurrency = () => {
-    if (!newCurrency.address || !newCurrency.name || !newCurrency.symbol) {
-      toast({
-        title: 'Missing information',
-        description: 'Please fill in all currency fields',
-        variant: 'destructive',
-      });
-      return;
-    }
-
+  const onAddCurrency = async (address: `0x${string}`) => {
     // Check if currency already exists
-    if (currencies.some(c => c.address === newCurrency.address)) {
+    if (currencies.some((c) => c.address === newCurrency)) {
       toast({
         title: 'Currency already exists',
         description: 'This currency is already in the list',
@@ -247,30 +206,93 @@ export const EnhancedFees = ({
       return;
     }
 
-    setCurrencies([...currencies, newCurrency]);
-    setNewCurrency({
-      address: '' as `0x${string}`,
-      name: '',
-      symbol: '',
-      isStableCoin: false
+    const currencyData = (
+      await aptos.getFungibleAssetMetadata({
+        options: {
+          where: {
+            asset_type: {
+              _eq: address,
+            },
+          },
+        },
+      })
+    )?.[0];
+
+    if (!currencyData) {
+      toast({
+        title: 'Currency not found',
+        description: 'No currency data found for this address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    await client?.useABI(FeesABI).add_currency({
+      arguments: [address],
+      type_arguments: [],
     });
+
+    setCurrencies([
+      ...currencies,
+      {
+        address: newCurrency as `0x${string}`,
+        name: currencyData.name,
+        symbol: currencyData.symbol,
+        isStableCoin: true,
+      },
+    ]);
+
+    setNewCurrency(undefined);
 
     toast({
       title: 'Currency added',
-      description: `${newCurrency.name} (${newCurrency.symbol}) has been added to the list`,
+      description: `${currencyData.name} (${currencyData.symbol}) has been added to the list`,
       variant: 'default',
     });
   };
 
-  const onRemoveCurrency = (address: `0x${string}`) => {
-    setCurrencies(currencies.filter(c => c.address !== address));
-    
+  const onRemoveCurrency = async (address: `0x${string}`) => {
+    if (selectedPaymentCurrency !== address) {
+      toast({
+        title: 'Cannot remove currency',
+        description:
+          'You must select a payment currency before removing a currency',
+        variant: 'destructive',
+      });
+
+      return;
+    }
+
+    if (currencies.length < 2) {
+      toast({
+        title: 'Cannot remove currency',
+        description: 'You must have at least two currencies in the list',
+        variant: 'destructive',
+      });
+
+      return;
+    }
+
     // If the removed currency is the selected one, reset to the first available
-    if (selectedPaymentCurrency === address && currencies.length > 1) {
-      const remainingCurrencies = currencies.filter(c => c.address !== address);
-      if (remainingCurrencies.length > 0) {
-        setSelectedPaymentCurrency(remainingCurrencies[0].address);
-      }
+    try {
+      await client?.useABI(FeesABI).remove_currency({
+        arguments: [address],
+        type_arguments: [],
+      });
+
+      setCurrencies(currencies.filter((c) => c.address !== address));
+
+      const remainingCurrencies = currencies.filter(
+        (c) => c.address !== address
+      );
+
+      setSelectedPaymentCurrency(remainingCurrencies[0].address);
+    } catch (error) {
+      toast({
+        title: 'Error removing currency',
+        description: `Error: ${error}`,
+        variant: 'destructive',
+      });
     }
   };
 
@@ -278,10 +300,10 @@ export const EnhancedFees = ({
     try {
       // In a real implementation, this would call the backend API
       // await api.updatePaymentCurrency(selectedPaymentCurrency);
-      
+
       // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
+      await new Promise((resolve) => setTimeout(resolve, 500));
+
       toast({
         title: 'Payment currency updated',
         description: `The payment currency has been updated successfully`,
@@ -296,28 +318,6 @@ export const EnhancedFees = ({
     }
   };
 
-  const onSaveCurrencies = async () => {
-    try {
-      // In a real implementation, this would call the backend API
-      // await api.updateCurrencies(currencies);
-      
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      toast({
-        title: 'Currencies updated',
-        description: `The currencies list has been updated successfully`,
-        variant: 'default',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error updating currencies',
-        description: `${error}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
   // Calculate if resource account creation should be disabled
   const disabledCreateResourceAccount = !initialCollectors.length;
 
@@ -325,37 +325,99 @@ export const EnhancedFees = ({
   return (
     <div className="space-y-6">
       {/* Currency Management Section - REMOVED */}
-      
-      {/* Collector Payment Currency Selection */}
-      <div className="space-y-4 pt-4 border-b pb-6">
-        <h3 className="font-semibold text-lg">Collector Payment Currency</h3>
+
+      {/* Add label to add currency and after show a list of currency added which the possibility to delete it */}
+      <div className="space-y-6 pt-4 pb-6">
+        <h3 className="font-semibold text-lg">Currencies</h3>
         <div className="space-y-2">
-          <Label>Select Currency for Paying Collectors</Label>
-          <Select 
-            value={selectedPaymentCurrency} 
-            onValueChange={(value) => setSelectedPaymentCurrency(value as `0x${string}`)}
-          >
-            <SelectTrigger className="w-full bg-white">
-              <SelectValue placeholder="Select a currency" />
-            </SelectTrigger>
-            <SelectContent className="bg-white">
-              {currencies.map((curr, index) => (
-                <SelectItem key={index} value={curr.address}>
-                  {curr.symbol} - {curr.name}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <h3 className="font-semibold">Add Currency</h3>
+          <div className="space-x-4">
+            <LabeledInput
+              id="new-currency-address"
+              value={newAddress}
+              onChange={(e) => setNewCurrency(e.target.value as `0x${string}`)}
+              label="Address"
+              type="text"
+              required={true}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button
+              variant="outline"
+              onClick={() => onAddCurrency(newCurrency as `0x${string}`)}
+              disabled={!newCurrency}
+            >
+              Add Currency
+            </Button>
+          </div>
+          {/* Currency List */}
+          {currencies.length > 0 && (
+            <div className="mt-4">
+              <h3 className="font-semibold mb-2">Current Currencies</h3>
+              <div className="space-y-2 max-h-60 overflow-y-auto">
+                {currencies.map((currency, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                  >
+                    <div>
+                      <span className="font-medium">{currency.symbol}</span>
+                      <span className="text-sm text-gray-500 ml-2">
+                        ({currency.name})
+                      </span>
+                      <div className="text-xs text-gray-400 truncate max-w-xs">
+                        {currency.address}
+                      </div>
+                    </div>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => onRemoveCurrency(currency.address)}
+                    >
+                      Remove
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-        {/* Save Payment Currency button - REMOVED */}
       </div>
-      
+
       {/* Original Fees Component UI */}
       <div className="space-y-6 pt-4">
         <h3 className="font-semibold text-lg">Resource Account & Collectors</h3>
-        
-        {isResourceAccountSet ? (
+
+        {resourceAccount ? (
           <>
+            {/* Collector Payment Currency Selection */}
+            {currencies.length > 0 && (
+              <div className="space-y-4 pt-4 border-b pb-6">
+                <h3 className="font-semibold text-lg">
+                  Collector Payment Currency
+                </h3>
+                <div className="space-y-2">
+                  <Label>Select Currency for Paying Collectors</Label>
+                  <Select
+                    value={selectedPaymentCurrency}
+                    onValueChange={(value) =>
+                      setSelectedPaymentCurrency(value as `0x${string}`)
+                    }
+                  >
+                    <SelectTrigger className="w-full bg-white">
+                      <SelectValue placeholder="Select a currency" />
+                    </SelectTrigger>
+                    <SelectContent className="bg-white">
+                      {currencies.map((curr, index) => (
+                        <SelectItem key={index} value={curr.address}>
+                          {curr.symbol} - {curr.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+            )}
             {/* Account Info */}
             <div className="space-y-4">
               <LabeledInput
@@ -484,4 +546,4 @@ export const EnhancedFees = ({
       </div>
     </div>
   );
-}; 
+};

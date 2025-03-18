@@ -13,7 +13,7 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { Chain, IMoveBotFields, ISubscription } from '@helpers';
+import { Chain, Currency, IMoveBotFields, ISubscription } from '@helpers';
 import {
   QRIBBLE_NFT_ADDRESS,
   QRIBBLE_NFT_MOVE_ADDRESS,
@@ -22,6 +22,7 @@ import {
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { useAuth } from './AuthProvider';
 import { useChain } from './ChainProvider';
+import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 export interface AppManagmentContextType {
   isAdmin: boolean;
@@ -32,8 +33,8 @@ export interface AppManagmentContextType {
   setIsCollector: Dispatch<SetStateAction<boolean>>;
   resourceAccount: `0x${string}` | null;
   setResourceAccount: Dispatch<SetStateAction<`0x${string}` | null>>;
-  currency: `0x${string}` | null;
-  setCurrency: Dispatch<SetStateAction<`0x${string}` | null>>;
+  currencies: Currency[];
+  setCurrencies: Dispatch<SetStateAction<Currency[]>>;
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
@@ -62,8 +63,8 @@ export const AppManagmentContext = createContext<AppManagmentContextType>({
   setIsCollector: () => {},
   resourceAccount: null,
   setResourceAccount: () => {},
-  currency: null,
-  setCurrency: () => {},
+  currencies: [],
+  setCurrencies: () => {},
   moveBotsOwned: 0,
   qribbleNFTsOwned: 0,
   sshiftRecordsOwned: 0,
@@ -101,7 +102,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
-  const [currency, setCurrency] = useState<`0x${string}` | null>(null);
+  const [currencies, setCurrencies] = useState<Currency[]>([]);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
   const [isAppRunning, setIsAppRunning] = useState<boolean>(true);
 
@@ -128,7 +129,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   }, [abi, connected, walletAddress]);
 
   useEffect(() => {
-    if (!connected) return;
+    if (!connected || !walletAddress) return;
     (async () => {
       let adminResult;
       let pendingAdminResult;
@@ -153,9 +154,13 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
         console.error('Error fetching pending admin:', error);
       }
 
-      const admin = adminResult?.[0];
+      const admin = AccountAddress.from(
+        adminResult?.[0] as `0x${string}`
+      )?.toString();
 
-      const pendingAdmin = pendingAdminResult?.[0];
+      const pendingAdmin = AccountAddress.from(
+        pendingAdminResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsAdmin(admin === walletAddress);
       setIsPendingAdmin(pendingAdmin === walletAddress);
@@ -246,16 +251,35 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
       }
 
       try {
-        const currencyResult = await abi
+        const currenciesResult = await abi
           ?.useABI(feesABI)
-          .view.get_currency_addr({
+          .view.get_currencies_addr({
             typeArguments: [],
             functionArguments: [],
           });
 
-        const currency = currencyResult?.[0];
+        const currencies = currenciesResult?.[0];
 
-        setCurrency(currency || null);
+        if (currencies?.length) {
+          const currenciesData = await aptos.getFungibleAssetMetadata({
+            options: {
+              where: {
+                asset_type: {
+                  _in: currencies,
+                },
+              },
+            },
+          });
+
+          setCurrencies(
+            currenciesData?.map((c) => ({
+              name: c.name,
+              address: c.asset_type as `0x${string}`,
+              symbol: c.symbol,
+              isStableCoin: true,
+            })) || []
+          );
+        }
       } catch (error) {
         toast({
           title: 'Error fetching token address',
@@ -562,8 +586,8 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     setIsCollector,
     resourceAccount,
     setResourceAccount,
-    currency,
-    setCurrency,
+    currencies,
+    setCurrencies,
     moveBotsOwned,
     qribbleNFTsOwned,
     sshiftRecordsOwned,
