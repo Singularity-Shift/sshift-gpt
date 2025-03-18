@@ -149,7 +149,7 @@ export const Features = () => {
         <h2 className="text-xl font-semibold text-gray-900">Models Configuration</h2>
         <div className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center">
           <div className="font-medium text-sm text-gray-700">Model Name</div>
-          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div className="font-medium text-sm text-gray-700">Uses Per Day</div>
           <div></div>
         </div>
         {adminConfig.models.map((model, index) => (
@@ -172,7 +172,7 @@ export const Features = () => {
         <h2 className="text-xl font-semibold text-gray-900">Tools Configuration</h2>
         <div className="grid grid-cols-[1fr,1fr,auto,auto] gap-4 items-center">
           <div className="font-medium text-sm text-gray-700">Tool Name</div>
-          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div className="font-medium text-sm text-gray-700">Uses Per Day</div>
           <div></div>
           <div></div>
         </div>
