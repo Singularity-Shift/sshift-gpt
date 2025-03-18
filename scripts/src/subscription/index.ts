@@ -8,8 +8,10 @@ const APTOS_FOLDER_PATH =
   process.env.APTOS_FOLDER_PATH || 'contracts/sshift_dao/aptos';
 
 const getConfig = () => {
-  if (!process.env.NEXT_PUBLIC_MODULE_ADDRESS) {
-    throw new Error('NEXT_PUBLIC_MODULE_ADDRESS env variable is required');
+  if (!process.env.NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS) {
+    throw new Error(
+      'NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS env variable is required'
+    );
   }
 
   if (!process.env.PRIVATE_KEY) {
@@ -88,7 +90,7 @@ export const upgrade = async () => {
 
   move.upgradeObjectPackage({
     packageDirectoryPath: 'salary_payment',
-    objectAddress: process.env.NEXT_PUBLIC_MODULE_ADDRESS,
+    objectAddress: process.env.NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS,
     namedAddresses: {
       // Upgrade module from an object
       sshift_dao_addr: accountAddress,

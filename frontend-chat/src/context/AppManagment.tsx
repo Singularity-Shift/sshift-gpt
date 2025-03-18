@@ -78,7 +78,7 @@ export const AppManagementProvider = ({
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
 
   const { abi, feesABI, subscriptionABI } = useAbiClient();
-  const { connected } = useWallet();
+  const { connected, account } = useWallet();
   const { toast } = useToast();
   const { client } = useWalletClient();
   const { walletAddress } = useAuth();
@@ -163,6 +163,8 @@ export const AppManagementProvider = ({
       let reviewerResult;
       let pendingReviewerResult;
       try {
+        console.log(account?.publicKey.toString());
+
         reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],
