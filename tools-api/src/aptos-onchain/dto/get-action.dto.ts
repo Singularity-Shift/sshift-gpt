@@ -18,17 +18,7 @@ export class GetActionDto {
     if (values?.input && Object.keys(values.input).length) {
       if (['aptos_balance', 'aptos_token_details'].includes(name)) {
         values.input = { balance: values.input };
-      } else if (
-        ![
-          'emojicoin_swap',
-          'emojicoin_get_market',
-          'emojicoin_provide_liquidity',
-          'emojicoin_register_market',
-          'emojicoin_remove_liquidity',
-          'emojicoin_swap',
-          'emojicoin_chat',
-        ].includes(name)
-      ) {
+      } else if (typeof values.input === 'string') {
         values.input = JSON.parse(values.input);
       }
     }
