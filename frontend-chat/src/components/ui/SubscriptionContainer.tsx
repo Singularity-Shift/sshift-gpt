@@ -2,6 +2,14 @@ import * as React from 'react';
 import { Button } from './button';
 import { Slider } from './slider';
 import { useAppManagment } from '../../context/AppManagment';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import Image from 'next/image';
+
+interface StableCoin {
+  symbol: string;
+  name: string;
+  icon: string;
+}
 
 interface SubscriptionContainerProps {
   days: number;
@@ -12,6 +20,9 @@ interface SubscriptionContainerProps {
     expirationDate: string;
   };
   discount: number;
+  selectedStableCoin: StableCoin;
+  setSelectedStableCoin: React.Dispatch<React.SetStateAction<StableCoin>>;
+  availableStableCoins: StableCoin[];
 }
 
 export function SubscriptionContainer({
@@ -20,8 +31,18 @@ export function SubscriptionContainer({
   price,
   dates,
   discount,
+  selectedStableCoin,
+  setSelectedStableCoin,
+  availableStableCoins,
 }: SubscriptionContainerProps) {
   const { onSubscribe, isSubscriptionActive, isCollector } = useAppManagment();
+
+  const handleStableCoinChange = (value: string) => {
+    const selected = availableStableCoins.find(coin => coin.symbol === value);
+    if (selected) {
+      setSelectedStableCoin(selected);
+    }
+  };
 
   return (
     <div className="w-full max-w-[400px] h-[600px] bg-white bg-opacity-90 p-6 lg:p-10 rounded-xl shadow-lg border border-gray-300 flex flex-col">
@@ -60,9 +81,52 @@ export function SubscriptionContainer({
         <div className="bg-gray-100 px-4 py-5 sm:p-6 rounded-md">
           <div className="text-center">
             <p className="text-sm text-gray-600">Total Price</p>
-            <p className="mt-1 text-3xl lg:text-4xl font-extrabold text-gray-900">
-              {price} USDT
-            </p>
+            <div className="mt-1 flex items-center justify-center">
+              <p className="text-3xl lg:text-4xl font-extrabold text-gray-900">
+                {price}
+              </p>
+              <div className="ml-2">
+                <Select
+                  value={selectedStableCoin.symbol}
+                  onValueChange={handleStableCoinChange}
+                >
+                  <SelectTrigger className="w-[140px] h-8 text-sm border border-gray-200 bg-white rounded-md shadow-sm px-3">
+                    <SelectValue>
+                      <div className="flex items-center mr-3">
+                        <Image
+                          src={selectedStableCoin.icon}
+                          alt={selectedStableCoin.symbol}
+                          width={20}
+                          height={20}
+                          className="rounded-full mr-2"
+                        />
+                        <span>{selectedStableCoin.symbol}</span>
+                      </div>
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent className="bg-white border border-gray-200 shadow-md rounded-md min-w-[120px]">
+                    {availableStableCoins.map((coin) => (
+                      <SelectItem 
+                        key={coin.symbol} 
+                        value={coin.symbol} 
+                        className="hover:bg-gray-100 data-[state=checked]:bg-gray-100 data-[state=checked]:font-medium"
+                      >
+                        <div className="flex items-center">
+                          <Image
+                            src={coin.icon}
+                            alt={coin.symbol}
+                            width={20}
+                            height={20}
+                            className="rounded-full mr-2"
+                          />
+                          {coin.symbol}
+                        </div>
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
             {discount > 0 && (
               <p className="text-sm text-green-600">
                 Discount Applied: {discount.toFixed(2)}%
@@ -70,6 +134,8 @@ export function SubscriptionContainer({
             )}
           </div>
         </div>
+      </div>
+      <div className="mt-auto">
         <Button
           disabled={isSubscriptionActive || isCollector}
           onClick={() => onSubscribe(days)}

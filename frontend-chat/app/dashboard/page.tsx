@@ -18,6 +18,12 @@ import Image from 'next/image';
 import { useChain } from '../../src/context/ChainProvider';
 import { Chain } from '@helpers';
 
+// Define available stable coins
+const AVAILABLE_STABLE_COINS = [
+  { symbol: 'USDT', name: 'Tether USD', icon: '/images/USDT.png' },
+  { symbol: 'USDC', name: 'USD Coin', icon: '/images/USDC.png' },
+];
+
 export default function SubscriptionPage() {
   const [days, setDays] = React.useState(15);
   const [price, setPrice] = React.useState(0);
@@ -25,11 +31,32 @@ export default function SubscriptionPage() {
     startDate: '',
     expirationDate: '',
   });
+  const [selectedStableCoin, setSelectedStableCoin] = React.useState(AVAILABLE_STABLE_COINS[0]);
   const { chain } = useChain();
 
-  const { moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned } =
-    useAppManagment();
+  const { 
+    moveBotsOwned, 
+    qribbleNFTsOwned, 
+    sshiftRecordsOwned,
+    isSubscriptionActive,
+    startFreeTrial
+  } = useAppManagment();
   const [discount, setDiscount] = useState(0);
+
+  // Get the appropriate buy link based on chain and selected stable coin
+  const getBuyLink = () => {
+    if (chain === Chain.Aptos) {
+      return `https://app.panora.exchange/swap/aptos?pair=APT-${selectedStableCoin.symbol}`;
+    } else {
+      // Movement chain
+      if (selectedStableCoin.symbol === 'USDC') {
+        return 'https://app.mosaic.ag/swap/MOVE-USDC.e';
+      } else {
+        // USDT on Movement
+        return 'https://app.mosaic.ag/swap/MOVE-USDT';
+      }
+    }
+  };
 
   useEffect(() => {
     const priceWithoutDiscount = calculatePrice(days);
@@ -63,28 +90,31 @@ export default function SubscriptionPage() {
             moveBotsOwned={moveBotsOwned}
             qribbleNFTsOwned={qribbleNFTsOwned}
             sshiftRecordsOwned={sshiftRecordsOwned}
+            selectedStableCoin={selectedStableCoin}
+            setSelectedStableCoin={setSelectedStableCoin}
+            availableStableCoins={AVAILABLE_STABLE_COINS}
+            isSubscriptionActive={isSubscriptionActive}
+            startFreeTrial={startFreeTrial}
           />
-          {chain === Chain.Aptos && (
-            <div className="mt-6 text-center">
-              <Link
-                href="https://app.panora.exchange/swap/aptos?pair=APT-USDt"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors duration-200 border-2 border-gray-300"
-              >
-                <Image
-                  src="/images/USDT.png"
-                  alt="USDT"
-                  width={24}
-                  height={24}
-                  className="rounded-full"
-                />
-                <span className={`${silkscreen.className} text-black`}>
-                  BUY USDT ON PANORA
-                </span>
-              </Link>
-            </div>
-          )}
+          <div className="mt-6 text-center">
+            <Link
+              href={getBuyLink()}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors duration-200 border-2 border-gray-300"
+            >
+              <Image
+                src={selectedStableCoin.icon}
+                alt={selectedStableCoin.symbol}
+                width={24}
+                height={24}
+                className="rounded-full"
+              />
+              <span className={`${silkscreen.className} text-black`}>
+                BUY {selectedStableCoin.symbol} ON {chain === Chain.Aptos ? 'PANORA' : 'MOSAIC'}
+              </span>
+            </Link>
+          </div>
         </div>
       </div>
     </div>
