@@ -107,7 +107,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   const [isAppRunning, setIsAppRunning] = useState<boolean>(true);
 
   const { abi, feesABI, subscriptionABI } = useAbiClient();
-  const { connected } = useWallet();
+  const { connected, account } = useWallet();
   const { toast } = useToast();
   const { client } = useWalletClient();
   const { walletAddress } = useAuth();
@@ -209,6 +209,8 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
       let reviewerResult;
       let pendingReviewerResult;
       try {
+        console.log(account?.publicKey.toString());
+
         reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],

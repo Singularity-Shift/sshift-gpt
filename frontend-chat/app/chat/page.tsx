@@ -506,6 +506,7 @@ export default function ChatPage() {
             }
             try {
               const parsedData = JSON.parse(data);
+
               if (parsedData.content) {
                 newAssistantMessage.content += parsedData.content;
                 updateChat(newAssistantMessage);
@@ -981,7 +982,7 @@ export default function ChatPage() {
           />
         </div>
       </div>
-      <RightSidebar 
+      <RightSidebar
         isOpen={isRightSidebarOpen}
         onClose={() => setIsRightSidebarOpen(false)}
       />
