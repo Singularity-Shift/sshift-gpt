@@ -1,7 +1,6 @@
 'use client';
 
 import * as React from 'react';
-import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { silkscreen } from '../fonts';
 import {
@@ -16,46 +15,36 @@ import { useAppManagment } from '../../src/context/AppManagment';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useChain } from '../../src/context/ChainProvider';
-import { Chain } from '@helpers';
-
-// Define available stable coins
-const AVAILABLE_STABLE_COINS = [
-  { symbol: 'USDT', name: 'Tether USD', icon: '/images/USDT.png' },
-  { symbol: 'USDC', name: 'USD Coin', icon: '/images/USDC.png' },
-];
+import { Chain, ICurrency } from '@helpers';
 
 export default function SubscriptionPage() {
-  const [days, setDays] = React.useState(15);
-  const [price, setPrice] = React.useState(0);
-  const [dates, setDates] = React.useState({
+  const [days, setDays] = useState(15);
+  const [price, setPrice] = useState(0);
+  const [dates, setDates] = useState({
     startDate: '',
     expirationDate: '',
   });
-  const [selectedStableCoin, setSelectedStableCoin] = React.useState(AVAILABLE_STABLE_COINS[0]);
+  const [selectedStableCoin, setSelectedStableCoin] = useState<ICurrency>();
   const { chain } = useChain();
+  const { currencies } = useAppManagment();
 
-  const { 
-    moveBotsOwned, 
-    qribbleNFTsOwned, 
+  const {
+    moveBotsOwned,
+    qribbleNFTsOwned,
     sshiftRecordsOwned,
     isSubscriptionActive,
-    startFreeTrial
+    startFreeTrial,
   } = useAppManagment();
   const [discount, setDiscount] = useState(0);
 
   // Get the appropriate buy link based on chain and selected stable coin
   const getBuyLink = () => {
     if (chain === Chain.Aptos) {
-      return `https://app.panora.exchange/swap/aptos?pair=APT-${selectedStableCoin.symbol}`;
-    } else {
-      // Movement chain
-      if (selectedStableCoin.symbol === 'USDC') {
-        return 'https://app.mosaic.ag/swap/MOVE-USDC.e';
-      } else {
-        // USDT on Movement
-        return 'https://app.mosaic.ag/swap/MOVE-USDT';
-      }
+      return `https://app.panora.exchange/swap/aptos?pair=APT-${selectedStableCoin?.symbol}`;
     }
+
+    // Movement chain
+    return `https://app.mosaic.ag/swap/MOVE-${selectedStableCoin?.symbol}`;
   };
 
   useEffect(() => {
@@ -71,7 +60,10 @@ export default function SubscriptionPage() {
     const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
     setPrice(parseFloat(finalPrice.toFixed(2)));
     setDates(calculateDates(days));
-  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned]);
+    if (currencies.length) {
+      setSelectedStableCoin(currencies[0]);
+    }
+  }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned, currencies]);
 
   return (
     <div className="min-h-screen flex flex-col relative">
@@ -92,7 +84,7 @@ export default function SubscriptionPage() {
             sshiftRecordsOwned={sshiftRecordsOwned}
             selectedStableCoin={selectedStableCoin}
             setSelectedStableCoin={setSelectedStableCoin}
-            availableStableCoins={AVAILABLE_STABLE_COINS}
+            availableStableCoins={currencies}
             isSubscriptionActive={isSubscriptionActive}
             startFreeTrial={startFreeTrial}
           />
@@ -103,15 +95,16 @@ export default function SubscriptionPage() {
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white hover:bg-gray-100 transition-colors duration-200 border-2 border-gray-300"
             >
-              <Image
-                src={selectedStableCoin.icon}
-                alt={selectedStableCoin.symbol}
+              <img
+                src={selectedStableCoin?.logo || '/images/sshift-guy.png'}
+                alt={selectedStableCoin?.symbol || ''}
                 width={24}
                 height={24}
                 className="rounded-full"
               />
               <span className={`${silkscreen.className} text-black`}>
-                BUY {selectedStableCoin.symbol} ON {chain === Chain.Aptos ? 'PANORA' : 'MOSAIC'}
+                BUY {selectedStableCoin?.symbol} ON{' '}
+                {chain === Chain.Aptos ? 'PANORA' : 'MOSAIC'}
               </span>
             </Link>
           </div>

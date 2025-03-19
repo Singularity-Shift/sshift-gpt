@@ -4,12 +4,7 @@ import { UserProfileContainer } from './UserProfileContainer';
 import { SubscriptionUpgradeContainer } from './SubscriptionUpgradeContainer';
 import { FreeTrialContainer } from './FreeTrialContainer';
 import UserDashboardTitle from './UserDashboardTitle';
-
-interface StableCoin {
-  symbol: string;
-  name: string;
-  icon: string;
-}
+import { ICurrency } from '@helpers';
 
 interface DashboardDisplayAreaProps {
   days: number;
@@ -20,9 +15,11 @@ interface DashboardDisplayAreaProps {
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
-  selectedStableCoin: StableCoin;
-  setSelectedStableCoin: React.Dispatch<React.SetStateAction<StableCoin>>;
-  availableStableCoins: StableCoin[];
+  selectedStableCoin?: ICurrency;
+  setSelectedStableCoin: React.Dispatch<
+    React.SetStateAction<ICurrency | undefined>
+  >;
+  availableStableCoins: ICurrency[];
   isSubscriptionActive: boolean;
   startFreeTrial: () => Promise<void>;
 }

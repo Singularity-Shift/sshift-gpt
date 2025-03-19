@@ -2,14 +2,15 @@ import * as React from 'react';
 import { Button } from './button';
 import { Slider } from './slider';
 import { useAppManagment } from '../../context/AppManagment';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './select';
 import Image from 'next/image';
-
-interface StableCoin {
-  symbol: string;
-  name: string;
-  icon: string;
-}
+import { ICurrency } from '@helpers';
 
 interface SubscriptionContainerProps {
   days: number;
@@ -20,9 +21,11 @@ interface SubscriptionContainerProps {
     expirationDate: string;
   };
   discount: number;
-  selectedStableCoin: StableCoin;
-  setSelectedStableCoin: React.Dispatch<React.SetStateAction<StableCoin>>;
-  availableStableCoins: StableCoin[];
+  selectedStableCoin?: ICurrency;
+  setSelectedStableCoin: React.Dispatch<
+    React.SetStateAction<ICurrency | undefined>
+  >;
+  availableStableCoins: ICurrency[];
 }
 
 export function SubscriptionContainer({
@@ -38,7 +41,7 @@ export function SubscriptionContainer({
   const { onSubscribe, isSubscriptionActive, isCollector } = useAppManagment();
 
   const handleStableCoinChange = (value: string) => {
-    const selected = availableStableCoins.find(coin => coin.symbol === value);
+    const selected = availableStableCoins.find((coin) => coin.symbol === value);
     if (selected) {
       setSelectedStableCoin(selected);
     }
@@ -87,34 +90,39 @@ export function SubscriptionContainer({
               </p>
               <div className="ml-2">
                 <Select
-                  value={selectedStableCoin.symbol}
+                  value={selectedStableCoin?.symbol}
                   onValueChange={handleStableCoinChange}
                 >
                   <SelectTrigger className="w-[140px] h-8 text-sm border border-gray-200 bg-white rounded-md shadow-sm px-3">
                     <SelectValue>
                       <div className="flex items-center mr-3">
-                        <Image
-                          src={selectedStableCoin.icon}
-                          alt={selectedStableCoin.symbol}
+                        <img
+                          src={
+                            selectedStableCoin?.logo || '/images/sshift-gui.png'
+                          }
+                          alt={selectedStableCoin?.symbol || ''}
                           width={20}
                           height={20}
                           className="rounded-full mr-2"
                         />
-                        <span>{selectedStableCoin.symbol}</span>
+                        <span>{selectedStableCoin?.symbol}</span>
                       </div>
                     </SelectValue>
                   </SelectTrigger>
                   <SelectContent className="bg-white border border-gray-200 shadow-md rounded-md min-w-[120px]">
                     {availableStableCoins.map((coin) => (
-                      <SelectItem 
-                        key={coin.symbol} 
-                        value={coin.symbol} 
+                      <SelectItem
+                        key={coin.symbol}
+                        value={coin.symbol}
                         className="hover:bg-gray-100 data-[state=checked]:bg-gray-100 data-[state=checked]:font-medium"
                       >
                         <div className="flex items-center">
-                          <Image
-                            src={coin.icon}
-                            alt={coin.symbol}
+                          <img
+                            src={
+                              selectedStableCoin?.logo ||
+                              '/images/sshift-gui.png'
+                            }
+                            alt={selectedStableCoin?.symbol || ''}
                             width={20}
                             height={20}
                             className="rounded-full mr-2"
@@ -137,8 +145,10 @@ export function SubscriptionContainer({
       </div>
       <div className="mt-auto">
         <Button
-          disabled={isSubscriptionActive || isCollector}
-          onClick={() => onSubscribe(days)}
+          disabled={isSubscriptionActive || isCollector || !selectedStableCoin}
+          onClick={() =>
+            onSubscribe(days, selectedStableCoin?.address as string)
+          }
           className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
           {isSubscriptionActive

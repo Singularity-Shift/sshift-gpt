@@ -13,7 +13,7 @@ import {
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { Chain, Currency, IMoveBotFields, ISubscription } from '@helpers';
+import { Chain, ICurrency, IMoveBotFields, ISubscription } from '@helpers';
 import {
   QRIBBLE_NFT_ADDRESS,
   QRIBBLE_NFT_MOVE_ADDRESS,
@@ -33,13 +33,13 @@ export interface AppManagmentContextType {
   setIsCollector: Dispatch<SetStateAction<boolean>>;
   resourceAccount: `0x${string}` | null;
   setResourceAccount: Dispatch<SetStateAction<`0x${string}` | null>>;
-  currencies: Currency[];
-  setCurrencies: Dispatch<SetStateAction<Currency[]>>;
+  currencies: ICurrency[];
+  setCurrencies: Dispatch<SetStateAction<ICurrency[]>>;
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
   nftAddressesRequiredOwned: string[];
-  onSubscribe: (days: number) => Promise<void>;
+  onSubscribe: (days: number, currency: string) => Promise<void>;
   startFreeTrial: () => Promise<void>;
   isSubscriptionActive: boolean;
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
@@ -102,7 +102,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
-  const [currencies, setCurrencies] = useState<Currency[]>([]);
+  const [currencies, setCurrencies] = useState<ICurrency[]>([]);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
   const [isAppRunning, setIsAppRunning] = useState<boolean>(true);
 
@@ -127,6 +127,19 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
       setHasSubscriptionToClaim(Boolean(hasSubscriptionToClaimResult?.[0]));
     })();
   }, [abi, connected, walletAddress]);
+
+  useEffect(() => {
+    if (!abi) return;
+
+    void (async () => {
+      const isStopped = await abi.useABI(subscriptionABI).view.get_app_status({
+        typeArguments: [],
+        functionArguments: [],
+      });
+
+      setAppRunning(!isStopped?.[0]);
+    })();
+  }, [abi]);
 
   useEffect(() => {
     if (!connected || !walletAddress) return;
@@ -219,11 +232,15 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
         console.error('Error fetching pending reviewer:', error);
       }
 
-      const reviewer = reviewerResult?.[0];
+      const reviewer = AccountAddress.from(
+        reviewerResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsReviewer(reviewer === walletAddress);
 
-      const pendingReviewer = pendingReviewerResult?.[0];
+      const pendingReviewer = AccountAddress.from(
+        pendingReviewerResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsPendingReviewer(pendingReviewer === walletAddress);
     })();
@@ -276,7 +293,9 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
               name: c.name,
               address: c.asset_type as `0x${string}`,
               symbol: c.symbol,
+              logo: c.icon_uri,
               isStableCoin: true,
+              decimals: c.decimals,
             })) || []
           );
         }
@@ -418,13 +437,18 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     })();
   }, [connected, walletAddress, abi, hasSubscriptionToClaim, aptos]);
 
-  const onSubscribe = async (days: number) => {
+  const onSubscribe = async (days: number, currency: string) => {
     try {
       const duration = days * 24 * 60 * 60;
 
       const tx = await client?.useABI(subscriptionABI).buy_plan({
         type_arguments: [],
-        arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
+        arguments: [
+          duration,
+          nftAddressesRequiredOwned as `0x${string}`[],
+          [],
+          currency as `0x${string}`,
+        ],
       });
 
       // Wait for transaction to be confirmed

@@ -308,9 +308,15 @@ export interface IActionFunction {
   arguments: string;
 }
 
-export interface Currency {
+export interface ICurrency {
   address: `0x${string}`;
   name: string;
   symbol: string;
   isStableCoin: boolean;
+  logo?: string | null;
+  decimals: number;
+}
+
+export interface IBalance extends ICurrency {
+  balance: number;
 }

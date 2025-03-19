@@ -40,35 +40,55 @@ export const EnhancedFees = () => {
     useState<number>(0);
   const { connected } = useWallet();
   const { client } = useWalletClient();
-  const { resourceAccount, setResourceAccount, currencies, setCurrencies } =
-    useAppManagment();
+  const {
+    resourceAccount,
+    setResourceAccount,
+    currencies,
+    setCurrencies,
+    isAdmin,
+  } = useAppManagment();
 
   const { aptos } = useChain();
 
   // New state for enhanced currency management
   const [newCurrency, setNewCurrency] = useState<`0x${string}`>();
   const [selectedPaymentCurrency, setSelectedPaymentCurrency] =
-    useState<`0x${string}`>('0x1::usdc::USDC' as `0x${string}`);
+    useState<`0x${string}`>('' as `0x${string}`);
 
   // Reuse existing useEffects and functions from the original Fees component
   useEffect(() => {
     if (resourceAccount) {
       void (async () => {
-        const balance = await abi?.useABI(feesABI).view.get_resource_balance({
+        const balances = await abi?.useABI(feesABI).view.get_resource_balances({
           typeArguments: [],
           functionArguments: [],
         });
 
-        setResourceAccountBalance(
-          convertAmountFromOnChainToHumanReadable(Number(balance?.[0]), 8)
+        const balanceIndex = balances?.[0].findIndex(
+          (b) => b === selectedPaymentCurrency
         );
+
+        if (balanceIndex !== undefined && balanceIndex >= 0) {
+          const balancesData = currencies.find(
+            (c) => c.address === balances?.[0][balanceIndex]
+          );
+
+          setResourceAccountBalance(
+            parseFloat(
+              convertAmountFromOnChainToHumanReadable(
+                Number(balances?.[1][balanceIndex]),
+                balancesData?.decimals as number
+              ).toFixed(2)
+            )
+          );
+        }
       })();
 
       if (currencies.length) {
         setSelectedPaymentCurrency(currencies[0].address);
       }
     }
-  }, [abi, resourceAccount, currencies]);
+  }, [abi, resourceAccount, currencies, selectedPaymentCurrency]);
 
   useEffect(() => {
     void (async () => {
@@ -168,6 +188,7 @@ export const EnhancedFees = () => {
         type_arguments: [],
         arguments: [
           [...collectorsSubscribed],
+          selectedPaymentCurrency,
           [...fees.map((s) => convertAmountFromHumanReadableToOnChain(s, 8))],
         ],
       });
@@ -238,7 +259,9 @@ export const EnhancedFees = () => {
         address: newCurrency as `0x${string}`,
         name: currencyData.name,
         symbol: currencyData.symbol,
+        logo: currencyData.icon_uri,
         isStableCoin: true,
+        decimals: currencyData.decimals,
       },
     ]);
 
@@ -296,28 +319,6 @@ export const EnhancedFees = () => {
     }
   };
 
-  const onSavePaymentCurrency = async () => {
-    try {
-      // In a real implementation, this would call the backend API
-      // await api.updatePaymentCurrency(selectedPaymentCurrency);
-
-      // Simulate API delay
-      await new Promise((resolve) => setTimeout(resolve, 500));
-
-      toast({
-        title: 'Payment currency updated',
-        description: `The payment currency has been updated successfully`,
-        variant: 'default',
-      });
-    } catch (error) {
-      toast({
-        title: 'Error updating payment currency',
-        description: `${error}`,
-        variant: 'destructive',
-      });
-    }
-  };
-
   // Calculate if resource account creation should be disabled
   const disabledCreateResourceAccount = !initialCollectors.length;
 
@@ -327,62 +328,66 @@ export const EnhancedFees = () => {
       {/* Currency Management Section - REMOVED */}
 
       {/* Add label to add currency and after show a list of currency added which the possibility to delete it */}
-      <div className="space-y-6 pt-4 pb-6">
-        <h3 className="font-semibold text-lg">Currencies</h3>
-        <div className="space-y-2">
-          <h3 className="font-semibold">Add Currency</h3>
-          <div className="space-x-4">
-            <LabeledInput
-              id="new-currency-address"
-              value={newAddress}
-              onChange={(e) => setNewCurrency(e.target.value as `0x${string}`)}
-              label="Address"
-              type="text"
-              required={true}
-            />
-          </div>
-          <div className="flex items-end">
-            <Button
-              variant="outline"
-              onClick={() => onAddCurrency(newCurrency as `0x${string}`)}
-              disabled={!newCurrency}
-            >
-              Add Currency
-            </Button>
-          </div>
-          {/* Currency List */}
-          {currencies.length > 0 && (
-            <div className="mt-4">
-              <h3 className="font-semibold mb-2">Current Currencies</h3>
-              <div className="space-y-2 max-h-60 overflow-y-auto">
-                {currencies.map((currency, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
-                  >
-                    <div>
-                      <span className="font-medium">{currency.symbol}</span>
-                      <span className="text-sm text-gray-500 ml-2">
-                        ({currency.name})
-                      </span>
-                      <div className="text-xs text-gray-400 truncate max-w-xs">
-                        {currency.address}
-                      </div>
-                    </div>
-                    <Button
-                      variant="destructive"
-                      size="sm"
-                      onClick={() => onRemoveCurrency(currency.address)}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
+      {isAdmin && (
+        <div className="space-y-6 pt-4 pb-6">
+          <h3 className="font-semibold text-lg">Currencies</h3>
+          <div className="space-y-2">
+            <h3 className="font-semibold">Add Currency</h3>
+            <div className="space-x-4">
+              <LabeledInput
+                id="new-currency-address"
+                value={newAddress}
+                onChange={(e) =>
+                  setNewCurrency(e.target.value as `0x${string}`)
+                }
+                label="Address"
+                type="text"
+                required={true}
+              />
             </div>
-          )}
+            <div className="flex items-end">
+              <Button
+                variant="outline"
+                onClick={() => onAddCurrency(newCurrency as `0x${string}`)}
+                disabled={!newCurrency}
+              >
+                Add Currency
+              </Button>
+            </div>
+            {/* Currency List */}
+            {currencies.length > 0 && (
+              <div className="mt-4">
+                <h3 className="font-semibold mb-2">Current Currencies</h3>
+                <div className="space-y-2 max-h-60 overflow-y-auto">
+                  {currencies.map((currency, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-gray-50 rounded-md"
+                    >
+                      <div>
+                        <span className="font-medium">{currency.symbol}</span>
+                        <span className="text-sm text-gray-500 ml-2">
+                          ({currency.name})
+                        </span>
+                        <div className="text-xs text-gray-400 truncate max-w-xs">
+                          {currency.address}
+                        </div>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => onRemoveCurrency(currency.address)}
+                      >
+                        Remove
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Original Fees Component UI */}
       <div className="space-y-6 pt-4">
