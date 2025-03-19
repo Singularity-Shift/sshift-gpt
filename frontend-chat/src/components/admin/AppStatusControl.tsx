@@ -67,7 +67,11 @@ const AppStatusControl = () => {
       <Button
         variant={isAppRunning ? "destructive" : "green"}
         onClick={() => handleToggleClick(isAppRunning ? 'stop' : 'resume')}
-        className="w-full"
+        className={`w-full border-2 border-black ${
+          isAppRunning 
+            ? 'bg-red-500 hover:bg-red-600 text-white' 
+            : 'bg-green-500 hover:bg-green-600 text-white'
+        }`}
       >
         {isAppRunning ? 'Stop App' : 'Resume App'}
       </Button>

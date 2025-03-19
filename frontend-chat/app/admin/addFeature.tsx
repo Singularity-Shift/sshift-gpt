@@ -45,7 +45,7 @@ export const AddFeature = (props: AddFeaturesProps) => {
         <LabeledInput
           id={`feature-credits-${featureType}-${index}`}
           label=""
-          tooltip="Credits cost per use"
+          tooltip="Maximum number of uses per day"
           required={index === 0}
           value={credits}
           disabled={isUpdating}
