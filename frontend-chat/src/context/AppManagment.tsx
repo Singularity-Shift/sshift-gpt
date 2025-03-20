@@ -401,13 +401,19 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
             : QRIBBLE_NFT_MOVE_ADDRESS;
 
         const qribbleNFTCollection = config.collections_discount.find(
-          (c) => c.collection_addr === qribbleNFTCollectionAddress
+          (c) =>
+            AccountAddress.from(c.collection_addr).toString() ===
+            AccountAddress.from(qribbleNFTCollectionAddress).toString()
         );
 
         const qribbleNFTsHolding = nftsHolding.filter(
           (nft) =>
-            nft.current_token_data?.collection_id ===
-            qribbleNFTCollection?.collection_addr
+            AccountAddress.from(
+              nft.current_token_data?.collection_id as string
+            ).toString() ===
+            AccountAddress.from(
+              qribbleNFTCollection?.collection_addr as string
+            ).toString()
         );
 
         setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
