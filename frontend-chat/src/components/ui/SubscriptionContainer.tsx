@@ -118,11 +118,8 @@ export function SubscriptionContainer({
                       >
                         <div className="flex items-center">
                           <img
-                            src={
-                              selectedStableCoin?.logo ||
-                              '/images/sshift-gui.png'
-                            }
-                            alt={selectedStableCoin?.symbol || ''}
+                            src={coin?.logo || '/images/sshift-gui.png'}
+                            alt={coin?.symbol || ''}
                             width={20}
                             height={20}
                             className="rounded-full mr-2"
