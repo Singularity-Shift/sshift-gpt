@@ -42,8 +42,8 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
   ): Promise<IAdminConfig | undefined> => {
     try {
       const body = {
-        name,
         ...config,
+        name,
         models: config.models.filter((m) => Boolean(m.name)),
         tools: config.tools.filter((t) => Boolean(t.name)),
       };

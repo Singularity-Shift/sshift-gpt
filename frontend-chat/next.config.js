@@ -23,7 +23,7 @@ const nextConfig = {
 
       new webpack.NormalModuleReplacementPlugin(
         /^node:/,
-        (resource) => {
+        (/** @type {{ request: string; }} */ resource) => {
           resource.request = resource.request.replace(/^node:/, '');
         },
       ),

@@ -37,7 +37,7 @@ export const TwitterFullscreenModal: React.FC<TwitterFullscreenModalProps> = ({
       const originalStyle = window.getComputedStyle(document.body).overflow;
       // Prevent scrolling on the body
       document.body.style.overflow = 'hidden';
-      
+
       // Restore original style when modal closes
       return () => {
         document.body.style.overflow = originalStyle;
@@ -68,7 +68,10 @@ export const TwitterFullscreenModal: React.FC<TwitterFullscreenModalProps> = ({
 
       // Set viewport meta to prevent scaling/zooming
       if (viewportMeta) {
-        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no');
+        viewportMeta.setAttribute(
+          'content',
+          'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no'
+        );
       }
 
       // Restore original viewport meta content when modal closes
@@ -83,16 +86,20 @@ export const TwitterFullscreenModal: React.FC<TwitterFullscreenModalProps> = ({
   if (!isOpen) return null;
 
   return createPortal(
-    <div 
-      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 tweet-fullscreen-modal ${isDarkTheme ? 'dark-theme' : 'light-theme'}`}
+    <div
+      className={`fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 tweet-fullscreen-modal ${
+        isDarkTheme ? 'dark-theme' : 'light-theme'
+      }`}
       onClick={onClose} // Close when clicking the backdrop
     >
-      <div 
+      <div
         className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden tweet-modal-content"
         onClick={(e) => e.stopPropagation()} // Prevent closing when clicking the modal content
       >
         <div className="flex justify-between items-center p-3 sm:p-4 border-b dark:border-gray-700">
-          <h2 className="text-base sm:text-lg font-semibold dark:text-white">Tweet</h2>
+          <h2 className="text-base sm:text-lg font-semibold dark:text-white">
+            Tweet
+          </h2>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-full transition-colors"
@@ -101,13 +108,12 @@ export const TwitterFullscreenModal: React.FC<TwitterFullscreenModalProps> = ({
             <X className="h-5 w-5 dark:text-white" />
           </button>
         </div>
-        
+
         <div className="flex-1 overflow-auto p-2 sm:p-4">
           <div className="tweet-fullscreen-container">
-            <Tweet 
-              id={tweetId} 
+            <Tweet
+              id={tweetId}
               // Set theme based on the app's theme
-              theme={isDarkTheme ? 'dark' : 'light'}
             />
           </div>
         </div>
@@ -117,4 +123,4 @@ export const TwitterFullscreenModal: React.FC<TwitterFullscreenModalProps> = ({
   );
 };
 
-export default TwitterFullscreenModal; 
+export default TwitterFullscreenModal;

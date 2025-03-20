@@ -10,7 +10,6 @@ import { COIN_DECIMALS } from '../../config/env';
 import { Button } from '../../src/components/ui/button';
 import { useChain } from '../../src/context/ChainProvider';
 import { IBalance } from '@helpers';
-import Image from 'next/image';
 import { Wallet, ExternalLink, Copy, AlertCircle } from 'lucide-react';
 import { silkscreen } from '../../app/fonts';
 
@@ -18,7 +17,6 @@ export const FundManage = () => {
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [balances, setBalances] = useState<IBalance[]>([]);
   const [feesToClaim, setFeesToClaim] = useState<IBalance[]>([]);
-  const [symbol, setSymbol] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isClaimingFees, setIsClaimingFees] = useState<string | null>(null);
   const [isSubscribing, setIsSubscribing] = useState(false);
@@ -86,9 +84,10 @@ export const FundManage = () => {
                   symbol: coin.symbol,
                   isStableCoin: true,
                   logo: coin.icon_uri,
+                  decimals: coin.decimals,
                   balance: convertAmountFromOnChainToHumanReadable(
                     parseInt(balancesData[1][index] as string),
-                    COIN_DECIMALS
+                    coin.decimals
                   ),
                 };
               }) || [];
