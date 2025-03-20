@@ -46,6 +46,7 @@ export const EnhancedFees = () => {
     currencies,
     setCurrencies,
     isAdmin,
+    collectors,
   } = useAppManagment();
 
   const { aptos } = useChain();
@@ -92,13 +93,8 @@ export const EnhancedFees = () => {
 
   useEffect(() => {
     void (async () => {
-      const addresses = await abi?.useABI(feesABI).view.get_collectors({
-        typeArguments: [],
-        functionArguments: [],
-      });
-
       const subscribers = await Promise.all(
-        addresses?.[0].map(async (a) => {
+        collectors.map(async (a) => {
           const isSubscriber = await abi
             ?.useABI(feesABI)
             .view.check_collector_object({
@@ -111,18 +107,14 @@ export const EnhancedFees = () => {
       );
 
       setCollectorsSubscribed([
-        ...(addresses?.[0]?.filter(
-          (_a, i) => subscribers[i]
-        ) as `0x${string}`[]),
+        ...(collectors?.filter((_a, i) => subscribers[i]) as `0x${string}`[]),
       ]);
 
       setCollectorsNotSubscribed([
-        ...(addresses?.[0]?.filter(
-          (_a, i) => !subscribers[i]
-        ) as `0x${string}`[]),
+        ...(collectors?.filter((_a, i) => !subscribers[i]) as `0x${string}`[]),
       ]);
     })();
-  }, [abi, resourceAccount]);
+  }, [abi, resourceAccount, collectors]);
 
   const onAddInitialCollector = async () => {
     setCollectorsNotSubscribed([

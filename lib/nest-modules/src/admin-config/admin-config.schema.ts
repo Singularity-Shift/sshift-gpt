@@ -6,6 +6,8 @@ export type AdminConfigDocument = HydratedDocument<AdminConfig>;
 
 @Schema()
 export class AdminConfig {
+  @Prop({ type: String, required: true })
+  name: string;
   @Prop({ type: [Feature], required: true })
   models: Feature[];
 

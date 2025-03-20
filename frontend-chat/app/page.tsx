@@ -5,29 +5,29 @@ import { silkscreen } from './fonts';
 import { SshiftWallet } from '../src/components/SshigtWallet';
 import { GameOfLife } from '../src/components/ui/gameOfLife';
 import { IndexHeader } from '../src/components/ui/IndexHeader';
-import { NetworkToggle } from '../src/components/ui/NetworkToggle';
-import { useEffect, useState } from 'react';
-import { Chain } from '@helpers';
-import { useChain } from '../src/context/ChainProvider';
+// import { NetworkToggle } from '../src/components/ui/NetworkToggle';
+// import { useEffect, useState } from 'react';
+// import { Chain } from '@helpers';
+// import { useChain } from '../src/context/ChainProvider';
 
 export default function Home() {
-  const [selectedNetwork, setSelectedNetwork] = useState<Chain>(Chain.Aptos);
-  const { createChainClient, chain } = useChain();
+  // const [selectedNetwork, setSelectedNetwork] = useState<Chain>(Chain.Aptos);
+  // const { createChainClient, chain } = useChain();
 
-  const handleNetworkToggle = () => {
-    setSelectedNetwork(
-      selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
-    );
+  // const handleNetworkToggle = () => {
+  //   setSelectedNetwork(
+  //     selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
+  //   );
 
-    createChainClient(
-      selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
-    );
-  };
+  //   createChainClient(
+  //     selectedNetwork === Chain.Aptos ? Chain.Movement : Chain.Aptos
+  //   );
+  // };
 
-  useEffect(() => {
-    if (!chain) return;
-    setSelectedNetwork(chain);
-  }, [chain]);
+  // useEffect(() => {
+  //   if (!chain) return;
+  //   setSelectedNetwork(chain);
+  // }, [chain]);
 
   return (
     <div className="relative min-h-screen">
@@ -56,10 +56,10 @@ export default function Home() {
           </div>
         </div>
 
-        <NetworkToggle
+        {/* <NetworkToggle
           selectedNetwork={selectedNetwork}
           onToggle={handleNetworkToggle}
-        />
+        /> */}
 
         <div className="flex space-x-2 md:space-x-4">
           <SshiftWallet />

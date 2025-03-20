@@ -9,7 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from './select';
-import Image from 'next/image';
 import { ICurrency } from '@helpers';
 
 interface SubscriptionContainerProps {
@@ -38,7 +37,8 @@ export function SubscriptionContainer({
   setSelectedStableCoin,
   availableStableCoins,
 }: SubscriptionContainerProps) {
-  const { onSubscribe, isSubscriptionActive, isCollector } = useAppManagment();
+  const { onSubscribe, isSubscriptionActive, isCollector, isTrialVersion } =
+    useAppManagment();
 
   const handleStableCoinChange = (value: string) => {
     const selected = availableStableCoins.find((coin) => coin.symbol === value);
@@ -145,13 +145,17 @@ export function SubscriptionContainer({
       </div>
       <div className="mt-auto">
         <Button
-          disabled={isSubscriptionActive || isCollector || !selectedStableCoin}
+          disabled={
+            (isSubscriptionActive && !isTrialVersion) ||
+            isCollector ||
+            !selectedStableCoin
+          }
           onClick={() =>
             onSubscribe(days, selectedStableCoin?.address as string)
           }
           className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500"
         >
-          {isSubscriptionActive
+          {isSubscriptionActive && !isTrialVersion
             ? 'Currently with subscription active'
             : isCollector
             ? "Collectors doesn't need subscription"

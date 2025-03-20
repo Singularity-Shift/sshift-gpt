@@ -36,7 +36,9 @@ export const ToolsGuard = (tool: string) => {
         const userConfig = await this.userService.findUserByAddress(
           user.address
         );
-        const adminConfig = await this.adminConfigService.findAdminConfig();
+        const adminConfig = await this.adminConfigService.findAdminConfig(
+          user.config.userType
+        );
 
         const toolsCredits = userConfig.activity.tools.find(
           (u) => u.name === tool

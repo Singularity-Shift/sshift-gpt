@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles, Gift } from 'lucide-react';
 import { Button } from './button';
+import { useAppManagment } from '@fn-chat/context/AppManagment';
 
 interface FreeTrialContainerProps {
   onStartFreeTrial: () => Promise<void>;
@@ -9,12 +10,14 @@ interface FreeTrialContainerProps {
 export const FreeTrialContainer: React.FC<FreeTrialContainerProps> = ({
   onStartFreeTrial,
 }) => {
-  const [isLoading, setIsLoading] = React.useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const { hasEverSubscribed, setIsTrialVersion } = useAppManagment();
 
   const handleStartFreeTrial = async () => {
     setIsLoading(true);
     try {
       await onStartFreeTrial();
+      setIsTrialVersion(true);
     } catch (error) {
       console.error('Error starting free trial:', error);
     } finally {
@@ -65,7 +68,7 @@ export const FreeTrialContainer: React.FC<FreeTrialContainerProps> = ({
       <div className="mt-auto">
         <Button
           onClick={handleStartFreeTrial}
-          disabled={isLoading}
+          disabled={isLoading || hasEverSubscribed}
           className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
         >
           {isLoading ? 'Starting...' : 'Start Free Trial'}
@@ -73,4 +76,4 @@ export const FreeTrialContainer: React.FC<FreeTrialContainerProps> = ({
       </div>
     </div>
   );
-}; 
+};

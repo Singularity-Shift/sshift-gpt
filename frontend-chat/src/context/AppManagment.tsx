@@ -31,6 +31,8 @@ export interface AppManagmentContextType {
   setIsPendingAdmin: Dispatch<SetStateAction<boolean>>;
   isCollector: boolean;
   setIsCollector: Dispatch<SetStateAction<boolean>>;
+  isTrialVersion: boolean;
+  setIsTrialVersion: Dispatch<SetStateAction<boolean>>;
   resourceAccount: `0x${string}` | null;
   setResourceAccount: Dispatch<SetStateAction<`0x${string}` | null>>;
   currencies: ICurrency[];
@@ -49,9 +51,13 @@ export interface AppManagmentContextType {
   isPendingReviewer: boolean;
   setIsPendingReviewer: Dispatch<SetStateAction<boolean>>;
   hasSubscriptionToClaim: boolean;
+  hasEverSubscribed: boolean;
+  setHasEverSubscribed: Dispatch<SetStateAction<boolean>>;
   setHasSubscriptionToClaim: Dispatch<SetStateAction<boolean>>;
   isAppRunning: boolean;
   setAppRunning: (isRunning: boolean) => void;
+  collectors: `0x${string}`[];
+  setCollectors: Dispatch<SetStateAction<`0x${string}`[]>>;
 }
 
 export const AppManagmentContext = createContext<AppManagmentContextType>({
@@ -61,6 +67,8 @@ export const AppManagmentContext = createContext<AppManagmentContextType>({
   setIsPendingAdmin: () => {},
   isCollector: false,
   setIsCollector: () => {},
+  isTrialVersion: false,
+  setIsTrialVersion: () => {},
   resourceAccount: null,
   setResourceAccount: () => {},
   currencies: [],
@@ -79,9 +87,13 @@ export const AppManagmentContext = createContext<AppManagmentContextType>({
   isPendingReviewer: false,
   setIsPendingReviewer: () => {},
   hasSubscriptionToClaim: false,
+  hasEverSubscribed: false,
+  setHasEverSubscribed: () => {},
   setHasSubscriptionToClaim: () => {},
   isAppRunning: true,
   setAppRunning: () => {},
+  collectors: [],
+  setCollectors: () => {},
 });
 
 export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
@@ -101,10 +113,13 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   >([]);
 
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
+  const [hasEverSubscribed, setHasEverSubscribed] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
   const [currencies, setCurrencies] = useState<ICurrency[]>([]);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
   const [isAppRunning, setIsAppRunning] = useState<boolean>(true);
+  const [collectors, setCollectors] = useState<`0x${string}`[]>([]);
+  const [isTrialVersion, setIsTrialVersion] = useState(false);
 
   const { abi, feesABI, subscriptionABI } = useAbiClient();
   const { connected, account } = useWallet();
@@ -183,23 +198,33 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   useEffect(() => {
     if (!connected) return;
     (async () => {
-      let collectorResult;
-      try {
-        collectorResult = await abi?.useABI(feesABI).view.get_collectors({
+      const collectorsExists = await abi
+        ?.useABI(feesABI)
+        .view.check_collector_object({
           typeArguments: [],
-          functionArguments: [],
+          functionArguments: [walletAddress as `0x${string}`],
         });
-      } catch (error) {
-        toast({
-          title: 'Error fetching collector',
-          description: `Not Collectors probably set yet: ${error}`,
-          variant: 'destructive',
-        });
+
+      if (collectorsExists) {
+        let collectorResult;
+        try {
+          collectorResult = await abi?.useABI(feesABI).view.get_collectors({
+            typeArguments: [],
+            functionArguments: [],
+          });
+        } catch (error) {
+          toast({
+            title: 'Error fetching collector',
+            description: `Not Collectors probably set yet: ${error}`,
+            variant: 'destructive',
+          });
+        }
+
+        const collectors = collectorResult?.[0];
+
+        setIsCollector(collectors?.some((c) => c === walletAddress) || false);
+        setCollectors(collectors || []);
       }
-
-      const collectors = collectorResult?.[0];
-
-      setIsCollector(collectors?.some((c) => c === walletAddress) || false);
     })();
   }, [abi, connected, walletAddress, isCollector]);
 
@@ -394,39 +419,56 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
         setNftAddressesRequiredOwned([...nftAddresses]);
 
-        const hasSubscriptionActiveResult = await abi
+        const hasEverSubcribedResult = await abi
           ?.useABI(subscriptionABI)
-          .view.has_subscription_active({
+          .view.exists_user_subscription({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
           });
 
-        const hasSubscriptionActive =
-          hasSubscriptionActiveResult?.[0] as boolean;
+        const hasEverSubscribedData = hasEverSubcribedResult?.[0] as boolean;
 
-        setIsSubscriptionActive(hasSubscriptionActive);
+        setHasEverSubscribed(hasEverSubscribedData);
 
-        if (hasSubscriptionActive) {
-          const subscribtionResult = await abi
+        if (hasEverSubscribedData) {
+          const hasSubscriptionActiveResult = await abi
             ?.useABI(subscriptionABI)
-            .view.get_plan({
+            .view.has_subscription_active({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],
             });
 
-          const subscription = subscribtionResult?.[1];
+          const hasSubscriptionActive =
+            hasSubscriptionActiveResult?.[0] as boolean;
 
-          if (subscription?.[1]) {
-            const expireDate = parseInt(subscription) * 1000;
-            setExpirationDate(
-              new Date(expireDate).toLocaleDateString(undefined, {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            );
+          setIsSubscriptionActive(hasSubscriptionActive);
+
+          if (hasSubscriptionActive) {
+            const subscriptionResult = await abi
+              ?.useABI(subscriptionABI)
+              .view.get_plan({
+                typeArguments: [],
+                functionArguments: [walletAddress as `0x${string}`],
+              });
+
+            const subscription = subscriptionResult?.[1];
+
+            if (subscription?.[1]) {
+              const expireDate = parseInt(subscription) * 1000;
+              setExpirationDate(
+                new Date(expireDate).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              );
+            }
+
+            const trialVersion = subscriptionResult?.[3];
+
+            setIsTrialVersion(trialVersion as boolean);
           }
         }
       } catch (error) {
@@ -507,6 +549,8 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
           ),
           variant: 'default',
         });
+
+        setIsSubscriptionActive(true);
       }
     } catch (error) {
       toast({
@@ -520,11 +564,10 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   const startFreeTrial = async () => {
     try {
       // Free trial duration - 2 days
-      const duration = 2 * 24 * 60 * 60;
 
-      const tx = await client?.useABI(subscriptionABI).buy_plan({
+      const tx = await client?.useABI(subscriptionABI).trial_free_subscription({
         type_arguments: [],
-        arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
+        arguments: [],
       });
 
       // Wait for transaction to be confirmed
@@ -555,7 +598,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
           const subscription = subscriptionResult?.[1];
 
-          if (subscription?.[1]) {
+          if (subscription) {
             const expireDate = parseInt(subscription) * 1000;
             setExpirationDate(
               new Date(expireDate).toLocaleDateString(undefined, {
@@ -610,6 +653,10 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     setIsPendingAdmin,
     isCollector,
     setIsCollector,
+    collectors,
+    setCollectors,
+    isTrialVersion,
+    setIsTrialVersion,
     resourceAccount,
     setResourceAccount,
     currencies,
@@ -629,6 +676,8 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     setIsPendingReviewer,
     hasSubscriptionToClaim,
     setHasSubscriptionToClaim,
+    hasEverSubscribed,
+    setHasEverSubscribed,
     isAppRunning,
     setAppRunning,
   };

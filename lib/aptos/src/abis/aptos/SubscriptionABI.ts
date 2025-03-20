@@ -143,6 +143,15 @@ export const SubscriptionABI = {
       ],
     },
     {
+      name: 'get_trial_duration',
+      visibility: 'public',
+      is_entry: false,
+      is_view: true,
+      generic_type_params: [],
+      params: [],
+      return: ['u64'],
+    },
+    {
       name: 'gift_subscription',
       visibility: 'public',
       is_entry: true,

@@ -5,7 +5,7 @@ import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { PendingActions } from '../pendingActions';
 import { ChangeReviewer } from './changeReviewer';
 import { EnhancedFees } from '../admin/enhancedFees';
-import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
+import CoinsV1PaymentBox from '../admin/coinsV1PaymentBox';
 import AppStatusControl from '../../src/components/admin/AppStatusControl';
 
 const ReviewerPage = () => {

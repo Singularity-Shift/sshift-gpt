@@ -1,6 +1,6 @@
 import { QuoteSummaryResult } from 'yahoo-finance2/dist/esm/src/modules/quoteSummary-iface';
 import { RecommendationsBySymbolResponse } from 'yahoo-finance2/dist/esm/src/modules/recommendationsBySymbol';
-import { Chain, MultisignAction } from './enums';
+import { Chain, MultisignAction, UserType } from './enums';
 import { ToolsNameList } from 'move-agent-kit-fullstack';
 import { PublicKey } from '@aptos-labs/ts-sdk';
 
@@ -63,15 +63,15 @@ export interface Token {
 }
 
 export interface ICoins {
-  amount: any;
-  asset_type: string;
+  amount?: any | null;
+  asset_type?: string | null;
   is_frozen: boolean;
-  is_primary: boolean;
-  last_transaction_timestamp: any;
-  last_transaction_version: any;
+  is_primary?: boolean | null;
+  last_transaction_timestamp?: any | null;
+  last_transaction_version?: any | null;
   owner_address: string;
   storage_id: string;
-  token_standard: string;
+  token_standard?: string | null;
   metadata?: {
     token_standard: string;
     symbol: string;
@@ -149,6 +149,7 @@ export interface IUserConfig {
   isAdmin: boolean;
   isReviewer: boolean;
   isCollector: boolean;
+  userType: UserType;
 }
 
 export interface ICredits {
@@ -157,6 +158,7 @@ export interface ICredits {
 }
 
 export interface IAdminConfig {
+  name: string;
   models: ICredits[];
   tools: ICredits[];
 }

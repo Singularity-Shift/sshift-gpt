@@ -4,7 +4,6 @@ import AGIThoughtBackground from '../../src/components/ui/agiThought';
 import DashboardHeader from '../../src/components/ui/DashboardHeader';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { ChangeAdmin } from './changeAdmin';
-import { Fees } from './fees';
 import { EnhancedFees } from './enhancedFees';
 import { Subscription } from './subscription';
 import { silkscreen } from '../fonts';
@@ -13,14 +12,17 @@ import { Actions } from './actions';
 import { PendingActions } from '../pendingActions';
 import { GrantSubscriptions } from './grantSubscriptions';
 import PromptEditor from './promptEditor';
-import { FreeTrialConfig } from './freeTrialConfig';
-import CoinsV1PaymentBox from '../../src/components/payment/CoinsV1PaymentBox';
+import CoinsV1PaymentBox from './coinsV1PaymentBox';
 import AppStatusControl from '../../src/components/admin/AppStatusControl';
+import { UserType } from '@helpers';
+import FreeTrialDuration from './freeTrialConfiguration';
 
 const AdminPage = () => {
   const { isAdmin, isPendingAdmin } = useAppManagment();
-  const [isSystemPromptEditorOpen, setIsSystemPromptEditorOpen] = useState(false);
-  const [isReasoningPromptEditorOpen, setIsReasoningPromptEditorOpen] = useState(false);
+  const [isSystemPromptEditorOpen, setIsSystemPromptEditorOpen] =
+    useState(false);
+  const [isReasoningPromptEditorOpen, setIsReasoningPromptEditorOpen] =
+    useState(false);
 
   return (
     <div>
@@ -64,13 +66,13 @@ const AdminPage = () => {
                   Prompt Management
                 </h2>
                 <div className="space-x-4">
-                  <button 
+                  <button
                     onClick={() => setIsSystemPromptEditorOpen(true)}
                     className="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded"
                   >
                     Edit System
                   </button>
-                  <button 
+                  <button
                     onClick={() => setIsReasoningPromptEditorOpen(true)}
                     className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
                   >
@@ -82,13 +84,13 @@ const AdminPage = () => {
           </div>
         )}
 
-        <PromptEditor 
+        <PromptEditor
           isOpen={isSystemPromptEditorOpen}
           onClose={() => setIsSystemPromptEditorOpen(false)}
           type="system"
         />
 
-        <PromptEditor 
+        <PromptEditor
           isOpen={isReasoningPromptEditorOpen}
           onClose={() => setIsReasoningPromptEditorOpen(false)}
           type="reasoning"
@@ -116,6 +118,15 @@ const AdminPage = () => {
               <EnhancedFees />
             </div>
 
+            <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Free Trial Settings
+                </h2>
+              </div>
+              <FreeTrialDuration />
+            </div>
+
             {/* Features Panel */}
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
@@ -123,7 +134,7 @@ const AdminPage = () => {
                   Features Config
                 </h2>
               </div>
-              <Features />
+              <Features name={UserType.Premium} />
             </div>
 
             {/* Actions Panel */}
@@ -135,21 +146,23 @@ const AdminPage = () => {
               </div>
               <Actions />
             </div>
-            
+
             {/* Free Trial Configuration Panel */}
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Free Trial Configuration
+                  Free Trial Features
                 </h2>
               </div>
-              <FreeTrialConfig />
+              <Features name={UserType.Trial} />
             </div>
 
             {/* Coins V1 Payment Panel */}
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
-                <h2 className="text-2xl font-bold text-gray-900">Coins V1 Payment</h2>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  Coins V1 Payment
+                </h2>
               </div>
               <CoinsV1PaymentBox />
             </div>
