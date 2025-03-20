@@ -6,6 +6,7 @@ import {
   Get,
   Put,
   UnauthorizedException,
+  Param,
 } from '@nestjs/common';
 import {
   ApiBearerAuth,
@@ -68,7 +69,7 @@ export class AdminConfigController {
     return adminConfigDto;
   }
 
-  @Get()
+  @Get(':name')
   @Public()
   @ApiOperation({
     description: 'Get user chat history',
@@ -82,10 +83,11 @@ export class AdminConfigController {
     status: 401,
     description: 'Unauthorized access',
   })
-  async getConfigAdmin() {
-    const adminConfig = await this.adminConfigService.findAdminConfig();
+  async getConfigAdmin(@Param('name') name: string) {
+    const adminConfig = await this.adminConfigService.findAdminConfig(name);
 
     return AdminConfigDto.fromJson(
+      adminConfig.name,
       adminConfig?.models?.map((m) => FeatureDto.fromJson(m)) || [],
       adminConfig?.tools?.map((t) => FeatureDto.fromJson(t)) || [],
       adminConfig?.systemPrompt || '',

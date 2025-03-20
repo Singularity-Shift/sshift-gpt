@@ -5,7 +5,7 @@ import * as cli from '@aptos-labs/ts-sdk/dist/common/cli/index.js';
 import { Network } from '@aptos-labs/ts-sdk';
 
 const APTOS_FOLDER_PATH =
-  process.env.APTOS_FOLDER_PATH || 'contracts/sshift_dao/aptos';
+  process.env.APTOS_FOLDER_PATH || 'contracts/sshift_gpt/aptos';
 
 const getConfig = () => {
   if (!process.env.NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS) {
@@ -41,7 +41,7 @@ export const compile = async () => {
   await move.compile({
     packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
-      sshift_dao_addr: accountAddress,
+      sshift_gpt_addr: accountAddress,
     },
     extraArguments: ['--move-2'],
   });
@@ -59,7 +59,7 @@ export const publish = async () => {
   await move.publish({
     packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
-      sshift_dao_addr: accountAddress,
+      sshift_gpt_addr: accountAddress,
     },
     extraArguments: [
       '--sender-account',
@@ -78,8 +78,9 @@ export const test = async () => {
   await move.test({
     packageDirectoryPath: APTOS_FOLDER_PATH,
     namedAddresses: {
-      sshift_dao_addr: '0x100' as any,
+      sshift_gpt_addr: '0x100' as any,
     },
+    extraArguments: ['--move-2'],
   });
 };
 
@@ -93,7 +94,7 @@ export const upgrade = async () => {
     objectAddress: process.env.NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS,
     namedAddresses: {
       // Upgrade module from an object
-      sshift_dao_addr: accountAddress,
+      sshift_gpt_addr: accountAddress,
     },
     profile,
   });

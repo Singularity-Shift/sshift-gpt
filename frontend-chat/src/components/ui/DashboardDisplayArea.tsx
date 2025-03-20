@@ -2,7 +2,9 @@ import React from 'react';
 import { SubscriptionContainer } from './SubscriptionContainer';
 import { UserProfileContainer } from './UserProfileContainer';
 import { SubscriptionUpgradeContainer } from './SubscriptionUpgradeContainer';
+import { FreeTrialContainer } from './FreeTrialContainer';
 import UserDashboardTitle from './UserDashboardTitle';
+import { ICurrency } from '@helpers';
 
 interface DashboardDisplayAreaProps {
   days: number;
@@ -13,6 +15,13 @@ interface DashboardDisplayAreaProps {
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
+  selectedStableCoin?: ICurrency;
+  setSelectedStableCoin: React.Dispatch<
+    React.SetStateAction<ICurrency | undefined>
+  >;
+  availableStableCoins: ICurrency[];
+  isSubscriptionActive: boolean;
+  startFreeTrial: () => Promise<void>;
 }
 
 const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
@@ -24,6 +33,11 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
   moveBotsOwned,
   qribbleNFTsOwned,
   sshiftRecordsOwned,
+  selectedStableCoin,
+  setSelectedStableCoin,
+  availableStableCoins,
+  isSubscriptionActive,
+  startFreeTrial,
 }) => {
   return (
     <div className="flex flex-col items-center w-full">
@@ -36,6 +50,9 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
           price={price}
           dates={dates}
           discount={discount}
+          selectedStableCoin={selectedStableCoin}
+          setSelectedStableCoin={setSelectedStableCoin}
+          availableStableCoins={availableStableCoins}
         />
 
         {/* User Profile Container */}
@@ -45,8 +62,12 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
           sshiftRecordsOwned={sshiftRecordsOwned}
         />
 
-        {/* Subscription Upgrade Container */}
-        <SubscriptionUpgradeContainer />
+        {/* Conditionally show Free Trial or Subscription Upgrade Container */}
+        {!isSubscriptionActive ? (
+          <FreeTrialContainer onStartFreeTrial={startFreeTrial} />
+        ) : (
+          <SubscriptionUpgradeContainer />
+        )}
       </div>
     </div>
   );

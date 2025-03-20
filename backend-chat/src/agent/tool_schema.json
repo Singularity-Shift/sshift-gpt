@@ -14,7 +14,7 @@
           "aspect_ratio": {
             "type": "string",
             "enum": ["ASPECT_1_1", "ASPECT_1_3", "ASPECT_3_1", "ASPECT_3_4", "ASPECT_4_3", "ASPECT_16_9", "ASPECT_3_2", "ASPECT_2_3", "ASPECT_9_16", "ASPECT_16_10","ASPECT_10_16"],
-            "description": " The aspect ratio to use for image generation, which determines the image’s resolution. Defaults to ASPECT_1_1."
+            "description": " The aspect ratio to use for image generation, which determines the image's resolution. Defaults to ASPECT_1_1."
           },
           "model": {
             "type": "string",
@@ -465,13 +465,13 @@
     "type": "function",
     "function": {
       "name": "getOnchainActions",
-      "description": "Fetches onchain actions in aptos blockchain. eg. get balances, swap tokens Panora, transfers tokens, lend and withdraw from Joule Finance or Aries, all onchain actions with emojicoins, etc... Always describe the transaction with human-readable format",
+      "description": "Performs on-chain actions on the Aptos blockchain. This tool handles operations such as viewing token balances, executing token swaps (native or cross-chain via LayerZero), transferring tokens, interacting with DeFi protocols (Joule Finance, Aries, Panora), and managing Emojicoins. Always describe transactions in human-readable format before executing them, explaining the purpose, assets involved, costs, and potential risks.",
       "parameters": {
         "type": "object",
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "The prompt for the onchain action."
+            "description": "A clear and specific instruction for the on-chain action. Include critical details such as: 1) Action type (swap, transfer, deposit, withdrawal, balance check); 2) Token names, symbols and amounts; 3) Protocol specification (e.g., 'on Panora', 'on Liquidswap', 'native'); 4) For swaps, specify 'native' when performing a local swap (not cross-chain); 5) For withdrawals from DeFi protocols, request less than the total deposited amount; 6) When swapping multiple tokens (like Emojicoins), use clear connecting words to indicate they are part of a single transaction. Example formats: 'swap 1 APT to USDC on Panora native', 'check my APT balance', 'withdraw 0.5 APT from Joule Finance'."
           }
         },
         "required": ["prompt"],

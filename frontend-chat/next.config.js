@@ -12,6 +12,25 @@ const nextConfig = {
     // See: https://github.com/gregberge/svgr
     svgr: false,
   },
+  webpack: (config, { webpack }) => {
+    config.experiments = { ...config.experiments, topLevelAwait: true };
+    config.externals["node:process"] = "commonjs node:fs";
+    config.resolve.fallback = {
+      ...config.resolve.fallback,
+      fs: false,
+  };
+    config.plugins.push(
+
+      new webpack.NormalModuleReplacementPlugin(
+        /^node:/,
+        (resource) => {
+          resource.request = resource.request.replace(/^node:/, '');
+        },
+      ),
+    );
+
+    return config;
+ },
   env: {
     API_BACKEND_URL: process.env.API_BACKEND_URL,
     API_TOOLS_URL: process.env.URI_TOOLS,

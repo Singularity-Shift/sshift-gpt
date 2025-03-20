@@ -7,11 +7,13 @@ import {
   useContext,
   useEffect,
   useState,
+  FC,
+  PropsWithChildren,
 } from 'react';
 import { useAbiClient } from './AbiProvider';
 import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
-import { Chain, IMoveBotFields, ISubscription } from '@helpers';
+import { Chain, ICurrency, IMoveBotFields, ISubscription } from '@helpers';
 import {
   QRIBBLE_NFT_ADDRESS,
   QRIBBLE_NFT_MOVE_ADDRESS,
@@ -20,23 +22,27 @@ import {
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { useAuth } from './AuthProvider';
 import { useChain } from './ChainProvider';
+import { AccountAddress } from '@aptos-labs/ts-sdk';
 
-export type AppManagmenContextProp = {
+export interface AppManagmentContextType {
   isAdmin: boolean;
   setIsAdmin: Dispatch<SetStateAction<boolean>>;
   isPendingAdmin: boolean;
   setIsPendingAdmin: Dispatch<SetStateAction<boolean>>;
   isCollector: boolean;
   setIsCollector: Dispatch<SetStateAction<boolean>>;
+  isTrialVersion: boolean;
+  setIsTrialVersion: Dispatch<SetStateAction<boolean>>;
   resourceAccount: `0x${string}` | null;
   setResourceAccount: Dispatch<SetStateAction<`0x${string}` | null>>;
-  currency: `0x${string}` | null;
-  setCurrency: Dispatch<SetStateAction<`0x${string}` | null>>;
+  currencies: ICurrency[];
+  setCurrencies: Dispatch<SetStateAction<ICurrency[]>>;
   moveBotsOwned: number;
   qribbleNFTsOwned: number;
   sshiftRecordsOwned: number;
   nftAddressesRequiredOwned: string[];
-  onSubscribe: (days: number) => Promise<void>;
+  onSubscribe: (days: number, currency: string) => Promise<void>;
+  startFreeTrial: () => Promise<void>;
   isSubscriptionActive: boolean;
   setIsSubscriptionActive: Dispatch<SetStateAction<boolean>>;
   expirationDate: string | null;
@@ -45,18 +51,52 @@ export type AppManagmenContextProp = {
   isPendingReviewer: boolean;
   setIsPendingReviewer: Dispatch<SetStateAction<boolean>>;
   hasSubscriptionToClaim: boolean;
+  hasEverSubscribed: boolean;
+  setHasEverSubscribed: Dispatch<SetStateAction<boolean>>;
   setHasSubscriptionToClaim: Dispatch<SetStateAction<boolean>>;
-};
+  isAppRunning: boolean;
+  setAppRunning: (isRunning: boolean) => void;
+  collectors: `0x${string}`[];
+  setCollectors: Dispatch<SetStateAction<`0x${string}`[]>>;
+}
 
-const AppManagmentContext = createContext<AppManagmenContextProp>(
-  {} as AppManagmenContextProp
-);
+export const AppManagmentContext = createContext<AppManagmentContextType>({
+  isAdmin: false,
+  setIsAdmin: () => {},
+  isPendingAdmin: false,
+  setIsPendingAdmin: () => {},
+  isCollector: false,
+  setIsCollector: () => {},
+  isTrialVersion: false,
+  setIsTrialVersion: () => {},
+  resourceAccount: null,
+  setResourceAccount: () => {},
+  currencies: [],
+  setCurrencies: () => {},
+  moveBotsOwned: 0,
+  qribbleNFTsOwned: 0,
+  sshiftRecordsOwned: 0,
+  nftAddressesRequiredOwned: [],
+  onSubscribe: async () => {},
+  startFreeTrial: async () => {},
+  isSubscriptionActive: false,
+  setIsSubscriptionActive: () => {},
+  expirationDate: null,
+  isReviewer: false,
+  setIsReviewer: () => {},
+  isPendingReviewer: false,
+  setIsPendingReviewer: () => {},
+  hasSubscriptionToClaim: false,
+  hasEverSubscribed: false,
+  setHasEverSubscribed: () => {},
+  setHasSubscriptionToClaim: () => {},
+  isAppRunning: true,
+  setAppRunning: () => {},
+  collectors: [],
+  setCollectors: () => {},
+});
 
-export const AppManagementProvider = ({
-  children,
-}: {
-  children: ReactNode;
-}) => {
+export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isPendingAdmin, setIsPendingAdmin] = useState(false);
   const [isCollector, setIsCollector] = useState(false);
@@ -73,9 +113,13 @@ export const AppManagementProvider = ({
   >([]);
 
   const [hasSubscriptionToClaim, setHasSubscriptionToClaim] = useState(false);
+  const [hasEverSubscribed, setHasEverSubscribed] = useState(false);
   const [isSubscriptionActive, setIsSubscriptionActive] = useState(false);
-  const [currency, setCurrency] = useState<`0x${string}` | null>(null);
+  const [currencies, setCurrencies] = useState<ICurrency[]>([]);
   const [expirationDate, setExpirationDate] = useState<string | null>(null);
+  const [isAppRunning, setIsAppRunning] = useState<boolean>(true);
+  const [collectors, setCollectors] = useState<`0x${string}`[]>([]);
+  const [isTrialVersion, setIsTrialVersion] = useState(false);
 
   const { abi, feesABI, subscriptionABI } = useAbiClient();
   const { connected, account } = useWallet();
@@ -100,7 +144,20 @@ export const AppManagementProvider = ({
   }, [abi, connected, walletAddress]);
 
   useEffect(() => {
-    if (!connected) return;
+    if (!abi) return;
+
+    void (async () => {
+      const isStopped = await abi.useABI(subscriptionABI).view.get_app_status({
+        typeArguments: [],
+        functionArguments: [],
+      });
+
+      setAppRunning(!isStopped?.[0]);
+    })();
+  }, [abi]);
+
+  useEffect(() => {
+    if (!connected || !walletAddress) return;
     (async () => {
       let adminResult;
       let pendingAdminResult;
@@ -125,9 +182,13 @@ export const AppManagementProvider = ({
         console.error('Error fetching pending admin:', error);
       }
 
-      const admin = adminResult?.[0];
+      const admin = AccountAddress.from(
+        adminResult?.[0] as `0x${string}`
+      )?.toString();
 
-      const pendingAdmin = pendingAdminResult?.[0];
+      const pendingAdmin = AccountAddress.from(
+        pendingAdminResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsAdmin(admin === walletAddress);
       setIsPendingAdmin(pendingAdmin === walletAddress);
@@ -137,23 +198,33 @@ export const AppManagementProvider = ({
   useEffect(() => {
     if (!connected) return;
     (async () => {
-      let collectorResult;
-      try {
-        collectorResult = await abi?.useABI(feesABI).view.get_collectors({
+      const collectorsExists = await abi
+        ?.useABI(feesABI)
+        .view.check_collector_object({
           typeArguments: [],
-          functionArguments: [],
+          functionArguments: [walletAddress as `0x${string}`],
         });
-      } catch (error) {
-        toast({
-          title: 'Error fetching collector',
-          description: `Not Collectors probably set yet: ${error}`,
-          variant: 'destructive',
-        });
+
+      if (collectorsExists) {
+        let collectorResult;
+        try {
+          collectorResult = await abi?.useABI(feesABI).view.get_collectors({
+            typeArguments: [],
+            functionArguments: [],
+          });
+        } catch (error) {
+          toast({
+            title: 'Error fetching collector',
+            description: `Not Collectors probably set yet: ${error}`,
+            variant: 'destructive',
+          });
+        }
+
+        const collectors = collectorResult?.[0];
+
+        setIsCollector(collectors?.some((c) => c === walletAddress) || false);
+        setCollectors(collectors || []);
       }
-
-      const collectors = collectorResult?.[0];
-
-      setIsCollector(collectors?.some((c) => c === walletAddress) || false);
     })();
   }, [abi, connected, walletAddress, isCollector]);
 
@@ -188,11 +259,15 @@ export const AppManagementProvider = ({
         console.error('Error fetching pending reviewer:', error);
       }
 
-      const reviewer = reviewerResult?.[0];
+      const reviewer = AccountAddress.from(
+        reviewerResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsReviewer(reviewer === walletAddress);
 
-      const pendingReviewer = pendingReviewerResult?.[0];
+      const pendingReviewer = AccountAddress.from(
+        pendingReviewerResult?.[0] as `0x${string}`
+      )?.toString();
 
       setIsPendingReviewer(pendingReviewer === walletAddress);
     })();
@@ -220,16 +295,37 @@ export const AppManagementProvider = ({
       }
 
       try {
-        const currencyResult = await abi
+        const currenciesResult = await abi
           ?.useABI(feesABI)
-          .view.get_currency_addr({
+          .view.get_currencies_addr({
             typeArguments: [],
             functionArguments: [],
           });
 
-        const currency = currencyResult?.[0];
+        const currencies = currenciesResult?.[0];
 
-        setCurrency(currency || null);
+        if (currencies?.length) {
+          const currenciesData = await aptos.getFungibleAssetMetadata({
+            options: {
+              where: {
+                asset_type: {
+                  _in: currencies,
+                },
+              },
+            },
+          });
+
+          setCurrencies(
+            currenciesData?.map((c) => ({
+              name: c.name,
+              address: c.asset_type as `0x${string}`,
+              symbol: c.symbol,
+              logo: c.icon_uri,
+              isStableCoin: true,
+              decimals: c.decimals,
+            })) || []
+          );
+        }
       } catch (error) {
         toast({
           title: 'Error fetching token address',
@@ -323,39 +419,56 @@ export const AppManagementProvider = ({
 
         setNftAddressesRequiredOwned([...nftAddresses]);
 
-        const hasSubscriptionActiveResult = await abi
+        const hasEverSubcribedResult = await abi
           ?.useABI(subscriptionABI)
-          .view.has_subscription_active({
+          .view.exists_user_subscription({
             typeArguments: [],
             functionArguments: [walletAddress as `0x${string}`],
           });
 
-        const hasSubscriptionActive =
-          hasSubscriptionActiveResult?.[0] as boolean;
+        const hasEverSubscribedData = hasEverSubcribedResult?.[0] as boolean;
 
-        setIsSubscriptionActive(hasSubscriptionActive);
+        setHasEverSubscribed(hasEverSubscribedData);
 
-        if (hasSubscriptionActive) {
-          const subscribtionResult = await abi
+        if (hasEverSubscribedData) {
+          const hasSubscriptionActiveResult = await abi
             ?.useABI(subscriptionABI)
-            .view.get_plan({
+            .view.has_subscription_active({
               typeArguments: [],
               functionArguments: [walletAddress as `0x${string}`],
             });
 
-          const subscription = subscribtionResult?.[1];
+          const hasSubscriptionActive =
+            hasSubscriptionActiveResult?.[0] as boolean;
 
-          if (subscription?.[1]) {
-            const expireDate = parseInt(subscription) * 1000;
-            setExpirationDate(
-              new Date(expireDate).toLocaleDateString(undefined, {
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })
-            );
+          setIsSubscriptionActive(hasSubscriptionActive);
+
+          if (hasSubscriptionActive) {
+            const subscriptionResult = await abi
+              ?.useABI(subscriptionABI)
+              .view.get_plan({
+                typeArguments: [],
+                functionArguments: [walletAddress as `0x${string}`],
+              });
+
+            const subscription = subscriptionResult?.[1];
+
+            if (subscription?.[1]) {
+              const expireDate = parseInt(subscription) * 1000;
+              setExpirationDate(
+                new Date(expireDate).toLocaleDateString(undefined, {
+                  day: 'numeric',
+                  month: 'long',
+                  year: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit',
+                })
+              );
+            }
+
+            const trialVersion = subscriptionResult?.[3];
+
+            setIsTrialVersion(trialVersion as boolean);
           }
         }
       } catch (error) {
@@ -368,13 +481,18 @@ export const AppManagementProvider = ({
     })();
   }, [connected, walletAddress, abi, hasSubscriptionToClaim, aptos]);
 
-  const onSubscribe = async (days: number) => {
+  const onSubscribe = async (days: number, currency: string) => {
     try {
       const duration = days * 24 * 60 * 60;
 
       const tx = await client?.useABI(subscriptionABI).buy_plan({
         type_arguments: [],
-        arguments: [duration, nftAddressesRequiredOwned as `0x${string}`[]],
+        arguments: [
+          duration,
+          nftAddressesRequiredOwned as `0x${string}`[],
+          [],
+          currency as `0x${string}`,
+        ],
       });
 
       // Wait for transaction to be confirmed
@@ -431,6 +549,8 @@ export const AppManagementProvider = ({
           ),
           variant: 'default',
         });
+
+        setIsSubscriptionActive(true);
       }
     } catch (error) {
       toast({
@@ -441,6 +561,91 @@ export const AppManagementProvider = ({
     }
   };
 
+  const startFreeTrial = async () => {
+    try {
+      // Free trial duration - 2 days
+
+      const tx = await client?.useABI(subscriptionABI).trial_free_subscription({
+        type_arguments: [],
+        arguments: [],
+      });
+
+      // Wait for transaction to be confirmed
+      const committedTransactionResponse = await aptos.waitForTransaction({
+        transactionHash: tx?.hash as string,
+      });
+
+      if (committedTransactionResponse.success) {
+        // Check subscription status after successful purchase
+        const hasSubscriptionActiveResult = await abi
+          ?.useABI(subscriptionABI)
+          .view.has_subscription_active({
+            typeArguments: [],
+            functionArguments: [walletAddress as `0x${string}`],
+          });
+
+        const hasSubscriptionActive =
+          hasSubscriptionActiveResult?.[0] as boolean;
+        setIsSubscriptionActive(hasSubscriptionActive);
+
+        if (hasSubscriptionActive) {
+          const subscriptionResult = await abi
+            ?.useABI(subscriptionABI)
+            .view.get_plan({
+              typeArguments: [],
+              functionArguments: [walletAddress as `0x${string}`],
+            });
+
+          const subscription = subscriptionResult?.[1];
+
+          if (subscription) {
+            const expireDate = parseInt(subscription) * 1000;
+            setExpirationDate(
+              new Date(expireDate).toLocaleDateString(undefined, {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+            );
+          }
+        }
+
+        toast({
+          title: 'Free Trial Started',
+          description: (
+            <a
+              href={`https://explorer.aptoslabs.com/txn/${tx?.hash}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline"
+            >
+              View transaction
+            </a>
+          ),
+        });
+      } else {
+        toast({
+          title: 'Error starting free trial',
+          description: 'Transaction failed',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      toast({
+        title: 'Error starting free trial',
+        description: `${error}`,
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const setAppRunning = (isRunning: boolean) => {
+    setIsAppRunning(isRunning);
+    // In a real implementation, you might want to persist this to a backend
+  };
+
   const values = {
     isAdmin,
     setIsAdmin,
@@ -448,15 +653,20 @@ export const AppManagementProvider = ({
     setIsPendingAdmin,
     isCollector,
     setIsCollector,
+    collectors,
+    setCollectors,
+    isTrialVersion,
+    setIsTrialVersion,
     resourceAccount,
     setResourceAccount,
-    currency,
-    setCurrency,
+    currencies,
+    setCurrencies,
     moveBotsOwned,
     qribbleNFTsOwned,
     sshiftRecordsOwned,
     nftAddressesRequiredOwned,
     onSubscribe,
+    startFreeTrial,
     isSubscriptionActive,
     setIsSubscriptionActive,
     expirationDate,
@@ -466,6 +676,10 @@ export const AppManagementProvider = ({
     setIsPendingReviewer,
     hasSubscriptionToClaim,
     setHasSubscriptionToClaim,
+    hasEverSubscribed,
+    setHasEverSubscribed,
+    isAppRunning,
+    setAppRunning,
   };
 
   return (

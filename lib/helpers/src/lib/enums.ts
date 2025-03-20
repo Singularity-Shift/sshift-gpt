@@ -30,3 +30,8 @@ export enum Protocol {
   Lens = 'Lens',
   Farcaster = 'Farcaster',
 }
+
+export enum UserType {
+  Trial = 'trial',
+  Premium = 'premium',
+}

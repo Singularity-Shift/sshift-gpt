@@ -1,16 +1,21 @@
 import { useBackend } from '../../src/context/BackendProvider';
 import { useEffect, useState } from 'react';
-import { FeatureType, IAdminConfig } from '@helpers';
+import { FeatureType, IAdminConfig, UserType } from '@helpers';
 import { useToast } from '../../src/components/ui/use-toast';
 import { AddFeature } from './addFeature';
 import { LoadingSpinner } from '../../src/components/LoadingSpinner';
 import { ConfirmButton } from '../../src/components/ui/confirm-button';
 
-export const Features = () => {
+export const Features = ({
+  name,
+}: {
+  name: UserType.Premium | UserType.Trial;
+}) => {
   const { submitAdminConfig, fetchAdminConfig } = useBackend();
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [adminConfig, setAdminConfig] = useState<IAdminConfig>({
+    name,
     models: [],
     tools: [],
   });
@@ -109,10 +114,11 @@ export const Features = () => {
     void (async () => {
       setIsLoading(true);
       try {
-        const config = await fetchAdminConfig();
+        const config = await fetchAdminConfig(name);
         if (config) {
           setAdminConfig({
             ...config,
+            name,
             models: config.models.length
               ? config.models
               : [
@@ -146,10 +152,12 @@ export const Features = () => {
   return (
     <div className="space-y-8">
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Models Configuration</h2>
+        <h2 className="text-xl font-semibold text-gray-900">
+          Models Configuration
+        </h2>
         <div className="grid grid-cols-[1fr,1fr,auto] gap-4 items-center">
           <div className="font-medium text-sm text-gray-700">Model Name</div>
-          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div className="font-medium text-sm text-gray-700">Uses Per Day</div>
           <div></div>
         </div>
         {adminConfig.models.map((model, index) => (
@@ -169,10 +177,12 @@ export const Features = () => {
       </div>
 
       <div className="space-y-4">
-        <h2 className="text-xl font-semibold text-gray-900">Tools Configuration</h2>
+        <h2 className="text-xl font-semibold text-gray-900">
+          Tools Configuration
+        </h2>
         <div className="grid grid-cols-[1fr,1fr,auto,auto] gap-4 items-center">
           <div className="font-medium text-sm text-gray-700">Tool Name</div>
-          <div className="font-medium text-sm text-gray-700">Credits Cost</div>
+          <div className="font-medium text-sm text-gray-700">Uses Per Day</div>
           <div></div>
           <div></div>
         </div>
@@ -196,7 +206,7 @@ export const Features = () => {
         <ConfirmButton
           variant="green"
           title="Save Config"
-          onSubmit={() => submitAdminConfig(adminConfig)}
+          onSubmit={() => submitAdminConfig(name, adminConfig)}
           disabled={disabledConfirmButton}
           confirmMessage={
             <p>

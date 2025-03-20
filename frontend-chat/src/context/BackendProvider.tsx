@@ -1,15 +1,16 @@
 'use client';
 import backend from '../services/backend';
-import { IAction, IAdminConfig, MultisignAction } from '@helpers';
+import { IAction, IAdminConfig, MultisignAction, UserType } from '@helpers';
 import { createContext, ReactNode, useContext } from 'react';
 import { useToast } from '../components/ui/use-toast';
 import { useAuth } from './AuthProvider';
 
 export type BackendContextProp = {
   submitAdminConfig: (
+    name: UserType,
     config: IAdminConfig
   ) => Promise<IAdminConfig | undefined>;
-  fetchAdminConfig: () => Promise<IAdminConfig>;
+  fetchAdminConfig: (name: UserType) => Promise<IAdminConfig>;
   addAction: (
     action: MultisignAction,
     transaction: string,
@@ -36,10 +37,12 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
 
   const submitAdminConfig = async (
+    name: UserType,
     config: IAdminConfig
   ): Promise<IAdminConfig | undefined> => {
     try {
       const body = {
+        name,
         ...config,
         models: config.models.filter((m) => Boolean(m.name)),
         tools: config.tools.filter((t) => Boolean(t.name)),
@@ -67,8 +70,8 @@ export const BackendProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const fetchAdminConfig = async (): Promise<IAdminConfig> => {
-    const response = await backend.get('/admin-config');
+  const fetchAdminConfig = async (name: UserType): Promise<IAdminConfig> => {
+    const response = await backend.get(`/admin-config/${name}`);
 
     return response.data;
   };

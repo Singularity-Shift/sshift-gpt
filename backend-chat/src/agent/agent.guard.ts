@@ -49,7 +49,9 @@ export class AgentGuard implements CanActivate {
       }
 
       const userConfig = await this.userService.findUserByAddress(user.address);
-      const adminConfig = await this.adminConfigService.findAdminConfig();
+      const adminConfig = await this.adminConfigService.findAdminConfig(
+        user.config.userType
+      );
 
       const modelCredits = userConfig.activity.models.find(
         (m) => m.name === model

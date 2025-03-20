@@ -21,7 +21,6 @@ import toolSchema from './tool_schema.json';
 import { ChatCompletionMessageParam } from 'openai/resources';
 import { AgentService } from './agent.service';
 import { v4 as uuidv4 } from 'uuid';
-import { sleep } from '@aptos-labs/ts-sdk';
 
 @Controller('agent')
 export class AgentController {
@@ -103,7 +102,9 @@ export class AgentController {
       };
     });
 
-    const adminConfig = await this.adminConfigService.findAdminConfig();
+    const adminConfig = await this.adminConfigService.findAdminConfig(
+      userAuth.config.userType
+    );
 
     // Use reasoningPrompt instead of systemPrompt for o3-mini
     const systemMessageContent = isReasoning

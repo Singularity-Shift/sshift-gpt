@@ -4,9 +4,27 @@ import { ValidateNested } from 'class-validator';
 import { FeatureDto } from './feature.dto';
 
 export class AdminConfigDto {
-  static fromJson(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string, reasoningPrompt: string): AdminConfigDto {
-    return new AdminConfigDto(models, tools, systemPrompt, reasoningPrompt);
+  static fromJson(
+    name: string,
+    models: FeatureDto[],
+    tools: FeatureDto[],
+    systemPrompt: string,
+    reasoningPrompt: string
+  ): AdminConfigDto {
+    return new AdminConfigDto(
+      name,
+      models,
+      tools,
+      systemPrompt,
+      reasoningPrompt
+    );
   }
+
+  @ApiProperty({
+    description: 'Name of the admin configuration',
+    example: 'premium',
+  })
+  name: string;
 
   @ApiProperty({
     description: 'Set request limit models for subscription',
@@ -36,7 +54,14 @@ export class AdminConfigDto {
   })
   reasoningPrompt: string;
 
-  constructor(models: FeatureDto[], tools: FeatureDto[], systemPrompt: string, reasoningPrompt: string) {
+  constructor(
+    name: string,
+    models: FeatureDto[],
+    tools: FeatureDto[],
+    systemPrompt: string,
+    reasoningPrompt: string
+  ) {
+    this.name = name;
     this.models = models;
     this.tools = tools;
     this.systemPrompt = systemPrompt;

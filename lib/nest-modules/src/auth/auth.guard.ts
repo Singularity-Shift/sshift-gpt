@@ -14,6 +14,7 @@ import {
   FeesABITypes,
   IUserConfig,
   SubscriptionABITypes,
+  UserType,
 } from '@helpers';
 import {
   abis,
@@ -23,6 +24,7 @@ import {
   SubscriptionMoveABI,
 } from '@aptos';
 import { UserService } from '../user/user.service';
+import { AccountAddress } from '@aptos-labs/ts-sdk';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -74,6 +76,10 @@ export class AuthGuard implements CanActivate {
     address: `0x${string}`,
     chain: Chain
   ): Promise<IUserConfig> {
+    let startTime: string;
+    let endTime: string;
+    let _upgrades: unknown[] | undefined;
+    let isTrialUser: boolean | undefined;
     let subscriptionDuration: number[];
 
     const fullnode = (
@@ -100,7 +106,9 @@ export class AuthGuard implements CanActivate {
 
     const currentAdmin = currentAdminResult?.[0];
 
-    const isAdmin = currentAdmin?.toLowerCase() === address.toLowerCase();
+    const isAdmin =
+      AccountAddress.from(currentAdmin).toString() ===
+      AccountAddress.from(address).toString();
 
     const currentReviewerResult = await contract
       .useABI(feesABI)
@@ -111,7 +119,9 @@ export class AuthGuard implements CanActivate {
 
     const currentReviewer = currentReviewerResult?.[0];
 
-    const isReviewer = currentReviewer?.toLowerCase() === address.toLowerCase();
+    const isReviewer =
+      AccountAddress.from(currentReviewer).toString() ===
+      AccountAddress.from(address).toString();
 
     const currentCollectorsResult = await contract
       .useABI(feesABI)
@@ -121,7 +131,9 @@ export class AuthGuard implements CanActivate {
       });
 
     const isCollector = currentCollectorsResult?.[0].some(
-      (c) => c.toLowerCase() === address.toLowerCase()
+      (c) =>
+        AccountAddress.from(c).toString() ===
+        AccountAddress.from(address).toString()
     );
 
     const hasSubscriptionResult = await contract
@@ -134,25 +146,25 @@ export class AuthGuard implements CanActivate {
     const hasSubscription = hasSubscriptionResult?.[0];
 
     if (hasSubscription) {
-      const subscriptionPlanResult = await contract
+      [startTime, endTime, _upgrades, isTrialUser] = await contract
         .useABI(subscriptionABI)
         .view.get_plan({
           typeArguments: [],
-          functionArguments: [address],
+          functionArguments: [AccountAddress.from(address).toString()],
         });
-
-      subscriptionDuration = subscriptionPlanResult?.map((s) => parseInt(s));
     }
 
-    const user = await this.userService.findUserByAddress(address);
+    const user = await this.userService.findUserByAddress(
+      AccountAddress.from(address).toString()
+    );
 
     const userConfig: IUserConfig = {
       subscriptionPlan: {
         active: hasSubscription,
         ...(hasSubscription
           ? {
-              startDate: subscriptionDuration[0],
-              endDate: subscriptionDuration[1],
+              startDate: parseInt(startTime),
+              endDate: parseInt(endTime),
               modelsUsed: user.activity.models,
               toolsUsed: user.activity.tools,
             }
@@ -164,6 +176,7 @@ export class AuthGuard implements CanActivate {
       isAdmin,
       isReviewer,
       isCollector,
+      userType: isTrialUser ? UserType.Trial : UserType.Premium,
     };
 
     return userConfig;

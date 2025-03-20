@@ -25,11 +25,10 @@ const CollectorPage = () => {
           </div>
         </div>
       ) : (
-        <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
-          <div className="text-center mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">Fund Managment</h2>
+        <div className="space-y-8 mt-10">
+          <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 min-w-[700px] justify-self-center">
+            <FundManage />
           </div>
-          <FundManage />
         </div>
       )}
     </div>

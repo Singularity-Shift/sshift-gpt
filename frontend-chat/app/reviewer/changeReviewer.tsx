@@ -93,9 +93,9 @@ export const ChangeReviewer = () => {
       {!isPendingReviewer && (
         <div>
           <LabeledInput
-            id="pending-admin-address"
-            label="Set the new admin address"
-            tooltip="Who will be the new admin"
+            id="pending-reviewer-address"
+            label="Set the new reviewer address"
+            tooltip="Who will be the new reviewer"
             required={true}
             value={pendingReviewer}
             onChange={(e) =>

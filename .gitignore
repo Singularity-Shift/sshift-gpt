@@ -59,8 +59,4 @@ contracts/**/build
 
 keyfile.json
 .idea
-
-# AI Knowledge Docs
-AI-KNOWLEDGE-DOCS/
-
-.movement
+contracts/**/.idea

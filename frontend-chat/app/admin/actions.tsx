@@ -40,7 +40,7 @@ export const Actions = () => {
           expireTimestamp: new Date().getTime() + 24 * 60 * 60 * 1000,
         },
         data: {
-          function: `${MODULE_ADDRESS}::fees_v3::add_collector`,
+          function: `${MODULE_ADDRESS}::fees::add_collector`,
           functionArguments: [newCollector as `0x${string}`],
         },
       });
@@ -79,7 +79,7 @@ export const Actions = () => {
           expireTimestamp: new Date().getTime() + 24 * 60 * 60 * 1000,
         },
         data: {
-          function: `${MODULE_ADDRESS}::fees_v3::remove_collector`,
+          function: `${MODULE_ADDRESS}::fees::remove_collector`,
           functionArguments: [removeCollector as `0x${string}`],
         },
       });
