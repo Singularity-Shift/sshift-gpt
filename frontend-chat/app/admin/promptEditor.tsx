@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import backend from '../../src/services/backend';
 import { useAuth } from '../../src/context/AuthProvider';
+import { UserType } from '@helpers';
 
 interface PromptEditorProps {
   isOpen: boolean;
@@ -39,7 +40,7 @@ const PromptEditor = ({ isOpen, onClose, type }: PromptEditorProps) => {
   useEffect(() => {
     const fetchPrompt = async () => {
       try {
-        const response = await backend.get('/admin-config');
+        const response = await backend.get(`/admin-config/${UserType.Premium}`);
         setPromptContent(formatForDisplay(response.data[promptField] || ''));
       } catch (error) {
         console.error(`Error fetching ${type} prompt:`, error);
@@ -71,13 +72,14 @@ const PromptEditor = ({ isOpen, onClose, type }: PromptEditorProps) => {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const response = await backend.get('/admin-config');
+      const response = await backend.get(`/admin-config/${UserType.Premium}`);
       const currentConfig = response.data;
 
       await backend.put(
         '/admin-config',
         {
           ...currentConfig,
+          name: UserType.Premium,
           [promptField]: formatForSaving(promptContent),
         },
         {
