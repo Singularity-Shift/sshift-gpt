@@ -386,10 +386,10 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
           setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
 
-          setNftAddressesRequiredOwned([
+          nftAddresses = [
             ...nftAddresses,
             ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
-          ]);
+          ];
         }
 
         const qribbleNFTsHolding =
@@ -400,10 +400,12 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
         setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
 
-        setNftAddressesRequiredOwned([
+        nftAddresses = [
           ...nftAddresses,
           ...qribbleNFTsHolding.map((nft) => nft.token_data_id),
-        ]);
+        ];
+
+        setNftAddressesRequiredOwned([...nftAddresses]);
 
         const hasEverSubcribedResult = await abi
           ?.useABI(subscriptionABI)
