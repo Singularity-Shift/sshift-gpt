@@ -11,6 +11,7 @@ module sshift_gpt_addr::subscription {
     use aptos_token::token as token_v1;
     use aptos_framework::object;
     use aptos_token_objects::token::{Self, Token};
+    use aptos_std::string_utils;
 
     use sshift_gpt_addr::fees;
 
@@ -361,9 +362,7 @@ module sshift_gpt_addr::subscription {
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
-
-        let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
+        let hold_move_token = account_owns_move_bot(buyer_addr, &plan.move_bot_id);
 
         let resource_account_addr = fees::get_resource_account_address();
 
@@ -486,9 +485,7 @@ module sshift_gpt_addr::subscription {
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
-
-        let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
+        let hold_move_token = account_owns_move_bot(buyer_addr, &plan.move_bot_id);
 
         let resource_account_addr = fees::get_resource_account_address();
 
@@ -573,9 +570,7 @@ module sshift_gpt_addr::subscription {
 
         let currency_metadata = object::address_to_object<Metadata>(currency);
 
-        let move_bot_id = option::borrow(&plan.move_bot_id);
-
-        let hold_move_token = token_v1::balance_of(buyer_addr, *move_bot_id);
+        let hold_move_token = account_owns_move_bot(buyer_addr, &plan.move_bot_id);
 
         let resource_account_addr = fees::get_resource_account_address();
 
@@ -797,6 +792,37 @@ module sshift_gpt_addr::subscription {
         *vector::borrow<FreeSubscription>(&free_subscriptions.subscriptions, index)
     }
 
+    inline fun account_owns_move_bot(
+        account: address, move_bot_id_option: &Option<token_v1::TokenId>
+    ): u64 {
+        let onwn_move_bot = 0;
+
+        let move_bot_id_borrowed = option::borrow(move_bot_id_option);
+
+        let (token_creator, token_collection, _token_name, token_property_version) =
+            token_v1::get_token_id_fields(move_bot_id_borrowed);
+
+        for (i in 0..110) {
+            let token_name = string_utils::format1(&b"Move Bots #{}", i);
+            let move_token_id =
+                token_v1::create_token_id_raw(
+                    token_creator,
+                    token_collection,
+                    token_name,
+                    token_property_version
+                );
+
+            let balance = token_v1::balance_of(account, move_token_id);
+
+            if (balance > 0) {
+                onwn_move_bot = balance;
+                break;
+            }
+        };
+
+        onwn_move_bot
+    }
+
     fun check_admin(sender: &signer) {
         let account_addr = signer::address_of(sender);
         let admin = fees::get_admin();
@@ -900,9 +926,6 @@ module sshift_gpt_addr::subscription {
     use aptos_framework::object::{Object};
 
     #[test_only]
-    use aptos_std::string_utils;
-
-    #[test_only]
     use aptos_framework::fungible_asset::{Self, MintRef, TransferRef};
 
     #[test_only]
@@ -969,7 +992,7 @@ module sshift_gpt_addr::subscription {
         let collection_name = string::utf8(b"Move Bot");
         let description = string::utf8(b"Move Bot collection");
         let collection_uri = string::utf8(b"Move Bot url");
-        let token_name = string::utf8(b"My Move Bot");
+        let token_name = string::utf8(b"Move Bots #10");
         let token_uri = string::utf8(b"My Token Move Bot");
         let maximum_supply = 0;
         let mutate_setting = vector<bool>[false, false, false];
