@@ -385,9 +385,10 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
             });
 
           setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
+
           nftAddresses = [
             ...nftAddresses,
-            ...movebotsHolding.map((nft) => nft.token_data_id),
+            ...sshiftRecordsHolding.map((nft) => nft.token_data_id),
           ];
         }
 

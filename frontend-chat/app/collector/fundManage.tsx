@@ -6,7 +6,6 @@ import { useToast } from '../../src/components/ui/use-toast';
 import { useWalletClient } from '@thalalabs/surf/hooks';
 import { useAppManagment } from '../../src/context/AppManagment';
 import { convertAmountFromOnChainToHumanReadable } from '@aptos-labs/ts-sdk';
-import { COIN_DECIMALS } from '../../config/env';
 import { Button } from '../../src/components/ui/button';
 import { useChain } from '../../src/context/ChainProvider';
 import { IBalance } from '@helpers';
@@ -113,7 +112,7 @@ export const FundManage = () => {
                   ...b,
                   balance: convertAmountFromOnChainToHumanReadable(
                     parseInt(feesBalance as string),
-                    COIN_DECIMALS
+                    b.decimals
                   ),
                 };
               })
