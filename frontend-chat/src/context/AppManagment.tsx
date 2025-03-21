@@ -234,8 +234,6 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
       let reviewerResult;
       let pendingReviewerResult;
       try {
-        console.log(account?.publicKey.toString());
-
         reviewerResult = await abi?.useABI(feesABI).view.get_reviewer({
           typeArguments: [],
           functionArguments: [],
@@ -344,6 +342,9 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
         let nftAddresses: string[] = [];
         const nftsHolding = await aptos.getAccountOwnedTokens({
           accountAddress: walletAddress as string,
+          options: {
+            tokenStandard: 'v1',
+          },
         });
 
         const configResult = await abi
@@ -367,8 +368,7 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
           const movebotsHolding = nftsHolding.filter(
             (nft) =>
-              nft.current_token_data?.token_name === moveBotFields.token_name &&
-              nft.current_token_data.current_collection?.creator_address ===
+              nft.current_token_data?.current_collection?.creator_address ===
                 moveBotFields.token_creator &&
               nft.property_version_v1?.toString() ===
                 moveBotFields.token_property_version &&
@@ -378,15 +378,11 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
 
           setMoveBotsOwned(movebotsHolding.length || 0);
 
-          const sshiftRecordsNFTCollection = config.collections_discount.find(
-            (c) => c.collection_addr === SSHIFT_RECORD_ADDRESS
-          );
-
-          const sshiftRecordsHolding = nftsHolding.filter(
-            (nft) =>
-              nft.current_token_data?.collection_id ===
-              sshiftRecordsNFTCollection?.collection_addr
-          );
+          const sshiftRecordsHolding =
+            await aptos.getAccountOwnedTokensFromCollectionAddress({
+              accountAddress: walletAddress as string,
+              collectionAddress: SSHIFT_RECORD_ADDRESS,
+            });
 
           setSShiftRecordsOwned(sshiftRecordsHolding.length || 0);
           nftAddresses = [
@@ -395,26 +391,11 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
           ];
         }
 
-        const qribbleNFTCollectionAddress =
-          chain === Chain.Aptos
-            ? QRIBBLE_NFT_ADDRESS
-            : QRIBBLE_NFT_MOVE_ADDRESS;
-
-        const qribbleNFTCollection = config.collections_discount.find(
-          (c) =>
-            AccountAddress.from(c.collection_addr).toString() ===
-            AccountAddress.from(qribbleNFTCollectionAddress).toString()
-        );
-
-        const qribbleNFTsHolding = nftsHolding.filter(
-          (nft) =>
-            AccountAddress.from(
-              nft.current_token_data?.collection_id as string
-            ).toString() ===
-            AccountAddress.from(
-              qribbleNFTCollection?.collection_addr as string
-            ).toString()
-        );
+        const qribbleNFTsHolding =
+          await aptos.getAccountOwnedTokensFromCollectionAddress({
+            accountAddress: walletAddress as string,
+            collectionAddress: QRIBBLE_NFT_ADDRESS,
+          });
 
         setQribbleNFTsOwned(qribbleNFTsHolding.length || 0);
 
