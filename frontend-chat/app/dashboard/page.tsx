@@ -60,7 +60,7 @@ export default function SubscriptionPage() {
     const finalPrice = priceWithoutDiscount * (1 - maxDiscount / 100);
     setPrice(parseFloat(finalPrice.toFixed(2)));
     setDates(calculateDates(days));
-    if (currencies.length) {
+    if (!selectedStableCoin && currencies.length) {
       setSelectedStableCoin(currencies[0]);
     }
   }, [days, moveBotsOwned, qribbleNFTsOwned, sshiftRecordsOwned, currencies]);
