@@ -127,7 +127,10 @@ export const Subscription = () => {
             prices,
             subscription.collections_discount.map((c) => c.collection_addr),
             subscription.collections_discount.map((c) =>
-              convertAmountFromHumanReadableToOnChain(c.discount_per_day, 6)
+              convertAmountFromHumanReadableToOnChain(
+                c.discount_per_day,
+                COIN_DECIMALS
+              )
             ),
             subscription.token_creator as `0x${string}`,
             subscription.token_collection,
