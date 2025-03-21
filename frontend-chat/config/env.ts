@@ -18,3 +18,4 @@ export const MODULE_ADDRESS =
   process.env.NEXT_PUBLIC_SSHIFT_MODULE_ADDRESS || '';
 export const API_BACKEND_URL = process.env.API_BACKEND_URL || '';
 export const PANORA_API_KEY = process.env.PANORA_API_KEY || '';
+export const MOVE_BOT_ID = process.env.NEXT_PUBLIC_MOVE_BOT_ID;

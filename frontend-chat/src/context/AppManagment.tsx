@@ -15,6 +15,7 @@ import { useWallet } from '@aptos-labs/wallet-adapter-react';
 import { useToast } from '../../src/components/ui/use-toast';
 import { Chain, ICurrency, IMoveBotFields, ISubscription } from '@helpers';
 import {
+  MOVE_BOT_ID,
   QRIBBLE_NFT_ADDRESS,
   QRIBBLE_NFT_MOVE_ADDRESS,
   SSHIFT_RECORD_ADDRESS,
@@ -340,43 +341,15 @@ export const AppManagmentProvider: FC<PropsWithChildren> = ({ children }) => {
     void (async () => {
       try {
         let nftAddresses: string[] = [];
-        const nftsHolding = await aptos.getAccountOwnedTokens({
-          accountAddress: walletAddress as string,
-          options: {
-            tokenStandard: 'v1',
-          },
-        });
-
-        const configResult = await abi
-          ?.useABI(subscriptionABI)
-          .view.get_subscription_config({
-            typeArguments: [],
-            functionArguments: [],
-          });
-
-        const config = configResult?.[0] as ISubscription;
 
         if (chain === Chain.Aptos) {
-          const moveBotFieldsResult = await abi
-            ?.useABI(subscriptionABI)
-            .view.get_move_bot_fields({
-              typeArguments: [],
-              functionArguments: [],
+          const nftsHolding =
+            await aptos.getAccountOwnedTokensFromCollectionAddress({
+              accountAddress: walletAddress as string,
+              collectionAddress: MOVE_BOT_ID as string,
             });
 
-          const moveBotFields = moveBotFieldsResult?.[0] as IMoveBotFields;
-
-          const movebotsHolding = nftsHolding.filter(
-            (nft) =>
-              nft.current_token_data?.current_collection?.creator_address ===
-                moveBotFields.token_creator &&
-              nft.property_version_v1?.toString() ===
-                moveBotFields.token_property_version &&
-              nft.current_token_data?.current_collection?.collection_name ===
-                moveBotFields.token_collection
-          );
-
-          setMoveBotsOwned(movebotsHolding.length || 0);
+          setMoveBotsOwned(nftsHolding.length || 0);
 
           const sshiftRecordsHolding =
             await aptos.getAccountOwnedTokensFromCollectionAddress({
