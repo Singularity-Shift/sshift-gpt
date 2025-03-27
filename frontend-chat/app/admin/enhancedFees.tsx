@@ -89,7 +89,7 @@ export const EnhancedFees = () => {
         setSelectedPaymentCurrency(currencies[0].address);
       }
     }
-  }, [abi, resourceAccount, currencies, selectedPaymentCurrency]);
+  }, [abi, resourceAccount, currencies]);
 
   useEffect(() => {
     void (async () => {
@@ -115,6 +115,34 @@ export const EnhancedFees = () => {
       ]);
     })();
   }, [abi, resourceAccount, collectors]);
+
+  const onChangeCurrency = async (value: `0x${string}`) => {
+    const balances = await abi?.useABI(feesABI).view.get_resource_balances({
+      typeArguments: [],
+      functionArguments: [],
+    });
+
+    const balanceIndex = balances?.[0].findIndex((b) => b === value);
+
+    if (balanceIndex !== undefined && balanceIndex >= 0) {
+      const balancesData = currencies.find(
+        (c) => c.address === balances?.[0][balanceIndex]
+      );
+
+      setResourceAccountBalance(
+        parseFloat(
+          convertAmountFromOnChainToHumanReadable(
+            Number(balances?.[1][balanceIndex]),
+            balancesData?.decimals as number
+          ).toFixed(2)
+        )
+      );
+    } else {
+      setResourceAccountBalance(0);
+    }
+
+    setSelectedPaymentCurrency(value);
+  };
 
   const onAddInitialCollector = async () => {
     setCollectorsNotSubscribed([
@@ -395,18 +423,19 @@ export const EnhancedFees = () => {
                 </h3>
                 <div className="space-y-2">
                   <Label>Select Currency for Paying Collectors</Label>
-                  <Select
-                    value={selectedPaymentCurrency}
-                    onValueChange={(value) =>
-                      setSelectedPaymentCurrency(value as `0x${string}`)
-                    }
-                  >
-                    <SelectTrigger className="w-full bg-white">
+                  <Select onValueChange={onChangeCurrency}>
+                    <SelectTrigger
+                      value={selectedPaymentCurrency}
+                      className="w-full bg-white"
+                    >
                       <SelectValue placeholder="Select a currency" />
                     </SelectTrigger>
                     <SelectContent className="bg-white">
                       {currencies.map((curr, index) => (
-                        <SelectItem key={index} value={curr.address}>
+                        <SelectItem
+                          key={`${curr.address}-${index}`}
+                          value={curr.address}
+                        >
                           {curr.symbol} - {curr.name}
                         </SelectItem>
                       ))}

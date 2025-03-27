@@ -74,12 +74,14 @@ const CoinsV1PaymentBox = () => {
       });
     }
 
+    const toPay = payments.filter((p) => p.address && p.amount);
+
     try {
       const tx = await client?.useABI(FeesABI).payment_v1({
         type_arguments: [coinToPay?.asset_type as string],
         arguments: [
-          payments.map((p) => p.address) as `0x${string}`[],
-          payments.map((p) =>
+          toPay.map((p) => p.address) as `0x${string}`[],
+          toPay.map((p) =>
             convertAmountFromHumanReadableToOnChain(
               parseFloat(p.amount),
               coinToPay?.metadata?.decimals || 8

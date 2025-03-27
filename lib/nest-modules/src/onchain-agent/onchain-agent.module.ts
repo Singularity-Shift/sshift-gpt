@@ -11,6 +11,7 @@ import {
 import { Account, Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '../config/config.module';
+import { StructuredToolInterface } from '@langchain/core/tools';
 
 export type OnchainAgentProvider = CompiledStateGraph<
   (typeof MessagesAnnotation)['State'],
@@ -39,7 +40,7 @@ export const onchainAgentProvider = {
       filter: [
         'aptos_transfer_token',
         'aptos_balance',
-        'aptos_get_wallet_address',
+        // 'aptos_get_wallet_address',
         'aptos_token_details',
         'aptos_create_token',
         'aptos_burn_token',
@@ -69,7 +70,7 @@ export const onchainAgentProvider = {
         'emojicoin_remove_liquidity',
         'emojicoin_swap',
       ],
-    });
+    }) as StructuredToolInterface[];
 
     const llm = new ChatOpenAI({
       temperature: 0.7,

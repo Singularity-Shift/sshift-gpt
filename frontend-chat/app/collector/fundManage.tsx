@@ -76,7 +76,11 @@ export const FundManage = () => {
                     },
                   },
                 })
-              )?.map((coin, index) => {
+              )?.map((coin) => {
+                const balanceIndex = balancesData[0].findIndex(
+                  (b) => b === coin.asset_type
+                );
+
                 return {
                   name: coin.name,
                   address: coin.asset_type as `0x${string}`,
@@ -85,7 +89,7 @@ export const FundManage = () => {
                   logo: coin.icon_uri,
                   decimals: coin.decimals,
                   balance: convertAmountFromOnChainToHumanReadable(
-                    parseInt(balancesData[1][index] as string),
+                    parseInt(balancesData[1][balanceIndex] as string),
                     coin.decimals
                   ),
                 };
