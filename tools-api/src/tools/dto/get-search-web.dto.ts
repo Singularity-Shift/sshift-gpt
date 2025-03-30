@@ -1,18 +1,26 @@
 import { ApiProperty } from '@nestjs/swagger';
+import { ChatCompletionMessage } from 'openai/resources/chat';
+import { CitationsDto } from './citations.dto';
 
 export class GetSearchWebDto {
+  static fromJson(
+    json: ChatCompletionMessage,
+    error: boolean
+  ): GetSearchWebDto {
+    return new GetSearchWebDto(
+      error,
+      json.content,
+      json.annotations.map((a) =>
+        CitationsDto.fromMap(a.url_citation.title, a.url_citation.url)
+      )
+    );
+  }
+
   @ApiProperty({
     description: 'Error status',
     example: false,
   })
   error: boolean;
-
-  @ApiProperty({
-    description: 'Search result',
-    example: 'https://www.google.com/search?q=test+search',
-    required: false,
-  })
-  result?: string;
 
   @ApiProperty({
     description: 'Error message',
@@ -23,11 +31,13 @@ export class GetSearchWebDto {
 
   @ApiProperty({
     description: 'Array of citations returned by the search process',
-    example: [
-      'https://www.youtube.com/watch?v=oijX1suWemQ',
-      'https://en.wikipedia.org/wiki/2025_in_the_United_Kingdom',
-    ],
-    required: false,
+    type: CitationsDto,
   })
-  citations?: string[];
+  citations: CitationsDto[];
+
+  constructor(error: boolean, message: string, citations: CitationsDto[]) {
+    this.error = error;
+    this.message = message;
+    this.citations = citations;
+  }
 }

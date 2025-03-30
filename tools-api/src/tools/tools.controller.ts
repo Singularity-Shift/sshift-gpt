@@ -341,9 +341,11 @@ export class ToolsController {
     status: 200,
     type: GetSearchWebDto,
   })
-  searchWeb(@Query('query') query: string): Promise<GetSearchWebDto> {
+  async searchWeb(@Query('query') query: string): Promise<GetSearchWebDto> {
     try {
-      return this.toolsService.searchWeb(query);
+      const response = await this.toolsService.searchWeb(query);
+
+      return GetSearchWebDto.fromJson(response, Boolean(response.refusal));
     } catch (error) {
       if (error instanceof HttpException) {
         throw error;
