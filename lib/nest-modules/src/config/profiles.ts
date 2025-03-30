@@ -43,10 +43,6 @@ export const Profiles = {
     wiki: {
       url: process.env.WIKI_URL,
     },
-    perplexity: {
-      apiKey: process.env.PERPLEXITY_API_KEY,
-      baseUrl: process.env.PERPLEXITY_BASE_URL,
-    },
     arxiv: {
       url: process.env.ARXIV_URL,
     },
@@ -113,10 +109,6 @@ export const Profiles = {
     },
     wiki: {
       url: process.env.WIKI_URL,
-    },
-    perplexity: {
-      apiKey: process.env.PERPLEXITY_API_KEY,
-      baseUrl: process.env.PERPLEXITY_BASE_URL,
     },
     arxiv: {
       url: process.env.ARXIV_URL,

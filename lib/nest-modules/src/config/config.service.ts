@@ -57,10 +57,6 @@ const DOTENV_SCHEMA = Joi.object({
   wiki: Joi.object({
     url: Joi.string().required(),
   }),
-  perplexity: Joi.object({
-    apiKey: Joi.string().required(),
-    baseUrl: Joi.string().required(),
-  }),
   arxiv: Joi.object({
     url: Joi.string().required(),
   }),
@@ -107,8 +103,6 @@ type DotenvSchemaKeys =
   | 'cmc.baseUrl'
   | 'cmc.apiKey'
   | 'wiki.url'
-  | 'perplexity.apiKey'
-  | 'perplexity.baseUrl'
   | 'arxiv.url'
   | 'handleFinder.apiKey'
   | 'handleFinder.baseUrl'
