@@ -143,7 +143,6 @@ export class AgentController {
         reasoning_effort: isReasoning ? 'high' : undefined,
         tools: toolSchema as OpenAI.Chat.Completions.ChatCompletionTool[],
         tool_choice: 'auto',
-        store: false,
         ...(isParallelToolCalling
           ? {
               parallel_tool_calls: true,
