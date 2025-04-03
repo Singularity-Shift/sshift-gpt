@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '@google-cloud/storage';
 import { ElevenLabsService } from './elevenlabs.service';
@@ -586,117 +586,24 @@ export class ToolsService {
   }
 
   async searchWeb(query: string) {
-    // Add current date information to date-sensitive queries
-    const currentDate = new Date();
-    const monthNames = [
-      'January',
-      'February',
-      'March',
-      'April',
-      'May',
-      'June',
-      'July',
-      'August',
-      'September',
-      'October',
-      'November',
-      'December',
-    ];
-
-    // Explicitly add the current year to queries about recent events or news
-    if (
-      query.toLowerCase().includes('news') ||
-      query.toLowerCase().includes('today') ||
-      query.toLowerCase().includes('recent') ||
-      query.toLowerCase().includes('latest')
-    ) {
-      const formattedDate = `${
-        monthNames[currentDate.getMonth()]
-      } ${currentDate.getFullYear()}`;
-      query = `${query} in ${formattedDate}`;
-    }
-
-    this.logger.log('Modified search query:', query);
-
-    const body = {
-      model: 'sonar-pro',
+    const stream = await this.openApi.chat.completions.create({
+      model: 'gpt-4o-mini-search-preview-2025-03-11',
+      response_format: {
+        type: 'text',
+      },
       messages: [
         {
-          role: 'system',
-          content:
-            'Be verbose, precise and accurate as possible, maximising the amount of information you can provide by giving a detailed and in-depth summary of each result or topic. Always prioritize the most recent information available and explicitly mention the current date/year in your responses.',
-        },
-        {
-          role: 'user',
           content: query,
+          role: 'user',
         },
       ],
-      max_tokens: 1000,
-      temperature: 0.2,
-      top_p: 0.9,
-      return_citations: true,
-      search_domain_filter: ['perplexity.ai'],
-      return_images: false,
-      return_related_questions: false,
-      search_recency_filter: 'day',
-      top_k: 0,
-      stream: false,
-      presence_penalty: 0,
-      frequency_penalty: 1,
-    };
+      web_search_options: {
+        search_context_size: 'high',
+      },
+      store: false,
+    });
 
-    this.logger.log('Sending request to Perplexity API with query:', query);
-    const response = await firstValueFrom(
-      this.httpService.post(
-        this.configService.get('perplexity.baseUrl'),
-        body,
-        {
-          headers: {
-            Authorization: `Bearer ${this.configService.get<string>(
-              'perplexity.apiKey'
-            )}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      )
-    );
-    this.logger.log('Perplexity API response status:', response.status);
-
-    // Handle different error status codes
-    switch (response.status) {
-      case 524:
-        return {
-          error: true,
-          message:
-            "I apologize, but I'm having trouble accessing the latest information right now due to a timeout. This usually means the search service is temporarily overloaded. Please try your question again in a moment.",
-        };
-      case 429:
-        return {
-          error: true,
-          message:
-            "I apologize, but I've hit the rate limit for web searches. Please try again in a few minutes when the limit resets.",
-        };
-      case 401:
-        return {
-          error: true,
-          message:
-            "I apologize, but I'm having authentication issues with the search service. This is a technical problem on our end that needs to be fixed.",
-        };
-    }
-
-    const data = await response.data;
-    this.logger.log('Perplexity API response data:', data);
-
-    const responseDto = {
-      error: false,
-      result:
-        data.choices && data.choices.length > 0
-          ? data.choices[0].message.content
-          : '',
-      message: data.message || '',
-      citations: data.citations || [],
-    };
-    return responseDto;
+    return stream.choices[0].message;
   }
 
   async queryArxiv(searchQueryDto: SearchArxivDto) {

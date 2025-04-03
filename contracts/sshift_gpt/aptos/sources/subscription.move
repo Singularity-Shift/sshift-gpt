@@ -977,6 +977,29 @@ module sshift_gpt_addr::subscription {
     }
 
     #[test_only]
+    public fun init_module_test(sender: &signer) {
+        move_to(
+            sender,
+            SubscriptionPlan {
+                prices: vector::empty(),
+                collections_discount: vector::empty(),
+                move_bot_id: option::none(),
+                extensions: vector::empty()
+            }
+        );
+
+        move_to(
+            sender,
+            SubscriptionsGifted { subscriptions: vector::empty() }
+        );
+
+        move_to(
+            sender,
+            SubscriptionConfig { stop_app: true, trial_free_days: 0 }
+        )
+    }
+
+    #[test_only]
     fun create_resource_account(sender: &signer, admin: &signer) {
         let admin_addr = signer::address_of(admin);
 
