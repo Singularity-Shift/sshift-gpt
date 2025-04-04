@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Button } from './button';
 import { ScrollArea } from './scrollarea';
-import { X, Calculator, DollarSign } from 'lucide-react';
+import { X } from 'lucide-react';
 import Link from 'next/link';
 
 interface RightSidebarProps {
@@ -31,12 +31,6 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
   isOpen = false,
   onClose,
 }) => {
-  const [amount, setAmount] = useState<string>('');
-  const [fromCurrency, setFromCurrency] = useState<string>('USD');
-  const [toCurrency, setToCurrency] = useState<string>('EUR');
-  const [conversionRate, setConversionRate] = useState<number>(0.92);
-  const [result, setResult] = useState<string>('');
-
   return (
     <>
       {/* Backdrop overlay for mobile */}
@@ -80,7 +74,7 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
             <div className="p-4 space-y-6">
               {/* Subscription Apps Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Subscription Apps</h3>
+                <h3 className="text-sm font-semibold text-gray-700">Free with subscription</h3>
                 <Link href={process.env.NEXT_LEDGER_APP_URL || 'https://ledgerapp.fun'}>
                   <Button className="w-full justify-start gap-2 p-4">
                     <span className="text-xl">📒</span>
@@ -94,79 +88,18 @@ export const RightSidebar: React.FC<RightSidebarProps> = ({
 
               {/* Pay-per-use Apps Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Pay-per-use Apps</h3>
+                <h3 className="text-sm font-semibold text-gray-700">Pay-per-use</h3>
+                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm text-center text-gray-500 italic">
+                  Apps in development
+                </div>
               </div>
 
               {/* Free Apps Section */}
               <div className="space-y-2">
-                <h3 className="text-sm font-semibold text-gray-700">Free Apps</h3>
-                <MiniApp
-                  title="Calculator"
-                  icon={<Calculator className="h-4 w-4 text-blue-500" />}
-                >
-                  <div className="grid grid-cols-4 gap-2">
-                    {['7', '8', '9', '/', '4', '5', '6', '*', '1', '2', '3', '-', '0', '.', '=', '+'].map((btn) => (
-                      <button
-                        key={btn}
-                        className="p-2 bg-gray-100 rounded hover:bg-gray-200 transition-colors"
-                        onClick={() => {
-                          if (btn === '=') {
-                            try {
-                              setResult(eval(result).toString());
-                            } catch {
-                              setResult('Error');
-                            }
-                          } else {
-                            setResult(prev => prev + btn);
-                          }
-                        }}
-                      >
-                        {btn}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="mt-2 p-2 bg-gray-50 rounded text-right">
-                    {result || '0'}
-                  </div>
-                </MiniApp>
-
-                <MiniApp
-                  title="Currency Converter"
-                  icon={<DollarSign className="h-4 w-4 text-yellow-500" />}
-                >
-                  <div className="space-y-2">
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      className="w-full p-2 border rounded text-sm"
-                      placeholder="Amount"
-                    />
-                    <div className="flex gap-2">
-                      <select
-                        value={fromCurrency}
-                        onChange={(e) => setFromCurrency(e.target.value)}
-                        className="flex-1 p-2 border rounded text-sm"
-                      >
-                        <option value="USD">USD</option>
-                        <option value="EUR">EUR</option>
-                        <option value="GBP">GBP</option>
-                      </select>
-                      <select
-                        value={toCurrency}
-                        onChange={(e) => setToCurrency(e.target.value)}
-                        className="flex-1 p-2 border rounded text-sm"
-                      >
-                        <option value="EUR">EUR</option>
-                        <option value="USD">USD</option>
-                        <option value="GBP">GBP</option>
-                      </select>
-                    </div>
-                    <div className="p-2 bg-gray-50 rounded text-sm">
-                      {(parseFloat(amount) * conversionRate).toFixed(2)} {toCurrency}
-                    </div>
-                  </div>
-                </MiniApp>
+                <h3 className="text-sm font-semibold text-gray-700">Free for all</h3>
+                <div className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm text-center text-gray-500 italic">
+                  Apps in development
+                </div>
               </div>
             </div>
           </ScrollArea>
