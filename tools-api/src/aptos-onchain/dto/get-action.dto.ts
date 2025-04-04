@@ -15,6 +15,7 @@ export class GetActionDto {
   constructor(name: ToolsNameList, args: string) {
     this.name = name;
     const values = JSON.parse(args);
+
     if (values?.input && Object.keys(values.input).length) {
       if (['aptos_balance', 'aptos_token_details'].includes(name)) {
         values.input = { balance: values.input };
@@ -22,6 +23,7 @@ export class GetActionDto {
         values.input = JSON.parse(values.input);
       }
     }
+
     this.args = Object.values(values?.input || values);
     this.onchain = true;
   }

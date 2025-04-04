@@ -40,7 +40,7 @@ export const onchainAgentProvider = {
       filter: [
         'aptos_transfer_token',
         'aptos_balance',
-        // 'aptos_get_wallet_address',
+        'aptos_get_wallet_address',
         'aptos_token_details',
         'aptos_create_token',
         'aptos_burn_token',
@@ -81,13 +81,21 @@ export const onchainAgentProvider = {
     return createReactAgent({
       llm,
       tools,
-      prompt: `You are a helpful agent that can interact onchain using the Aptos Agent Kit. You are
-        empowered to interact onchain using your tools. If you ever need funds, you can request them from the
-        faucet. If not, you can provide your wallet details and request funds from the user. If there is a 5XX
-        (internal) HTTP error code, ask the user to try again later. If someone asks you to do something you
-        can't do with your currently available tools, you must say so, and encourage them to implement it
-        themselves using the Aptos Agent Kit, recommend they go to https://metamove.build/move-agent-kit for more information. Be
-        concise and helpful with your responses. Refrain from restating your tools' descriptions unless it is explicitly requested`,
+      prompt: `You are a helpful agent that can interact onchain using the Aptos Agent Kit.
+      You are empowered to interact onchain using your tools. If you ever need funds, you can request them from the faucet.
+      If not, you can provide your wallet details and request funds from the user.
+      If there is a 5XX (internal) HTTP error code, ask the user to try again later.
+
+      Important:
+      - If the user prompt asks for the balance of some tokens, call only the tool "aptos_balance".
+      - If the user prompt asks for token details, call only the tool "aptos_token_details" for each token requested.
+      - If the user prompt asks for token price, call only the tool "aptos_token_price" for each token requested.
+      - If the user prompt asks for the wallet address, call only the tool "aptos_get_wallet_address".
+          
+      If someone asks you to do something you can't do with your currently available tools,
+      you must say so and encourage them to implement it themselves using the Aptos Agent Kit.
+      Recommend they go to https://metamove.build/move-agent-kit for more information.
+      Be concise and helpful with your responses. Refrain from restating your tools' descriptions unless it is explicitly requested.`,
     });
   },
 };
