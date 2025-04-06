@@ -471,7 +471,7 @@
         "properties": {
           "prompt": {
             "type": "string",
-            "description": "A clear and specific instruction for the on-chain action. Include critical details such as: 1) Action type (swap, transfer, deposit, withdrawal, balance check); 2) Token names, symbols and amounts; 3) Protocol specification (e.g., 'on Panora', 'on Liquidswap', 'native'); 4) For swaps, specify 'native' when performing a local swap (not cross-chain); 5) For withdrawals from DeFi protocols, request less than the total deposited amount; 6) When swapping multiple tokens (like Emojicoins), use clear connecting words to indicate they are part of a single transaction. Example formats: 'swap 1 APT to USDC on Panora native', 'check my APT balance', 'withdraw 0.5 APT from Joule Finance'."
+            "description": "A clear and specific instruction for the on-chain action. Include critical details such as: 1) Action type (swap, transfer, deposit, withdrawal, balance check); 2) Token names, symbols and amounts; 3) Protocol specification (e.g., 'on Panora', 'on Emojicoin'); 4) For swaps, specify 'native' when performing a local swap (not cross-chain); 5) For withdrawals from DeFi protocols, request less than the total deposited amount; 6) When swapping multiple tokens (like Emojicoins), use clear connecting words to indicate they are part of a single transaction. Example formats: 'swap 1 APT to USDC on Panora native', 'check my APT balance', 'withdraw 0.5 APT from Joule Finance'."
           }
         },
         "required": ["prompt"],
