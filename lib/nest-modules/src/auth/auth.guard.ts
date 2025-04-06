@@ -79,8 +79,7 @@ export class AuthGuard implements CanActivate {
     let startTime: string;
     let endTime: string;
     let _upgrades: unknown[] | undefined;
-    let isTrialUser: boolean | undefined;
-    let subscriptionDuration: number[];
+    let _isTrialUser: boolean | undefined;
 
     const fullnode = (
       chain === Chain.Aptos
@@ -146,7 +145,7 @@ export class AuthGuard implements CanActivate {
     const hasSubscription = hasSubscriptionResult?.[0];
 
     if (hasSubscription) {
-      [startTime, endTime, _upgrades, isTrialUser] = await contract
+      [startTime, endTime, _upgrades, _isTrialUser] = await contract
         .useABI(subscriptionABI)
         .view.get_plan({
           typeArguments: [],
@@ -176,7 +175,7 @@ export class AuthGuard implements CanActivate {
       isAdmin,
       isReviewer,
       isCollector,
-      userType: isTrialUser ? UserType.Trial : UserType.Premium,
+      userType: hasSubscription ? UserType.Free : UserType.Premium,
     };
 
     return userConfig;

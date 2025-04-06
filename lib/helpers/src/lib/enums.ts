@@ -32,6 +32,6 @@ export enum Protocol {
 }
 
 export enum UserType {
-  Trial = 'trial',
+  Free = 'free',
   Premium = 'premium',
 }
