@@ -9,7 +9,7 @@ import { ConfirmButton } from '../../src/components/ui/confirm-button';
 export const Features = ({
   name,
 }: {
-  name: UserType.Premium | UserType.Trial;
+  name: UserType.Premium | UserType.Free;
 }) => {
   const { submitAdminConfig, fetchAdminConfig } = useBackend();
   const { toast } = useToast();

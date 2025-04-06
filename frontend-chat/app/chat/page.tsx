@@ -59,7 +59,7 @@ export default function ChatPage() {
   const { toast } = useToast();
   const { agent } = useAgent();
   const lastMessageRef = useRef<HTMLDivElement>(null);
-  const { isSubscriptionActive } = useAppManagment();
+  const { isSubscriptionActive, isCollector } = useAppManagment();
 
   const scrollToBottom = () => {
     if (lastMessageRef.current) {
@@ -164,9 +164,10 @@ export default function ChatPage() {
   const handleModelChange = (model: string) => {
     if (!isSubscriptionActive && model !== 'gpt-4o-mini') {
       toast({
-        title: "Model not available",
-        description: "This model is only available with a subscription. Please subscribe to access all models.",
-        variant: "default",
+        title: 'Model not available',
+        description:
+          'This model is only available with a subscription. Please subscribe to access all models.',
+        variant: 'default',
       });
       return;
     }
@@ -963,6 +964,7 @@ export default function ChatPage() {
           currentChatModel={currentChat?.model || null}
           onToggleMiniApps={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
           setIsSidebarOpen={setIsSidebarOpen}
+          isCollector={isCollector}
           isSubscriptionActive={isSubscriptionActive}
         />
         <Button

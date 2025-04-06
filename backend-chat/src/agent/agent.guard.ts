@@ -5,7 +5,7 @@ import {
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
-import { FeatureType, IUserAuth } from '@helpers';
+import { AIModel, FeatureType, IUserAuth, UserType } from '@helpers';
 import { UserService, AdminConfigService } from '@nest-modules';
 import { CreateMessageDto } from './dto/create-message.dto';
 
@@ -26,12 +26,6 @@ export class AgentGuard implements CanActivate {
         return true;
       }
 
-      if (!user.config.subscriptionPlan.active) {
-        throw new UnauthorizedException(
-          'User subscription has not active plan'
-        );
-      }
-
       const createMessageDto: CreateMessageDto = context
         .switchToHttp()
         .getRequest()?.body;
@@ -41,11 +35,10 @@ export class AgentGuard implements CanActivate {
       }
 
       if (
-        !user.config.subscriptionPlan?.active ||
-        !user.config.subscriptionPlan?.startDate ||
-        !user.config.subscriptionPlan?.endDate
+        user.config.userType === UserType.Free &&
+        model !== AIModel.GPT4oMini
       ) {
-        throw new UnauthorizedException('User subscription is not active');
+        throw new UnauthorizedException('Free users can only use GPT4oMini');
       }
 
       const userConfig = await this.userService.findUserByAddress(user.address);
