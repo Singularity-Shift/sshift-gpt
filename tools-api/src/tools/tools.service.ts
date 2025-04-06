@@ -1,4 +1,4 @@
-import { HttpException, HttpStatus, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { v4 as uuidv4 } from 'uuid';
 import { Storage } from '@google-cloud/storage';
 import { ElevenLabsService } from './elevenlabs.service';
@@ -24,14 +24,12 @@ import {
   actions,
   ICmcInfo,
   ICollection,
-  IImage,
   ISoundEffect,
   ITicker,
   transformCoverUrl,
   TrendingOptions,
 } from '@helpers';
 import { CreateSoundEffectDto } from './dto/create-sound-efect.dto';
-import { GenerateImageDto } from './dto/generate-image.dto';
 import { OpenAI } from 'openai';
 import { CMCService } from './coin-market-cap.service';
 import yahooFinance from 'yahoo-finance2';
