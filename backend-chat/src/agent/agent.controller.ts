@@ -13,7 +13,7 @@ import {
   UserAuth,
   UserService,
 } from '@nest-modules';
-import { AIModel, IUserAuth } from '@helpers';
+import { AIModel, IUserAuth, UserType } from '@helpers';
 import { AgentGuard } from './agent.guard';
 import { Response } from 'express-stream';
 import { OpenAI } from 'openai';
@@ -103,7 +103,7 @@ export class AgentController {
     });
 
     const adminConfig = await this.adminConfigService.findAdminConfig(
-      userAuth.config.userType
+      UserType.Premium
     );
 
     // Use reasoningPrompt instead of systemPrompt for o3-mini

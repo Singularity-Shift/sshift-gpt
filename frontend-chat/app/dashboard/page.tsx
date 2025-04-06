@@ -33,7 +33,6 @@ export default function SubscriptionPage() {
     qribbleNFTsOwned,
     sshiftRecordsOwned,
     isSubscriptionActive,
-    startFreeTrial,
   } = useAppManagment();
   const [discount, setDiscount] = useState(0);
 
@@ -86,7 +85,7 @@ export default function SubscriptionPage() {
             setSelectedStableCoin={setSelectedStableCoin}
             availableStableCoins={currencies}
             isSubscriptionActive={isSubscriptionActive}
-            startFreeTrial={startFreeTrial}
+            startFreeTrial={() => Promise.resolve()}
           />
           <div className="mt-6 text-center">
             <Link

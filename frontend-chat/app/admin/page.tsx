@@ -151,10 +151,10 @@ const AdminPage = () => {
             <div className="bg-white bg-opacity-90 p-8 rounded-xl shadow-lg border border-gray-300 w-full max-w-[700px] justify-self-center">
               <div className="text-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
-                  Free Trial Features
+                  Non Subsciption Features
                 </h2>
               </div>
-              <Features name={UserType.Trial} />
+              <Features name={UserType.Free} />
             </div>
 
             {/* Coins V1 Payment Panel */}
