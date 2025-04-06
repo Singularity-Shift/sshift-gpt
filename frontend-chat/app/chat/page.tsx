@@ -20,6 +20,7 @@ import { useToast } from '../../src/components/ui/use-toast';
 import { IChat, IMessage } from '@helpers';
 import { useAgent } from '../../src/context/AgentProvider';
 import { executeAllActions } from '../../src/lib/utils';
+import { useAppManagment } from '../../src/context/AppManagment';
 
 interface NewMessage {
   id: string;
@@ -58,6 +59,7 @@ export default function ChatPage() {
   const { toast } = useToast();
   const { agent } = useAgent();
   const lastMessageRef = useRef<HTMLDivElement>(null);
+  const { isSubscriptionActive } = useAppManagment();
 
   const scrollToBottom = () => {
     if (lastMessageRef.current) {
@@ -160,6 +162,15 @@ export default function ChatPage() {
   };
 
   const handleModelChange = (model: string) => {
+    if (!isSubscriptionActive && model !== 'gpt-4o-mini') {
+      toast({
+        title: "Model not available",
+        description: "This model is only available with a subscription. Please subscribe to access all models.",
+        variant: "default",
+      });
+      return;
+    }
+
     setSelectedModel(model);
     if (currentChatId) {
       setChats((prevChats) =>
@@ -952,6 +963,7 @@ export default function ChatPage() {
           currentChatModel={currentChat?.model || null}
           onToggleMiniApps={() => setIsRightSidebarOpen(!isRightSidebarOpen)}
           setIsSidebarOpen={setIsSidebarOpen}
+          isSubscriptionActive={isSubscriptionActive}
         />
         <Button
           variant="ghost"

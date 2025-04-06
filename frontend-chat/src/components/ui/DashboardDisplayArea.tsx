@@ -2,7 +2,6 @@ import React from 'react';
 import { SubscriptionContainer } from './SubscriptionContainer';
 import { UserProfileContainer } from './UserProfileContainer';
 import { SubscriptionUpgradeContainer } from './SubscriptionUpgradeContainer';
-import { FreeTrialContainer } from './FreeTrialContainer';
 import UserDashboardTitle from './UserDashboardTitle';
 import { ICurrency } from '@helpers';
 
@@ -62,12 +61,8 @@ const DashboardDisplayArea: React.FC<DashboardDisplayAreaProps> = ({
           sshiftRecordsOwned={sshiftRecordsOwned}
         />
 
-        {/* Conditionally show Free Trial or Subscription Upgrade Container */}
-        {!isSubscriptionActive ? (
-          <FreeTrialContainer onStartFreeTrial={startFreeTrial} />
-        ) : (
-          <SubscriptionUpgradeContainer />
-        )}
+        {/* Always show SubscriptionUpgradeContainer for non-subscribed users */}
+        <SubscriptionUpgradeContainer />
       </div>
     </div>
   );

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles } from 'lucide-react';
+import { Sparkles, Lock } from 'lucide-react';
 
 export const SubscriptionUpgradeContainer = () => {
   return (
@@ -8,47 +8,39 @@ export const SubscriptionUpgradeContainer = () => {
         <div className="flex items-center justify-center gap-2">
           <Sparkles className="w-6 h-6 text-yellow-500" />
           <h2 className="mt-6 text-2xl lg:text-3xl font-extrabold text-gray-900">
-            Upgrade Subscription
+            Premium Features
           </h2>
           <Sparkles className="w-6 h-6 text-yellow-500" />
         </div>
-        <p className="mt-2 text-sm text-gray-600">Unlock premium features</p>
+        <p className="mt-2 text-sm text-gray-600">Unlock the full power of SShift GPT</p>
       </div>
       <div className="flex-grow flex flex-col items-center justify-center space-y-6">
         <div className="flex flex-col items-center space-y-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 animate-pulse flex items-center justify-center">
-            <Sparkles className="w-8 h-8 text-white" />
+          <div className="w-16 h-16 rounded-full bg-gradient-to-r from-purple-400 via-pink-500 to-red-500 flex items-center justify-center">
+            <Lock className="w-8 h-8 text-white" />
           </div>
-          <p className="text-lg text-gray-400 text-center font-semibold">
-            Coming soon - under development
+          <p className="text-lg text-gray-800 text-center font-semibold">
+            Elevate your experience with a subscription
           </p>
         </div>
-        <div className="space-y-3 text-sm text-gray-500">
+        <div className="space-y-3 text-sm text-gray-700">
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            <p>Enhanced AI capabilities</p>
+            <p><span className="font-bold">Access All Models</span> - Including cutting-edge GPT-4o, O3-mini and future SOTA models</p>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            <p>Additional models</p>
+            <p><span className="font-bold">Premium Tools</span> - Image generation, sound effects, handle finder & more</p>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            <p>Exclusive features access</p>
+            <p><span className="font-bold">Higher Rate Limits</span> - Much higher rate limits</p>
           </div>
           <div className="flex items-center gap-2">
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            <p>Access to SOTA models</p>
+            <p><span className="font-bold">Advanced Features</span> - Free use of non PAYG Super-Apps</p>
           </div>
         </div>
-      </div>
-      <div className="mt-auto">
-        <button
-          disabled
-          className="w-full py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-gray-400 bg-gray-100 cursor-not-allowed"
-        >
-          Coming Soon
-        </button>
       </div>
     </div>
   );
