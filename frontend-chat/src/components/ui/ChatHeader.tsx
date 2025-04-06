@@ -7,7 +7,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from './select';
-import { ArrowLeft, Plus, Menu } from 'lucide-react';
+import { ArrowLeft, Plus, Menu, Lock } from 'lucide-react';
 import UserLoginStatus from './UserLoginStatus';
 
 interface ChatHeaderProps {
@@ -18,6 +18,7 @@ interface ChatHeaderProps {
   currentChatModel: string | null;
   onToggleMiniApps?: () => void;
   setIsSidebarOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  isSubscriptionActive?: boolean;
 }
 
 export const ChatHeader: React.FC<ChatHeaderProps> = ({
@@ -28,6 +29,7 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
   currentChatModel,
   onToggleMiniApps,
   setIsSidebarOpen,
+  isSubscriptionActive = false,
 }) => {
   return (
     <div className="flex items-center justify-between p-2 min-[1010px]:p-4 border-b border-border h-[73px] w-full">
@@ -59,8 +61,28 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </SelectTrigger>
             <SelectContent className="bg-white shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border-gray-100">
               <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
-              <SelectItem value="gpt-4o">GPT-4o</SelectItem>
-              <SelectItem value="o3-mini">O3-mini</SelectItem>
+              
+              {isSubscriptionActive ? (
+                <>
+                  <SelectItem value="gpt-4o">GPT-4o</SelectItem>
+                  <SelectItem value="o3-mini">O3-mini</SelectItem>
+                </>
+              ) : (
+                <>
+                  <SelectItem value="gpt-4o" disabled className="opacity-60 cursor-not-allowed">
+                    <div className="flex items-center">
+                      <Lock className="h-3 w-3 mr-1" />
+                      GPT-4o <span className="ml-1 text-xs text-gray-500">(Premium)</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="o3-mini" disabled className="opacity-60 cursor-not-allowed">
+                    <div className="flex items-center">
+                      <Lock className="h-3 w-3 mr-1" />
+                      O3-mini <span className="ml-1 text-xs text-gray-500">(Premium)</span>
+                    </div>
+                  </SelectItem>
+                </>
+              )}
             </SelectContent>
           </Select>
         </div>

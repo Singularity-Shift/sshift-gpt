@@ -162,7 +162,6 @@ export const UserProfileContainer: React.FC<UserProfileContainerProps> = ({
           whitespace-nowrap
           mt-auto
         `}
-        disabled={!isSubscriptionActive && !isCollector}
         onClick={handleEnterSShiftGPT}
       >
         ENTER SSHIFT GPT
