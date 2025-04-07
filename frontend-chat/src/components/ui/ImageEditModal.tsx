@@ -170,8 +170,8 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
     } else {
       // Use destination-out to erase (which will reveal the white background)
       context.globalCompositeOperation = 'destination-out';
-      context.strokeStyle = 'black';
-      context.fillStyle = 'black';
+      context.strokeStyle = 'white';
+      context.fillStyle = 'white';
     }
     context.lineWidth = brushSize;
     context.lineCap = 'round';
@@ -245,17 +245,9 @@ export const ImageEditModal: React.FC<ImageEditModalProps> = ({
 
   useEffect(() => {
     if (ctx) {
-      // Store current composite operation and line width
-      const currentComposite = ctx.globalCompositeOperation;
-      const currentLineWidth = ctx.lineWidth;
-      
       updateBrushSettings(ctx);
-      
-      // Restore the previous drawing state
-      ctx.globalCompositeOperation = currentComposite;
-      ctx.lineWidth = currentLineWidth;
     }
-  }, [brushMode, brushSize]);
+  }, [brushMode, brushSize, ctx]);
 
   const getScaledCoordinates = (e: React.MouseEvent<HTMLCanvasElement>) => {
     return getDrawingCoordinates(e.clientX, e.clientY);
