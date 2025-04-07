@@ -465,7 +465,7 @@
     "type": "function",
     "function": {
       "name": "getOnchainActions",
-      "description": "Performs on-chain actions on the Aptos blockchain. This tool handles operations such as viewing token balances, token details, wallet address, executing token swaps (native or cross-chain via LayerZero), transferring tokens, interacting with DeFi protocols (Joule Finance, Aries, Panora), and managing Emojicoins. Always describe transactions in human-readable format before executing them, explaining the purpose, assets involved, costs, and potential risks.",
+      "description": "Performs on-chain actions on the Aptos blockchain. This tool handles operations such as viewing token balances, token details, wallet address, executing token swaps on Panora, transferring tokens, interacting with DeFi protocols (Joule Finance, Aries, Panora), and managing Emojicoins. Always describe transactions in human-readable format before executing them, explaining the purpose, assets involved, costs, and potential risks.",
       "parameters": {
         "type": "object",
         "properties": {
