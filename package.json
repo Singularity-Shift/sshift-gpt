@@ -84,7 +84,7 @@
     "katex": "^0.16.21",
     "lucide-react": "^0.436.0",
     "mongoose": "^8.6.1",
-    "move-agent-kit-fullstack": "^0.2.14",
+    "move-agent-kit-fullstack": "file:../move-agent-kit",
     "multer": "^1.4.5-lts.1",
     "next": "^14.2.7",
     "next-themes": "^0.3.0",

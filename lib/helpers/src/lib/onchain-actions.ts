@@ -237,11 +237,6 @@ export const executeAction = async (
       await agent.swapWithPanora(...args);
       break;
     }
-    case 'panora_aggregator_price': {
-      const args = values as [string];
-
-      return agent.priceWithPanora(...args);
-    }
     case 'panora_aggregator_list': {
       const args = values as [string, boolean, string];
 

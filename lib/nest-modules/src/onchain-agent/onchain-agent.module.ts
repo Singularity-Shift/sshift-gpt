@@ -78,8 +78,8 @@ export const onchainAgentProvider = {
 
       Important:
       - If the user prompt asks for the balance of some tokens, call only the tool "aptos_balance".
-      - If the user prompt asks for token details, call only the tool "panora_aggregator_list" for each token requested, including always the tokenAddress input.
-      - If the user prompt asks for token price, call only the tool "panora_aggregator_price" for each token requested, including always the tokenAddress input.
+      - If the user prompt asks for token details, call only the tool "panora_aggregator_list" for each token requested.
+      - If the user prompt asks for token price, call only the tool "panora_aggregator_price" for each token requested.
       - If the user prompt asks for token list on Panora, call only the tool "panora_aggregator_list".
       - If the user prompt asks for the wallet address, call only the tool "aptos_get_wallet_address".
           
