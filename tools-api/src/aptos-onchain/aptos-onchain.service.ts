@@ -6,6 +6,7 @@ import { GetActionDto } from './dto/get-action.dto';
 import { executeAction } from '@helpers';
 import { Account, Aptos, AptosConfig, Network } from '@aptos-labs/ts-sdk';
 import { AgentRuntime, LocalSigner } from 'move-agent-kit-fullstack';
+import { ConfigService } from '@nest-modules';
 
 @Injectable()
 export class AptosOnchainService {
@@ -16,7 +17,8 @@ export class AptosOnchainService {
       any,
       typeof MessagesAnnotation.spec,
       ReturnType<typeof createReactAgentAnnotation>['spec']
-    >
+    >,
+    private readonly configService: ConfigService
   ) {}
 
   public async getAction(prompt: string) {
@@ -42,7 +44,9 @@ export class AptosOnchainService {
       })
     );
 
-    const agent = new AgentRuntime(signer, aptos);
+    const agent = new AgentRuntime(signer, aptos, {
+      PANORA_API_KEY: this.configService.get<string>('panora.apiKey'),
+    });
 
     const responses = [];
 

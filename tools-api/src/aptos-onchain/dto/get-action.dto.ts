@@ -19,6 +19,8 @@ export class GetActionDto {
     if (values?.input && Object.keys(values.input).length) {
       if (['aptos_balance', 'aptos_token_details'].includes(name)) {
         values.input = { balance: values.input };
+      } else if (['panora_aggregator_price'].includes(name)) {
+        values.input = { tokenAddress: values.input };
       } else if (typeof values.input === 'string') {
         values.input = JSON.parse(values.input);
       }

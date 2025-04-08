@@ -41,15 +41,9 @@ export const onchainAgentProvider = {
         'aptos_transfer_token',
         'aptos_balance',
         'aptos_get_wallet_address',
-        'aptos_token_details',
         'aptos_create_token',
         'aptos_burn_token',
         'aptos_mint_token',
-        'aptos_token_price',
-        // 'liquidswap_add_liquidity',
-        // 'liquidswap_remove_liquidity',
-        // 'liquidswap_create_pool',
-        // 'liquidswap_swap',
         'joule_lend_token',
         'joule_withdraw_token',
         'joule_borrow_token',
@@ -58,12 +52,8 @@ export const onchainAgentProvider = {
         'joule_get_user_all_positions',
         'amnis_stake',
         'amnis_withdraw_stake',
-        'aries_borrow',
-        'aries_repay',
-        'aries_lend',
-        'aries_withdraw',
-        'aries_create_profile',
         'panora_aggregator_swap',
+        'panora_aggregator_list',
         'emojicoin_get_market',
         'emojicoin_provide_liquidity',
         'emojicoin_register_market',
@@ -88,8 +78,9 @@ export const onchainAgentProvider = {
 
       Important:
       - If the user prompt asks for the balance of some tokens, call only the tool "aptos_balance".
-      - If the user prompt asks for token details, call only the tool "aptos_token_details" for each token requested.
-      - If the user prompt asks for token price, call only the tool "aptos_token_price" for each token requested.
+      - If the user prompt asks for token details, call only the tool "panora_aggregator_list" for each token requested, including always the tokenAddress input.
+      - If the user prompt asks for token price, call only the tool "panora_aggregator_price" for each token requested, including always the tokenAddress input.
+      - If the user prompt asks for token list on Panora, call only the tool "panora_aggregator_list".
       - If the user prompt asks for the wallet address, call only the tool "aptos_get_wallet_address".
           
       If someone asks you to do something you can't do with your currently available tools,
