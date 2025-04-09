@@ -46,8 +46,10 @@ import { useToast } from '../ui/use-toast';
 import { FaWallet } from 'react-icons/fa';
 import { Button } from '../ui/button';
 import { useAuth } from '../../context/AuthProvider';
+import { useTranslations } from 'next-intl';
 
 export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
+  const t = useTranslations('Home');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
 
   const closeDialog = useCallback(() => setIsDialogOpen(false), []);
@@ -57,7 +59,7 @@ export const SshiftWallet = (walletSortingOptions: WalletSortingOptions) => {
       <DialogTrigger asChild>
         <Button className="px-8 py-2 text-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center space-x-2">
           <FaWallet className="w-6 h-6" />
-          <span>Connect Wallet</span>
+          <span>{t('connectWallet')}</span>
         </Button>
       </DialogTrigger>
       <ConnectWalletDialog close={closeDialog} {...walletSortingOptions} />

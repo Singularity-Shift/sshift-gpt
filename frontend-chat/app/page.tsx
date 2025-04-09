@@ -5,12 +5,14 @@ import { silkscreen } from './fonts';
 import { SshiftWallet } from '../src/components/SshigtWallet';
 import { GameOfLife } from '../src/components/ui/gameOfLife';
 import { IndexHeader } from '../src/components/ui/IndexHeader';
+import { useTranslations } from 'next-intl';
 // import { NetworkToggle } from '../src/components/ui/NetworkToggle';
 // import { useEffect, useState } from 'react';
 // import { Chain } from '@helpers';
 // import { useChain } from '../src/context/ChainProvider';
 
 export default function Home() {
+  const t = useTranslations('Home'); // Assuming translations are keyed under 'Home'
   // const [selectedNetwork, setSelectedNetwork] = useState<Chain>(Chain.Aptos);
   // const { createChainClient, chain } = useChain();
 
@@ -49,9 +51,9 @@ export default function Home() {
             <h1
               className={`text-4xl md:text-6xl font-bold text-gray-800 leading-tight text-center ${silkscreen.className}`}
             >
-              Welcome to
+              {t('welcomeMessage')}
               <br />
-              SShift GPT
+              {t('appName')}
             </h1>
           </div>
         </div>
