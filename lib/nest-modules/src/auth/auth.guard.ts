@@ -175,7 +175,7 @@ export class AuthGuard implements CanActivate {
       isAdmin,
       isReviewer,
       isCollector,
-      userType: hasSubscription ? UserType.Free : UserType.Premium,
+      userType: hasSubscription ? UserType.Premium : UserType.Free,
     };
 
     return userConfig;
