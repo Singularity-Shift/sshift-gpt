@@ -668,7 +668,12 @@ export class AgentService {
         )
       );
 
-      return response.data;
+      return response.data.data.data.map((e) => {
+        const values = { ...e };
+
+        values.twitter_url = `https://twitter.com/${e.twitter_account_info.username}/status/${e.twitter_id}`;
+        return values;
+      });
     } catch (error) {
       console.error(
         'Error in getTopMentions:',
