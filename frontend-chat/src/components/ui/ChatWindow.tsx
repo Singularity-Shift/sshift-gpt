@@ -24,16 +24,16 @@ interface ChatWindowProps {
 const PROMPT_SUGGESTIONS = [
   "How can I check my token balance on the Aptos?",
   "What on-chain actions can you execute for me?",
-  "Guide me through performing a token swap on Panora with you.",
-  "How do I withdraw funds from Joule Finance with you?",
+  "Guide me through performing an emojicoin swap with you.",
+  "How do I lend my tokens on Joule Finance with you?",
   "What are the steps to transfer tokens between wallets with you?",
-  "Can you help me find recent mentions of a specific token on Twitter?",
+  "Can you help me find recent mentions of a specific token on Twitter if i'm a paid user?",
   "How do I search for an NFT collection on the Aptos blockchain?",
   "What are the latest top 10 trending NFTs on Aptos?",
-  "Can you explain how to create a sound effect with you?",
+  "Can you explain how to create a sound effect with you if i'm a paid user?",
   "How can I perform web searches with you?",
   "Can you write a classic retro arcade game for me?",
-  "Can you explain how to create an amazing image with you?"
+  "Can you explain how to create an amazing image with you if i'm a paid user?"
 ];
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
