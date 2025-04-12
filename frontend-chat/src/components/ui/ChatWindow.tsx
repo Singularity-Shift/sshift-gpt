@@ -19,6 +19,7 @@ interface ChatWindowProps {
   hasMore: boolean;
   isLoadingMore: boolean;
   onSendMessage?: (message: string) => void;
+  isLoadingChats?: boolean;
 }
 
 const PROMPT_SUGGESTIONS = [
@@ -47,7 +48,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onLoadMore,
   hasMore,
   isLoadingMore,
-  onSendMessage
+  onSendMessage,
+  isLoadingChats = false
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -158,7 +160,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           initialLoad={false}
         >
           <div className="w-full space-y-3 md:space-y-4 bg-transparent px-4 pt-4">
-            {messages.length === 0 && !isAssistantResponding && !showNoChatsMessage && (
+            {isLoadingChats && (
+              <div className="flex flex-col items-center justify-center w-full py-20">
+                <Loader2 className="h-12 w-12 animate-spin text-primary mb-4" />
+                <p className="text-muted-foreground">Loading your chat history...</p>
+              </div>
+            )}
+            
+            {!isLoadingChats && messages.length === 0 && !isAssistantResponding && !showNoChatsMessage && (
               <div className="flex flex-col items-center justify-center w-full py-10">
                 <div className="text-center mb-6">
                   <h2 className="text-2xl font-semibold mb-2">Not sure where to start?</h2>

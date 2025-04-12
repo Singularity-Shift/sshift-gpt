@@ -55,6 +55,7 @@ export default function ChatPage() {
   const { jwt } = useAuth();
   const [hasMore, setHasMore] = useState(true);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isLoadingChats, setIsLoadingChats] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const { toast } = useToast();
   const { agent } = useAgent();
@@ -127,6 +128,7 @@ export default function ChatPage() {
       // If the chat has no messages, load the initial set
       if (!selectedChat.messages || selectedChat.messages.length === 0) {
         try {
+          setIsLoadingChats(true);
           const messagesResponse = await backend.get(
             `/history/${chatId}/messages`,
             {
@@ -156,6 +158,8 @@ export default function ChatPage() {
           setCurrentPage(1);
         } catch (error) {
           console.error('Error loading chat messages:', error);
+        } finally {
+          setIsLoadingChats(false);
         }
       }
     }
@@ -573,18 +577,17 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (!jwt) return;
-
-    (async () => {
+    const loadChats = async () => {
+      if (!jwt) return;
+      
       try {
-        console.log('[Initial Load] Starting to load chats');
-        // First get the chat list
+        setIsLoadingChats(true);
         const chatResponse = await backend.get('/history', {
           headers: {
             Authorization: `Bearer ${jwt}`,
           },
         });
-
+        
         const savedChats = chatResponse.data;
         console.log('[Initial Load] Loaded chats:', {
           chatCount: savedChats?.chats?.length,
@@ -595,7 +598,7 @@ export default function ChatPage() {
           })),
         });
 
-        if (savedChats && savedChats.chats.length > 0) {
+        if (savedChats && savedChats.chats && savedChats.chats.length > 0) {
           // Find the most recent chat based on lastUpdated timestamp
           const mostRecentChat = savedChats.chats.reduce(
             (latest: IChat, current: IChat) =>
@@ -603,54 +606,64 @@ export default function ChatPage() {
                 ? current
                 : latest
           );
-
+          
           console.log('[Initial Load] Most recent chat:', {
             id: mostRecentChat.id,
             title: mostRecentChat.title,
             lastUpdated: mostRecentChat.lastUpdated,
           });
-
-          // Get initial messages for the most recent chat
-          const messagesResponse = await backend.get(
-            `/history/${mostRecentChat.id}/messages`,
-            {
-              params: {
-                page: 1,
-                limit: 10,
-              },
-              headers: {
-                Authorization: `Bearer ${jwt}`,
-              },
-            }
-          );
-
-          console.log('Initial messages response:', messagesResponse.data);
-
-          // Check if there are more messages based on the total count
-          const { messages } = messagesResponse.data;
-          const hasMoreMessages = messages.length === 10; // If we got a full page, there are likely more
-
-          // Update the most recent chat with only the first 10 messages
-          const updatedChats = savedChats.chats.map(
-            (chat: IChat) =>
-              chat.id === mostRecentChat.id
-                ? { ...chat, messages: [...messages].reverse() }
-                : { ...chat, messages: [] } // Initialize other chats with empty messages
-          );
-
-          setChats(updatedChats);
+          
+          setChats(savedChats.chats);
           setCurrentChatId(mostRecentChat.id);
           setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
-          setHasMore(hasMoreMessages);
-          setCurrentPage(1);
+          
+          // Load initial messages for the most recent chat
+          try {
+            const messagesResponse = await backend.get(
+              `/history/${mostRecentChat.id}/messages`,
+              {
+                params: {
+                  page: 1,
+                  limit: 10,
+                },
+                headers: {
+                  Authorization: `Bearer ${jwt}`,
+                },
+              }
+            );
+            
+            console.log('Initial messages response:', messagesResponse.data);
+            
+            // Check if there are more messages based on the total count
+            const { messages } = messagesResponse.data;
+            const hasMoreMessages = messages.length === 10;
+            
+            // Update the most recent chat with only the first 10 messages
+            const updatedChats = savedChats.chats.map(
+              (chat: IChat) =>
+                chat.id === mostRecentChat.id
+                  ? { ...chat, messages: [...messages].reverse() }
+                  : { ...chat, messages: [] } // Initialize other chats with empty messages
+            );
+            
+            setChats(updatedChats);
+            setHasMore(hasMoreMessages);
+            setCurrentPage(1);
+          } catch (error) {
+            console.error('Error loading chat messages:', error);
+          }
         } else {
-          createFirstChat();
+          await createFirstChat();
         }
       } catch (error) {
         console.error('Error loading initial chat data:', error);
         createFirstChat();
+      } finally {
+        setIsLoadingChats(false);
       }
-    })();
+    };
+    
+    loadChats();
   }, [jwt]);
 
   const currentChat = chats.find((chat) => chat.id === currentChatId);
@@ -989,6 +1002,7 @@ export default function ChatPage() {
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
             onSendMessage={(message) => handleSendMessage(message, [])}
+            isLoadingChats={isLoadingChats}
           />
           <ChatInput
             onSendMessage={handleSendMessage}
