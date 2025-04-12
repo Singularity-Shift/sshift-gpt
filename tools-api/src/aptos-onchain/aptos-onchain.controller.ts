@@ -32,7 +32,6 @@ export class AptosOnchainController {
       'joule_get_user_position',
       'joule_get_user_all_positions',
       'emojicoin_get_market',
-      'panora_aggregator_price',
       'panora_aggregator_list',
     ];
 
