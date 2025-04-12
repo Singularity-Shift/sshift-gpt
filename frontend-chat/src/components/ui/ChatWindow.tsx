@@ -18,7 +18,23 @@ interface ChatWindowProps {
   onLoadMore: (page: number) => Promise<void>;
   hasMore: boolean;
   isLoadingMore: boolean;
+  onSendMessage?: (message: string) => void;
 }
+
+const PROMPT_SUGGESTIONS = [
+  "How can I check my token balance on the Aptos?",
+  "What on-chain actions can you execute for me?",
+  "Guide me through performing a token swap on Panora with you.",
+  "How do I withdraw funds from Joule Finance with you?",
+  "What are the steps to transfer tokens between wallets with you?",
+  "Can you help me find recent mentions of a specific token on Twitter?",
+  "How do I search for an NFT collection on the Aptos blockchain?",
+  "What are the latest top 10 trending NFTs on Aptos?",
+  "Can you explain how to create a sound effect with you?",
+  "How can I perform web searches with you?",
+  "Can you write a classic retro arcade game for me?",
+  "Can you explain how to create an amazing image with you?"
+];
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
   messages,
@@ -31,6 +47,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onLoadMore,
   hasMore,
   isLoadingMore,
+  onSendMessage
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const lastMessageRef = useRef<HTMLDivElement>(null);
@@ -87,6 +104,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
+  const handlePromptClick = (prompt: string) => {
+    if (onSendMessage) {
+      onSendMessage(prompt);
+    }
+  };
+
   return (
     <div className="flex-1 overflow-hidden flex flex-col w-full max-w-[1920px] mx-auto relative min-h-0">
       {/* Left Panel */}
@@ -135,6 +158,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           initialLoad={false}
         >
           <div className="w-full space-y-3 md:space-y-4 bg-transparent px-4 pt-4">
+            {messages.length === 0 && !isAssistantResponding && !showNoChatsMessage && (
+              <div className="flex flex-col items-center justify-center w-full py-10">
+                <div className="text-center mb-6">
+                  <h2 className="text-2xl font-semibold mb-2">Not sure where to start?</h2>
+                  <p className="text-muted-foreground">Choose a prompt or ask me anything</p>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-w-3xl mx-auto w-full">
+                  {PROMPT_SUGGESTIONS.map((prompt, index) => (
+                    <button
+                      key={index}
+                      className="p-3 text-left border border-gray-200 rounded-lg hover:bg-gray-100 transition-colors text-sm md:text-base"
+                      onClick={() => handlePromptClick(prompt)}
+                    >
+                      {prompt}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {messages.map((message, index) => (
               <div
                 key={`${message.id}-${index}`}
