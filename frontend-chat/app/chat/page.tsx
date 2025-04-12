@@ -988,6 +988,7 @@ export default function ChatPage() {
             onLoadMore={handleLoadMore}
             hasMore={hasMore}
             isLoadingMore={isLoadingMore}
+            onSendMessage={(message) => handleSendMessage(message, [])}
           />
           <ChatInput
             onSendMessage={handleSendMessage}
