@@ -40,7 +40,7 @@ interface NewMessage {
 
 export default function ChatPage() {
   const router = useRouter();
-  const [selectedModel, setSelectedModel] = useState('gpt-4o-mini');
+  const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
   const [chats, setChats] = useState<IChat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [, setIsWaiting] = useState(false);
@@ -75,7 +75,7 @@ export default function ChatPage() {
         id: uuidv4(),
         title: `New Chat ${chats.length + 1}`,
         messages: [],
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         createdAt: currentTime,
         lastUpdated: currentTime,
       };
@@ -87,7 +87,7 @@ export default function ChatPage() {
       });
       setChats([...chats, response.data]);
       setCurrentChatId(response.data.id);
-      setSelectedModel('gpt-4o-mini');
+      setSelectedModel('gpt-4.1-mini');
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -100,7 +100,7 @@ export default function ChatPage() {
         id: uuidv4(),
         title: `New Chat 1`,
         messages: [],
-        model: 'gpt-4o-mini',
+        model: 'gpt-4.1-mini',
         createdAt: currentTime,
         lastUpdated: currentTime,
       };
@@ -113,7 +113,7 @@ export default function ChatPage() {
 
       setChats([{ ...response.data }]);
       setCurrentChatId(response.data.id);
-      setSelectedModel('gpt-4o-mini');
+      setSelectedModel('gpt-4.1-mini');
     } catch (error) {
       console.error('Error creating new chat:', error);
     }
@@ -166,7 +166,7 @@ export default function ChatPage() {
   };
 
   const handleModelChange = (model: string) => {
-    if (!isSubscriptionActive && model !== 'gpt-4o-mini') {
+    if (!isSubscriptionActive && model !== 'gpt-4.1-mini') {
       toast({
         title: 'Model not available',
         description:
@@ -615,7 +615,7 @@ export default function ChatPage() {
           
           setChats(savedChats.chats);
           setCurrentChatId(mostRecentChat.id);
-          setSelectedModel(mostRecentChat.model || 'gpt-4o-mini');
+          setSelectedModel(mostRecentChat.model || 'gpt-4.1-mini');
           
           // Load initial messages for the most recent chat
           try {

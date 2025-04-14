@@ -34,11 +34,36 @@ export class AgentGuard implements CanActivate {
         model = createMessageDto.model;
       }
 
+      const freeTierModels = [
+        AIModel.GPT4oMini,
+        'gpt-4o-mini',
+        AIModel.GPT41Mini,
+        'gpt-4.1-mini',
+        AIModel.GPT41Nano,
+        'gpt-4.1-nano',
+      ];
       if (
         user.config.userType === UserType.Free &&
-        model !== AIModel.GPT4oMini
+        !freeTierModels.includes(model)
       ) {
-        throw new UnauthorizedException('Free users can only use GPT4oMini');
+        throw new UnauthorizedException('Free users can only use GPT4oMini, GPT-4.1-mini, or GPT-4.1-nano');
+      }
+
+      // Restrict premium models to premium/collector users
+      const premiumModels = [
+        AIModel.GPT4o,
+        AIModel.GPTo3Mini,
+        'gpt-4o',
+        'o3-mini',
+        AIModel.GPT41,
+        'gpt-4.1',
+        // Do not include mini/nano here, as they are now free
+      ];
+      if (
+        user.config.userType === UserType.Free &&
+        premiumModels.includes(model)
+      ) {
+        throw new UnauthorizedException('This model is only available with a subscription.');
       }
 
       const userConfig = await this.userService.findUserByAddress(user.address);
