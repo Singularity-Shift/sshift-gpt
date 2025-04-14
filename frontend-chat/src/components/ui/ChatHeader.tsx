@@ -71,11 +71,14 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
             </SelectTrigger>
             <SelectContent className="bg-white shadow-[0_4px_8px_-1px_rgba(0,0,0,0.2)] border-gray-100">
               <SelectItem value="gpt-4o-mini">GPT-4o-mini</SelectItem>
+              <SelectItem value="gpt-4.1-mini">GPT-4.1-mini</SelectItem>
+              <SelectItem value="gpt-4.1-nano">GPT-4.1-nano</SelectItem>
 
               {isSubscriptionActive || isCollector ? (
                 <>
                   <SelectItem value="gpt-4o">GPT-4o</SelectItem>
                   <SelectItem value="o3-mini">O3-mini</SelectItem>
+                  <SelectItem value="gpt-4.1">GPT-4.1</SelectItem>
                 </>
               ) : (
                 <>
@@ -100,6 +103,19 @@ export const ChatHeader: React.FC<ChatHeaderProps> = ({
                     <div className="flex items-center">
                       <Lock className="h-3 w-3 mr-1" />
                       O3-mini{' '}
+                      <span className="ml-1 text-xs text-gray-500">
+                        (Premium)
+                      </span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem
+                    value="gpt-4.1"
+                    disabled
+                    className="opacity-60 cursor-not-allowed"
+                  >
+                    <div className="flex items-center">
+                      <Lock className="h-3 w-3 mr-1" />
+                      GPT-4.1{' '}
                       <span className="ml-1 text-xs text-gray-500">
                         (Premium)
                       </span>
