@@ -38,6 +38,8 @@ interface NewMessage {
   model: string;
 }
 
+const FreeModels = ['gpt-4.1-mini', 'gpt-4o-mini', 'gpt-4.1-nano'];
+
 export default function ChatPage() {
   const router = useRouter();
   const [selectedModel, setSelectedModel] = useState('gpt-4.1-mini');
@@ -166,7 +168,7 @@ export default function ChatPage() {
   };
 
   const handleModelChange = (model: string) => {
-    if (!isSubscriptionActive && model !== 'gpt-4.1-mini') {
+    if (!isSubscriptionActive && !isCollector && !FreeModels.includes(model)) {
       toast({
         title: 'Model not available',
         description:
@@ -579,7 +581,7 @@ export default function ChatPage() {
   useEffect(() => {
     const loadChats = async () => {
       if (!jwt) return;
-      
+
       try {
         setIsLoadingChats(true);
         const chatResponse = await backend.get('/history', {
@@ -587,7 +589,7 @@ export default function ChatPage() {
             Authorization: `Bearer ${jwt}`,
           },
         });
-        
+
         const savedChats = chatResponse.data;
         console.log('[Initial Load] Loaded chats:', {
           chatCount: savedChats?.chats?.length,
@@ -606,17 +608,17 @@ export default function ChatPage() {
                 ? current
                 : latest
           );
-          
+
           console.log('[Initial Load] Most recent chat:', {
             id: mostRecentChat.id,
             title: mostRecentChat.title,
             lastUpdated: mostRecentChat.lastUpdated,
           });
-          
+
           setChats(savedChats.chats);
           setCurrentChatId(mostRecentChat.id);
           setSelectedModel(mostRecentChat.model || 'gpt-4.1-mini');
-          
+
           // Load initial messages for the most recent chat
           try {
             const messagesResponse = await backend.get(
@@ -631,13 +633,13 @@ export default function ChatPage() {
                 },
               }
             );
-            
+
             console.log('Initial messages response:', messagesResponse.data);
-            
+
             // Check if there are more messages based on the total count
             const { messages } = messagesResponse.data;
             const hasMoreMessages = messages.length === 10;
-            
+
             // Update the most recent chat with only the first 10 messages
             const updatedChats = savedChats.chats.map(
               (chat: IChat) =>
@@ -645,7 +647,7 @@ export default function ChatPage() {
                   ? { ...chat, messages: [...messages].reverse() }
                   : { ...chat, messages: [] } // Initialize other chats with empty messages
             );
-            
+
             setChats(updatedChats);
             setHasMore(hasMoreMessages);
             setCurrentPage(1);
@@ -662,7 +664,7 @@ export default function ChatPage() {
         setIsLoadingChats(false);
       }
     };
-    
+
     loadChats();
   }, [jwt]);
 
